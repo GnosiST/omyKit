@@ -8,7 +8,8 @@
     "last_verified_on": "2026-06-22",
     "verification_source": "GitHub repository API",
     "officiality_meaning": "Exact upstream or home repository tracked for the capability; not repository-owner endorsement of omyKit.",
-    "stars_are_snapshot": true
+    "stars_are_snapshot": true,
+    "specialist_skill_bar": "Prefer verified, non-forked, non-archived third-party specialist skill repos with roughly 1000+ stars; allow lower-star first-party platform repos only as official platform/connector references, not as community-skill quality endorsements."
   },
   "sources": [
     {
@@ -20,7 +21,7 @@
       "verification": {
         "owner": "obra",
         "owner_type": "User",
-        "stars": 235549,
+        "stars": 235577,
         "fork": false,
         "archived": false,
         "reference_scope": "Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied."
@@ -35,7 +36,7 @@
       "verification": {
         "owner": "github",
         "owner_type": "Organization",
-        "stars": 114712,
+        "stars": 114714,
         "fork": false,
         "archived": false,
         "reference_scope": "Strict SDD and constitution signals for durable projects; no templates copied."
@@ -50,7 +51,7 @@
       "verification": {
         "owner": "Fission-AI",
         "owner_type": "Organization",
-        "stars": 55967,
+        "stars": 55969,
         "fork": false,
         "archived": false,
         "reference_scope": "Proposal and archived-delta change-management pattern; no CLI or templates bundled."
@@ -65,7 +66,7 @@
       "verification": {
         "owner": "colbymchenry",
         "owner_type": "User",
-        "stars": 52973,
+        "stars": 52986,
         "fork": false,
         "archived": false,
         "reference_scope": "Code-map and impact-analysis routing signal; no dependency bundled."
@@ -95,7 +96,7 @@
       "verification": {
         "owner": "zhongerxin",
         "owner_type": "User",
-        "stars": 1723,
+        "stars": 1735,
         "fork": false,
         "archived": false,
         "reference_scope": "Visual canvas and spatial-context routing signal; no assets bundled."
@@ -110,7 +111,7 @@
       "verification": {
         "owner": "GLips",
         "owner_type": "User",
-        "stars": 15187,
+        "stars": 15188,
         "fork": false,
         "archived": false,
         "reference_scope": "Figma design-context routing signal; no MCP config or code bundled."
@@ -125,7 +126,7 @@
       "verification": {
         "owner": "phuryn",
         "owner_type": "User",
-        "stars": 20429,
+        "stars": 20433,
         "fork": false,
         "archived": false,
         "reference_scope": "PM method categories and routing cues; no PRD or launch templates copied."
@@ -155,7 +156,7 @@
       "verification": {
         "owner": "Leonxlnx",
         "owner_type": "User",
-        "stars": 48761,
+        "stars": 48774,
         "fork": false,
         "archived": false,
         "reference_scope": "Visual-taste calibration signal; no skill body copied."
@@ -170,7 +171,7 @@
       "verification": {
         "owner": "nextlevelbuilder",
         "owner_type": "Organization",
-        "stars": 94918,
+        "stars": 94930,
         "fork": false,
         "archived": false,
         "reference_scope": "UX/design intelligence lane and pattern-comparison signal; no database or skill body copied."
@@ -185,7 +186,7 @@
       "verification": {
         "owner": "anthropics",
         "owner_type": "Organization",
-        "stars": 153753,
+        "stars": 153760,
         "fork": false,
         "archived": false,
         "reference_scope": "Official frontend-design source link and routing reference; no skill body copied into omyKit."
@@ -200,7 +201,7 @@
       "verification": {
         "owner": "greensock",
         "owner_type": "Organization",
-        "stars": 9717,
+        "stars": 9719,
         "fork": false,
         "archived": false,
         "reference_scope": "Official GSAP API skill routing reference; no skill body copied into omyKit."
@@ -215,10 +216,295 @@
       "verification": {
         "owner": "headroomlabs-ai",
         "owner_type": "Organization",
-        "stars": 45826,
+        "stars": 45899,
         "fork": false,
         "archived": false,
         "reference_scope": "Optional context-compression and output-shaping reference; no default dependency or proxy bundled."
+      }
+    },
+    {
+      "id": "openai-codex",
+      "repo": "openai/codex",
+      "url": "https://github.com/openai/codex.git",
+      "baseline": "9c3b10e5d4fcd1881c191b26467a6b0aa5b50682",
+      "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
+      "verification": {
+        "owner": "openai",
+        "owner_type": "Organization",
+        "stars": 92646,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Codex platform/source reference; omyKit does not vendor Codex."
+      }
+    },
+    {
+      "id": "impeccable",
+      "repo": "pbakaus/impeccable",
+      "url": "https://github.com/pbakaus/impeccable.git",
+      "baseline": "609bbfbd5b8d4ac629267c13f06489eca8689cca",
+      "role": "Impeccable design-skill reference for design context capture, critique, audit, adaptation, UX copy, hardening, onboarding, extraction, and optimization lanes",
+      "verification": {
+        "owner": "pbakaus",
+        "owner_type": "User",
+        "stars": 40158,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Installed local design-skill family reference; omyKit records routing boundaries and does not copy additional upstream text."
+      }
+    },
+    {
+      "id": "ui-skills",
+      "repo": "ibelick/ui-skills",
+      "url": "https://github.com/ibelick/ui-skills.git",
+      "baseline": "4d766c65fc3c63c611ecbc375882231152dea8c4",
+      "role": "UI Skills reference for baseline UI checks, accessibility repair, metadata repair, and motion-performance repair",
+      "verification": {
+        "owner": "ibelick",
+        "owner_type": "User",
+        "stars": 3302,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Installed local UI-engineering skill family reference; no upstream body copied into omyKit."
+      }
+    },
+    {
+      "id": "better-icons",
+      "repo": "better-auth/better-icons",
+      "url": "https://github.com/better-auth/better-icons.git",
+      "baseline": "033316ecb8f4982235af4111a2257e80231f5ab1",
+      "role": "Better Icons reference for icon search, retrieval, and icon-system strategy",
+      "verification": {
+        "owner": "better-auth",
+        "owner_type": "Organization",
+        "stars": 1105,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Installed local icon-strategy reference; omyKit does not vendor CLI or MCP code."
+      }
+    },
+    {
+      "id": "motion",
+      "repo": "motiondivision/motion",
+      "url": "https://github.com/motiondivision/motion.git",
+      "baseline": "830c73766c418f6c2624ccb2cdfa8f8cf859f3cd",
+      "role": "Motion official library reference for animation implementation and Motion AI Kit adjacency",
+      "verification": {
+        "owner": "motiondivision",
+        "owner_type": "Organization",
+        "stars": 32454,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Official Motion GitHub reference; Motion AI Kit docs remain the source for paid AI Kit behavior."
+      }
+    },
+    {
+      "id": "canva-claude-skills",
+      "repo": "canva-sdks/canva-claude-skills",
+      "url": "https://github.com/canva-sdks/canva-claude-skills.git",
+      "baseline": "66d54fb317509c04752a163255f4af098af23c5f",
+      "role": "Official Canva agent-skill reference for Canva Connector creative workflows",
+      "verification": {
+        "owner": "canva-sdks",
+        "owner_type": "Organization",
+        "stars": 41,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Canva connector/agent-skill source reference; omyKit does not vendor Canva skills."
+      }
+    },
+    {
+      "id": "remotion",
+      "repo": "remotion-dev/remotion",
+      "url": "https://github.com/remotion-dev/remotion.git",
+      "baseline": "243178f0338a3410d52228c2605a1795d93d3933",
+      "role": "Official Remotion reference for deterministic React video rendering",
+      "verification": {
+        "owner": "remotion-dev",
+        "owner_type": "Organization",
+        "stars": 50848,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Video-rendering platform reference; no dependency bundled."
+      }
+    },
+    {
+      "id": "ffmpeg",
+      "repo": "FFmpeg/FFmpeg",
+      "url": "https://github.com/FFmpeg/FFmpeg.git",
+      "baseline": "ff1e1b5b72bc7110257334735ceb3f05e6642034",
+      "role": "Official FFmpeg GitHub mirror reference for media processing and export workflows",
+      "verification": {
+        "owner": "FFmpeg",
+        "owner_type": "Organization",
+        "stars": 61333,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Media-processing reference; omyKit does not vendor FFmpeg."
+      }
+    },
+    {
+      "id": "docker-compose",
+      "repo": "docker/compose",
+      "url": "https://github.com/docker/compose.git",
+      "baseline": "9b55a6e9c1016fd3c31859b7e09260378d45a783",
+      "role": "Official Docker Compose reference for local multi-service runtime readiness",
+      "verification": {
+        "owner": "docker",
+        "owner_type": "Organization",
+        "stars": 37579,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Runtime dependency orchestration reference."
+      }
+    },
+    {
+      "id": "moby",
+      "repo": "moby/moby",
+      "url": "https://github.com/moby/moby.git",
+      "baseline": "d59033e2cfd9666a4d6332c8ec15a2177992cea5",
+      "role": "Moby/Docker engine ecosystem reference for container runtime behavior",
+      "verification": {
+        "owner": "moby",
+        "owner_type": "Organization",
+        "stars": 71727,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Container runtime ecosystem reference; Docker Compose remains the preferred project-level route."
+      }
+    },
+    {
+      "id": "chrome-extensions-samples",
+      "repo": "GoogleChrome/chrome-extensions-samples",
+      "url": "https://github.com/GoogleChrome/chrome-extensions-samples.git",
+      "baseline": "c4393862e164d74d1b6112ced19f2a2bbe26506c",
+      "role": "Official Google Chrome Extensions sample reference for Chrome-extension platform behavior",
+      "verification": {
+        "owner": "GoogleChrome",
+        "owner_type": "Organization",
+        "stars": 17619,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Chrome extension platform reference; Codex Chrome plugin behavior remains first-party runtime behavior."
+      }
+    },
+    {
+      "id": "playwright",
+      "repo": "microsoft/playwright",
+      "url": "https://github.com/microsoft/playwright.git",
+      "baseline": "69442c4505c9b13c22c123ba40bb0ca19abeb3de",
+      "role": "Official Playwright reference for repeatable browser automation",
+      "verification": {
+        "owner": "microsoft",
+        "owner_type": "Organization",
+        "stars": 91381,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Browser automation reference; no dependency bundled."
+      }
+    },
+    {
+      "id": "github-mcp-server",
+      "repo": "github/github-mcp-server",
+      "url": "https://github.com/github/github-mcp-server.git",
+      "baseline": "a37837027f6ac03560ebebd9f51f9f1f898b28c4",
+      "role": "Official GitHub MCP server reference for GitHub connector workflows",
+      "verification": {
+        "owner": "github",
+        "owner_type": "Organization",
+        "stars": 30870,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "GitHub platform tooling reference; omyKit still prefers local git/gh when repository facts are local."
+      }
+    },
+    {
+      "id": "linear",
+      "repo": "linear/linear",
+      "url": "https://github.com/linear/linear.git",
+      "baseline": "df205619da0b502386236ea7e5c5e65c0da826ee",
+      "role": "Official Linear tools, SDKs, and plugins reference for issue/work tracking",
+      "verification": {
+        "owner": "linear",
+        "owner_type": "Organization",
+        "stars": 1454,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Linear work-tracking reference; no SDK bundled."
+      }
+    },
+    {
+      "id": "sentry",
+      "repo": "getsentry/sentry",
+      "url": "https://github.com/getsentry/sentry.git",
+      "baseline": "eede9e73f6c7d4ba6f68946037e4adf481e3a5e7",
+      "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
+      "verification": {
+        "owner": "getsentry",
+        "owner_type": "Organization",
+        "stars": 44146,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Observability platform reference; omyKit uses it only when deployed runtime evidence matters."
+      }
+    },
+    {
+      "id": "sonarqube",
+      "repo": "SonarSource/sonarqube",
+      "url": "https://github.com/SonarSource/sonarqube.git",
+      "baseline": "7a3783c482017de77293a338a7f50c71445e7d41",
+      "role": "Official SonarQube reference for static quality and security gates",
+      "verification": {
+        "owner": "SonarSource",
+        "owner_type": "Organization",
+        "stars": 10699,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "External quality-gate reference; does not replace local verification."
+      }
+    },
+    {
+      "id": "chromatic-cli",
+      "repo": "chromaui/chromatic-cli",
+      "url": "https://github.com/chromaui/chromatic-cli.git",
+      "baseline": "8caa6791b3d04517b46d894d24ef06d712463ee4",
+      "role": "Official Chromatic CLI reference for Storybook visual regression workflows",
+      "verification": {
+        "owner": "chromaui",
+        "owner_type": "Organization",
+        "stars": 337,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Visual regression tool reference; no CLI bundled."
+      }
+    },
+    {
+      "id": "coderabbit-awesome",
+      "repo": "coderabbitai/awesome-coderabbit",
+      "url": "https://github.com/coderabbitai/awesome-coderabbit.git",
+      "baseline": "4d37d6e9fe29b6e28c51560071eec0d6e0a75bd2",
+      "role": "Official CodeRabbit resource reference for AI PR review workflow context",
+      "verification": {
+        "owner": "coderabbitai",
+        "owner_type": "Organization",
+        "stars": 402,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "CodeRabbit resource reference; product behavior should be verified through current docs/app output."
+      }
+    },
+    {
+      "id": "openai-cua-sample-app",
+      "repo": "openai/openai-cua-sample-app",
+      "url": "https://github.com/openai/openai-cua-sample-app.git",
+      "baseline": "3751c8baa6376c0bbf6cceea2cdc0c0b42996e03",
+      "role": "Official OpenAI Computer Using Agent sample reference for GUI/computer-use workflows",
+      "verification": {
+        "owner": "openai",
+        "owner_type": "Organization",
+        "stars": 1740,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Computer-use platform sample reference; no sample app vendored."
       }
     }
   ]

@@ -4,7 +4,11 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added source marks and verified sources to every tool-registry row, covering installed local skills, platform tools, OpenAI bundled tools, and repo-local mechanisms.
+- Added star-count suffixes to verified GitHub sources in the tool registry and documented a no-low-signal-community-skill admission rule.
+- Added source-integrity baselines for local skill origins and platform-tool GitHub references such as Impeccable, UI Skills, Better Icons, Motion, Canva skills, Remotion, FFmpeg, Docker, Playwright, GitHub MCP, Linear, Sentry, SonarQube, Chromatic, CodeRabbit, and OpenAI CUA samples.
 - Added source-integrity snapshots and validation for external references, including developer/owner, star counts as of 2026-06-22, fork/archive status, and scoped reference boundaries.
+- Refreshed the `openai/codex` upstream baseline after reviewing a remote-exec sandboxing change; no omyKit workflow rule was promoted.
 - Added workflow usability controls to the overview so routing, custom answers, language matching, same-lane skill selection, and external reference boundaries are visible in one place.
 - Linked official upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Cowart, Figma Context MCP, UI/UX Pro Max, and design-taste, and added a no-forks/no-mirrors source-integrity rule.
 - Linked `frontend-design` and `gsap-*` to their official skill sources, added them to upstream tracking, and clarified tool-registry source labeling rules.

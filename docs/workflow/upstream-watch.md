@@ -12,20 +12,39 @@ Officiality means "the exact upstream or home repository omyKit tracks for that 
 
 | Source | Developer / owner | Stars on 2026-06-22 | Status | Reference scope in omyKit |
 | --- | --- | ---: | --- | --- |
-| [`obra/Superpowers`](https://github.com/obra/Superpowers) | `obra` / User | 235,549 | Not forked, active | Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied. |
-| [`github/spec-kit`](https://github.com/github/spec-kit) | `github` / Organization | 114,712 | Not forked, active | Strict SDD and constitution signals for durable projects; no templates copied. |
-| [`Fission-AI/openspec`](https://github.com/Fission-AI/openspec) | `Fission-AI` / Organization | 55,967 | Not forked, active | Proposal and archived-delta change-management pattern; no CLI or templates bundled. |
-| [`colbymchenry/codegraph`](https://github.com/colbymchenry/codegraph) | `colbymchenry` / User | 52,973 | Not forked, active | Code-map and impact-analysis routing signal; no dependency bundled. |
-| [`upstash/context7`](https://github.com/upstash/context7) | `upstash` / Organization | 57,851 | Not forked, active | Current library-doc lookup signal; no documentation mirrored. |
-| [`zhongerxin/Cowart`](https://github.com/zhongerxin/Cowart) | `zhongerxin` / User | 1,723 | Not forked, active | Visual canvas and spatial-context routing signal; no assets bundled. |
-| [`GLips/Figma-Context-MCP`](https://github.com/GLips/Figma-Context-MCP) | `GLips` / User | 15,187 | Not forked, active | Figma design-context routing signal; no MCP config or code bundled. |
-| [`phuryn/pm-skills`](https://github.com/phuryn/pm-skills) | `phuryn` / User | 20,429 | Not forked, active | PM method categories and routing cues; no PRD or launch templates copied. |
-| [`birobirobiro/awesome-shadcn-ui`](https://github.com/birobirobiro/awesome-shadcn-ui) | `birobirobiro` / User | 19,884 | Not forked, active | shadcn/ui ecosystem discovery signal; no fast-changing catalog copied. |
-| [`Leonxlnx/taste-skill`](https://github.com/Leonxlnx/taste-skill) | `Leonxlnx` / User | 48,761 | Not forked, active | Visual-taste calibration signal; no skill body copied. |
-| [`nextlevelbuilder/ui-ux-pro-max-skill`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | `nextlevelbuilder` / Organization | 94,918 | Not forked, active | UX/design intelligence lane and pattern-comparison signal; no database or skill body copied. |
-| [`anthropics/skills`](https://github.com/anthropics/skills) | `anthropics` / Organization | 153,753 | Not forked, active | Official `frontend-design` source link and routing reference; no skill body copied into omyKit. |
-| [`greensock/gsap-skills`](https://github.com/greensock/gsap-skills) | `greensock` / Organization | 9,717 | Not forked, active | Official GSAP API skill routing reference; no skill body copied into omyKit. |
-| [`headroomlabs-ai/headroom`](https://github.com/headroomlabs-ai/headroom) | `headroomlabs-ai` / Organization | 45,826 | Not forked, active | Optional context-compression and output-shaping reference; no default dependency or proxy bundled. |
+| [obra/Superpowers](https://github.com/obra/Superpowers) | `obra` / User | 235,577 | Not forked, active | Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied. |
+| [github/spec-kit](https://github.com/github/spec-kit) | `github` / Organization | 114,714 | Not forked, active | Strict SDD and constitution signals for durable projects; no templates copied. |
+| [Fission-AI/openspec](https://github.com/Fission-AI/openspec) | `Fission-AI` / Organization | 55,969 | Not forked, active | Proposal and archived-delta change-management pattern; no CLI or templates bundled. |
+| [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph) | `colbymchenry` / User | 52,986 | Not forked, active | Code-map and impact-analysis routing signal; no dependency bundled. |
+| [upstash/context7](https://github.com/upstash/context7) | `upstash` / Organization | 57,851 | Not forked, active | Current library-doc lookup signal; no documentation mirrored. |
+| [zhongerxin/Cowart](https://github.com/zhongerxin/Cowart) | `zhongerxin` / User | 1,735 | Not forked, active | Visual canvas and spatial-context routing signal; no assets bundled. |
+| [GLips/Figma-Context-MCP](https://github.com/GLips/Figma-Context-MCP) | `GLips` / User | 15,188 | Not forked, active | Figma design-context routing signal; no MCP config or code bundled. |
+| [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | `phuryn` / User | 20,433 | Not forked, active | PM method categories and routing cues; no PRD or launch templates copied. |
+| [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | `birobirobiro` / User | 19,884 | Not forked, active | shadcn/ui ecosystem discovery signal; no fast-changing catalog copied. |
+| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | `Leonxlnx` / User | 48,774 | Not forked, active | Visual-taste calibration signal; no skill body copied. |
+| [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | `nextlevelbuilder` / Organization | 94,930 | Not forked, active | UX/design intelligence lane and pattern-comparison signal; no database or skill body copied. |
+| [anthropics/skills](https://github.com/anthropics/skills) | `anthropics` / Organization | 153,760 | Not forked, active | Official frontend-design source link and routing reference; no skill body copied into omyKit. |
+| [greensock/gsap-skills](https://github.com/greensock/gsap-skills) | `greensock` / Organization | 9,719 | Not forked, active | Official GSAP API skill routing reference; no skill body copied into omyKit. |
+| [headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom) | `headroomlabs-ai` / Organization | 45,899 | Not forked, active | Optional context-compression and output-shaping reference; no default dependency or proxy bundled. |
+| [openai/codex](https://github.com/openai/codex) | `openai` / Organization | 92,646 | Not forked, active | Codex platform/source reference; omyKit does not vendor Codex. |
+| [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | `pbakaus` / User | 40,158 | Not forked, active | Installed local design-skill family reference; omyKit records routing boundaries and does not copy additional upstream text. |
+| [ibelick/ui-skills](https://github.com/ibelick/ui-skills) | `ibelick` / User | 3,302 | Not forked, active | Installed local UI-engineering skill family reference; no upstream body copied into omyKit. |
+| [better-auth/better-icons](https://github.com/better-auth/better-icons) | `better-auth` / Organization | 1,105 | Not forked, active | Installed local icon-strategy reference; omyKit does not vendor CLI or MCP code. |
+| [motiondivision/motion](https://github.com/motiondivision/motion) | `motiondivision` / Organization | 32,454 | Not forked, active | Official Motion GitHub reference; Motion AI Kit docs remain the source for paid AI Kit behavior. |
+| [canva-sdks/canva-claude-skills](https://github.com/canva-sdks/canva-claude-skills) | `canva-sdks` / Organization | 41 | Not forked, active | Canva connector/agent-skill source reference; omyKit does not vendor Canva skills. |
+| [remotion-dev/remotion](https://github.com/remotion-dev/remotion) | `remotion-dev` / Organization | 50,848 | Not forked, active | Video-rendering platform reference; no dependency bundled. |
+| [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) | `FFmpeg` / Organization | 61,333 | Not forked, active | Media-processing reference; omyKit does not vendor FFmpeg. |
+| [docker/compose](https://github.com/docker/compose) | `docker` / Organization | 37,579 | Not forked, active | Runtime dependency orchestration reference. |
+| [moby/moby](https://github.com/moby/moby) | `moby` / Organization | 71,727 | Not forked, active | Container runtime ecosystem reference; Docker Compose remains the preferred project-level route. |
+| [GoogleChrome/chrome-extensions-samples](https://github.com/GoogleChrome/chrome-extensions-samples) | `GoogleChrome` / Organization | 17,619 | Not forked, active | Chrome extension platform reference; Codex Chrome plugin behavior remains first-party runtime behavior. |
+| [microsoft/playwright](https://github.com/microsoft/playwright) | `microsoft` / Organization | 91,381 | Not forked, active | Browser automation reference; no dependency bundled. |
+| [github/github-mcp-server](https://github.com/github/github-mcp-server) | `github` / Organization | 30,870 | Not forked, active | GitHub platform tooling reference; omyKit still prefers local git/gh when repository facts are local. |
+| [linear/linear](https://github.com/linear/linear) | `linear` / Organization | 1,454 | Not forked, active | Linear work-tracking reference; no SDK bundled. |
+| [getsentry/sentry](https://github.com/getsentry/sentry) | `getsentry` / Organization | 44,146 | Not forked, active | Observability platform reference; omyKit uses it only when deployed runtime evidence matters. |
+| [SonarSource/sonarqube](https://github.com/SonarSource/sonarqube) | `SonarSource` / Organization | 10,699 | Not forked, active | External quality-gate reference; does not replace local verification. |
+| [chromaui/chromatic-cli](https://github.com/chromaui/chromatic-cli) | `chromaui` / Organization | 337 | Not forked, active | Visual regression tool reference; no CLI bundled. |
+| [coderabbitai/awesome-coderabbit](https://github.com/coderabbitai/awesome-coderabbit) | `coderabbitai` / Organization | 402 | Not forked, active | CodeRabbit resource reference; product behavior should be verified through current docs/app output. |
+| [openai/openai-cua-sample-app](https://github.com/openai/openai-cua-sample-app) | `openai` / Organization | 1,740 | Not forked, active | Computer-use platform sample reference; no sample app vendored. |
 
 ## Cadence
 
@@ -61,5 +80,6 @@ When an upstream source changed:
 
 - Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
 - Do not substitute a linked official source with a similarly named fork, marketplace mirror, or repackaged skill unless the user explicitly asks for that alternate source.
+- Do not add low-signal community specialist skills. Prefer verified 1,000+ star repositories; make lower-star exceptions only for first-party platform sources and label them as platform/connector references.
 - Do not turn a fast-changing ecosystem list into a fixed rule.
 - Do not run this check for every task; use it at learning, release, or current-source dependency boundaries.
