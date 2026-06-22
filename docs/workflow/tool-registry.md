@@ -13,6 +13,7 @@ This registry describes how Codex should combine tools without loading or using 
 | OpenSpec | Change management | Standard feature/bug/refactor proposals and archived deltas. | One-off throwaway artifacts. |
 | CodeGraph | Code map and impact | Existing code structure, callers/callees, blast radius. | Replacing tests, source confirmation, or runtime checks. |
 | Context7 | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
+| [Headroom](https://github.com/headroomlabs-ai/headroom) | Optional context compression reference or installed layer | Large repetitive tool outputs, logs, RAG chunks, files, diffs, conversation handoffs, or output shaping after native narrowing is insufficient. | Default dependency, every task, exact source-of-truth edits, security/legal/privacy evidence, citations, or untrusted data paths without local retrieval. |
 | Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
 | Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
 | teach-impeccable | Durable design context capture | One-time capture of stable product/design context into AI configuration for future sessions. | One-off visual tweaks or project facts that are not stable design guidance. |
@@ -48,7 +49,7 @@ This registry describes how Codex should combine tools without loading or using 
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
-| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/ecosystem routing depends on current third-party skill behavior. | Every task or as automatic permission to copy upstream content. |
+| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/ecosystem/context-compression routing depends on current third-party behavior. | Every task or as automatic permission to copy upstream content. |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method reference source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
@@ -62,6 +63,7 @@ Apply them only when the active omyKit route sees the matching signal:
 - Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active brief/change workflow.
 - Visual frontend work: add checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA.
 - shadcn/ui ecosystem work: consult current project dependencies or current sources only when examples, component options, or ecosystem research are needed.
+- Context compression work: first narrow source context with indexes, outlines, focused commands, and evidence notes; use Headroom-style compression only when large retrievable outputs still exceed the useful budget.
 - Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson.
 
 Use an installed specialist skill directly inside the current route only when it is available and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
@@ -94,6 +96,7 @@ Do not stack same-lane skills by default. Choose one primary capability for the 
 | Motion | `motion-ai-kit`. | Add `fixing-motion-performance` only if animation cost or smoothness is a risk. |
 | GSAP implementation | The matching `gsap-*` skill for the concrete API or integration concern. | Add `motion-ai-kit` only when the intended choreography is unclear; add `fixing-motion-performance` only for confirmed performance risk. |
 | shadcn/ui resources | Project dependencies and current official/source material first; consult `birobirobiro/awesome-shadcn-ui` as an ecosystem reference. | The task needs current examples, component options, or library discovery. |
+| Context compression | `codex-context-budget` first: avoid, index, focus, compact, then summarize. | Use Headroom only when large repetitive content remains useful, originals can be retrieved, and the path is local or explicitly trusted. |
 | Workflow evolution | `codex-workflow-evolution`. | Add owner skills only after evidence shows the generic kit should change. |
 
 ## Versioning Readiness

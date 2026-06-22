@@ -11,13 +11,14 @@ Codex Workflow Kit 是一个以 Codex 为控制面的操作层，用于初始化
 - 在不膨胀上下文的前提下交付高质量结果。
 - 在使用工具前先按项目类型路由。
 - 渐进式上下文加载：`scan -> focus -> deep`。
+- 压缩感知的上下文管理：先避免和缩小范围，再摘要，只有可取回原文时才使用可选本地压缩。
 - 用 Codex repo skills 编码可重复工作流。
 - 本地验证前准备运行时依赖，包括 Docker 支持的中间件。
 - 为历史追踪、回滚、发布和项目特定定制检查版本准备度。
 - 可见推理摘要、问题、进度和 handoff 跟随用户语言。
 - 在声明完成前提供交付物类型对应的证据。
 - 基于证据改进 workflow，同时避免把目标项目事实导入通用 kit。
-- 定期检查影响 PM、设计品味和生态发现的第三方 skill 仓库参考来源。
+- 定期检查影响 PM、设计品味、生态发现和上下文压缩的第三方参考来源。
 
 ## 核心流程
 
@@ -58,9 +59,11 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 
 1. 项目原生命令、API 和文件。
 2. 语义化或索引化上下文，例如 CodeGraph。
-3. 专用 MCP/plugins，例如 Context7、Cowart、Figma、Canva、GitHub 或 Sentry。
-4. 浏览器自动化，例如 Chrome Extension 或 Playwright。
-5. 只有在本地 GUI 工作流没有更好接口时才使用 Computer Use。
+3. 通过 Context7、Cowart 或 Figma 等工具获取聚焦文档或选中交付物上下文。
+4. 原生缩小范围仍不够时，对大型可取回输出使用可选本地压缩。
+5. 当 Canva、GitHub、Sentry、Headroom 或 artifact 工具能实质改变下一步决策时，才调用专用 MCP/plugins。
+6. 浏览器自动化，例如 Chrome Extension 或 Playwright。
+7. 只有在本地 GUI 工作流没有更好接口时才使用 Computer Use。
 
 ## 运行时哲学
 
@@ -89,4 +92,4 @@ already running service -> project compose/script -> testcontainer/in-memory pat
 
 新项目使用 `$omykit 初始化项目`。现有项目使用 `$omykit 改造旧项目`。在项目 profile 提供具体工具、命令和门禁之前，生成的规则应保持通用。
 
-安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、UI 设计、设计品味和生态资源发现的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。
+安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、UI 设计、设计品味、生态资源发现和上下文压缩的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。

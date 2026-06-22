@@ -11,13 +11,14 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - High-quality delivery without bloated context.
 - Project-type routing before tool use.
 - Progressive context loading: `scan -> focus -> deep`.
+- Compression-aware context management: avoid and narrow first, summarize next, then use optional local compression only when originals can be retrieved.
 - Repeatable workflows encoded as Codex repo skills.
 - Runtime readiness, including Docker-backed middleware, before local verification.
 - Versioning readiness for history lookup, rollback, releases, and project-specific customization.
 - Language-aware visible output for rationale summaries, questions, progress, and handoff.
 - Artifact-specific delivery evidence before claiming completion.
 - Evidence-based workflow evolution without importing target-project facts into the generic kit.
-- Periodic upstream reference checks for third-party skill repositories that inform PM, design taste, and ecosystem discovery.
+- Periodic upstream reference checks for third-party sources that inform PM, design taste, ecosystem discovery, and context compression.
 
 ## Core Flow
 
@@ -58,9 +59,11 @@ Use the most specific reliable tool first:
 
 1. Project-native commands, APIs, and files.
 2. Semantic/indexed context such as CodeGraph.
-3. Dedicated MCP/plugins such as Context7, Cowart, Figma, Canva, GitHub, or Sentry.
-4. Browser automation such as Chrome Extension or Playwright.
-5. Computer Use only for local GUI workflows without a better interface.
+3. Focused documentation or selected artifact context through tools such as Context7, Cowart, or Figma.
+4. Optional local compression for large retrievable outputs after native narrowing is insufficient.
+5. Dedicated MCP/plugins such as Canva, GitHub, Sentry, Headroom, or artifact tools when they materially change the next decision.
+6. Browser automation such as Chrome Extension or Playwright.
+7. Computer Use only for local GUI workflows without a better interface.
 
 ## Runtime Philosophy
 
@@ -89,4 +92,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional PM, UI design, design-taste, and ecosystem-discovery selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, and [evolution.md](evolution.md) for evidence-based workflow improvement.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional PM, UI design, design-taste, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, and [evolution.md](evolution.md) for evidence-based workflow improvement.

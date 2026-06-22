@@ -113,6 +113,7 @@ $omykit 交付检查
 
 - CodeGraph 用于代码地图。
 - Context7 用于当前库文档。
+- Headroom 或类似本地压缩能力只用于高容量且可取回原文的 tool output、logs、RAG chunks 或会话交接。
 - Cowart 或 Figma 用于视觉上下文。
 - Chrome Extension 或 Playwright 用于浏览器检查。
 - Computer Use 用于本地 GUI 工作流。

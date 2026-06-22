@@ -9,7 +9,7 @@
       "id": "pm-skills",
       "repo": "phuryn/pm-skills",
       "url": "https://github.com/phuryn/pm-skills.git",
-      "baseline": "d384f0c9eb81fe74656a4f6da168587836939edb",
+      "baseline": "a0cd730d4c61e519ca8568b172334402257a74a9",
       "role": "PM method reference for discovery, PRD, launch, pre-mortem, acceptance, and test-scenario structure"
     },
     {
@@ -25,6 +25,13 @@
       "url": "https://github.com/Leonxlnx/taste-skill.git",
       "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
       "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration"
+    },
+    {
+      "id": "headroom",
+      "repo": "headroomlabs-ai/headroom",
+      "url": "https://github.com/headroomlabs-ai/headroom.git",
+      "baseline": "95b2333ee5a3f1cbe512ca04a6563c3572835758",
+      "role": "Optional token and context compression reference for large tool outputs, logs, RAG chunks, files, reversible retrieval, and output shaping"
     }
   ]
 }

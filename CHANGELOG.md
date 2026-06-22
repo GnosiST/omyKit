@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added Headroom as an optional upstream reference and expanded context-budget guidance with compression gates, original-retrieval safeguards, and output-shaping rules.
+- Refreshed the `phuryn/pm-skills` upstream baseline after reviewing a README badge-only change; no omyKit workflow rule was promoted.
+
 ## 0.1.0 - 2026-06-22
 
 - Added upstream reference monitoring for third-party skill/source repositories, with local checks, monthly GitHub Actions, and evidence-based promotion rules.

@@ -18,13 +18,14 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
+- **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
-- **Reference-aware selection:** use PM, design, and ecosystem-discovery signals only when they improve the active workflow, without copying third-party content.
+- **Reference-aware selection:** use PM, design, ecosystem-discovery, and context-compression signals only when they improve the active workflow, without copying third-party content.
 - **Evidence-based evolution:** promote only reusable workflow lessons into omyKit, while keeping target-project facts isolated.
-- **Upstream reference watch:** periodically check referenced external skill repositories for changes, then review useful workflow lessons before adopting anything.
+- **Upstream reference watch:** periodically check referenced external sources for changes, then review useful workflow lessons before adopting anything.
 
 ## Workflow At A Glance
 
@@ -77,7 +78,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
-| `upstream-sources.json` | Tracked external reference baselines for PM, shadcn/ui, and design-taste sources. |
+| `upstream-sources.json` | Tracked external reference baselines for PM, shadcn/ui, design-taste, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
 ## Skill Layer
@@ -86,7 +87,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | --- | --- |
 | `omykit` | Entry point for initialization, retrofit, change work, and delivery checks. |
 | `codex-project-router` | Classifies entry type, project type, workflow mode, and tool path. |
-| `codex-context-budget` | Keeps context loading progressive: `scan -> focus -> deep`. |
+| `codex-context-budget` | Keeps context loading progressive and compression-aware: `scan -> focus -> deep`, with original retrieval for exact evidence. |
 | `codex-project-init` | Creates the minimum Codex workflow layer for a new project. |
 | `codex-project-retrofit` | Adds workflow structure to an existing project without disrupting it. |
 | `codex-change-workflow` | Runs scoped feature, fix, refactor, or artifact work through focused verification. |
@@ -108,6 +109,7 @@ Operational rules:
 - Route once at task intake, when scope or risk changes, or before delivery.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
+- For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.
 - Check versioning readiness for durable changes: branch state, history lookup, rollback path, release notes, and customization boundary.
 - Treat generated project rules as local project assets, not global defaults.
@@ -179,7 +181,7 @@ After changing skill files:
 
 This repository is intended to contain original workflow instructions, scripts, and documentation for omyKit. It does not intentionally bundle third-party proprietary assets, private documentation, or copied product manuals.
 
-Names such as Codex, GitHub, Docker, Canva, Remotion, and other referenced tools are used descriptively to identify integrations or workflow contexts. Those names may be trademarks of their respective owners. This project is not endorsed by, sponsored by, or affiliated with those owners unless explicitly stated.
+Names such as Codex, GitHub, Docker, Canva, Remotion, Headroom, and other referenced tools are used descriptively to identify integrations or workflow contexts. Those names may be trademarks of their respective owners. This project is not endorsed by, sponsored by, or affiliated with those owners unless explicitly stated.
 
 When adding new content, keep examples, prose, and templates original or clearly licensed for reuse. Do not copy third-party documentation, brand assets, screenshots, icons, or proprietary workflow text into this repository without confirming the applicable license and attribution requirements.
 

@@ -13,6 +13,7 @@ Current tracked sources:
 - `phuryn/pm-skills` for PM method references.
 - `birobirobiro/awesome-shadcn-ui` for shadcn/ui ecosystem discovery.
 - `Leonxlnx/taste-skill` for design taste calibration.
+- `headroomlabs-ai/headroom` for optional context compression, reversible retrieval, and output shaping reference signals.
 
 ## Cadence
 
