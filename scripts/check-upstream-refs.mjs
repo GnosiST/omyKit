@@ -14,6 +14,7 @@ if (!fs.existsSync(configPath)) {
 
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const sources = Array.isArray(config.sources) ? config.sources : [];
+const requiresVerification = Boolean(config.source_integrity);
 
 if (sources.length === 0) {
   console.log("No upstream sources configured.");
@@ -26,6 +27,41 @@ for (const source of sources) {
   if (!source.id || !source.url || !source.baseline) {
     console.error(`Invalid source entry: ${JSON.stringify(source)}`);
     process.exit(1);
+  }
+
+  if (requiresVerification) {
+    const verification = source.verification;
+    if (!verification || typeof verification !== "object") {
+      console.error(`Missing source-integrity verification for ${source.id}`);
+      process.exit(1);
+    }
+
+    const [repoOwner] = String(source.repo || "").split("/");
+    if (
+      repoOwner &&
+      typeof verification.owner === "string" &&
+      verification.owner.toLowerCase() !== repoOwner.toLowerCase()
+    ) {
+      console.error(
+        `Verification owner mismatch for ${source.id}: ${verification.owner} != ${repoOwner}`,
+      );
+      process.exit(1);
+    }
+
+    const invalidVerification =
+      typeof verification.owner !== "string" ||
+      typeof verification.owner_type !== "string" ||
+      !Number.isInteger(verification.stars) ||
+      verification.stars < 0 ||
+      typeof verification.fork !== "boolean" ||
+      typeof verification.archived !== "boolean" ||
+      typeof verification.reference_scope !== "string" ||
+      verification.reference_scope.length === 0;
+
+    if (invalidVerification) {
+      console.error(`Invalid source-integrity verification for ${source.id}`);
+      process.exit(1);
+    }
   }
 
   let output;

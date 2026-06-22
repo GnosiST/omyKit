@@ -4,104 +4,222 @@
     "owner": "codex-workflow-evolution",
     "promotion_rule": "Review changed upstream references for reusable workflow lessons; do not copy third-party bodies, templates, resource lists, images, badges, or branding."
   },
+  "source_integrity": {
+    "last_verified_on": "2026-06-22",
+    "verification_source": "GitHub repository API",
+    "officiality_meaning": "Exact upstream or home repository tracked for the capability; not repository-owner endorsement of omyKit.",
+    "stars_are_snapshot": true
+  },
   "sources": [
     {
       "id": "superpowers",
       "repo": "obra/Superpowers",
       "url": "https://github.com/obra/Superpowers.git",
       "baseline": "896224c4b1879920ab573417e68fd51d2ccc9072",
-      "role": "Official Superpowers reference for execution discipline, planning, debugging, TDD, verification, and review workflows"
+      "role": "Official Superpowers reference for execution discipline, planning, debugging, TDD, verification, and review workflows",
+      "verification": {
+        "owner": "obra",
+        "owner_type": "User",
+        "stars": 235549,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied."
+      }
     },
     {
       "id": "spec-kit",
       "repo": "github/spec-kit",
       "url": "https://github.com/github/spec-kit.git",
       "baseline": "487af97864901462874f18f1c7f8d8adec0b7ddd",
-      "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow"
+      "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow",
+      "verification": {
+        "owner": "github",
+        "owner_type": "Organization",
+        "stars": 114712,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Strict SDD and constitution signals for durable projects; no templates copied."
+      }
     },
     {
       "id": "openspec",
       "repo": "Fission-AI/openspec",
       "url": "https://github.com/Fission-AI/openspec.git",
       "baseline": "1b06fddd59d8e592d5b5794a1970b22867e85b1f",
-      "role": "Official OpenSpec reference for proposal-based change management and archived deltas"
+      "role": "Official OpenSpec reference for proposal-based change management and archived deltas",
+      "verification": {
+        "owner": "Fission-AI",
+        "owner_type": "Organization",
+        "stars": 55967,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Proposal and archived-delta change-management pattern; no CLI or templates bundled."
+      }
     },
     {
       "id": "codegraph",
       "repo": "colbymchenry/codegraph",
       "url": "https://github.com/colbymchenry/codegraph.git",
       "baseline": "e43ac82cdf76998f78bc871a741235a4c02e5bd0",
-      "role": "Official CodeGraph reference for code maps, symbol exploration, callers/callees, and impact analysis"
+      "role": "Official CodeGraph reference for code maps, symbol exploration, callers/callees, and impact analysis",
+      "verification": {
+        "owner": "colbymchenry",
+        "owner_type": "User",
+        "stars": 52973,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Code-map and impact-analysis routing signal; no dependency bundled."
+      }
     },
     {
       "id": "context7",
       "repo": "upstash/context7",
       "url": "https://github.com/upstash/context7.git",
       "baseline": "18e6d4727bbcfb4001a8a17337b0f0f717f1b4fd",
-      "role": "Official Context7 reference for current library documentation lookup"
+      "role": "Official Context7 reference for current library documentation lookup",
+      "verification": {
+        "owner": "upstash",
+        "owner_type": "Organization",
+        "stars": 57851,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Current library-doc lookup signal; no documentation mirrored."
+      }
     },
     {
       "id": "cowart",
       "repo": "zhongerxin/Cowart",
       "url": "https://github.com/zhongerxin/Cowart.git",
       "baseline": "43134e975670adb3a204671900eaef3c83b528a0",
-      "role": "Official Cowart reference for visual canvas, product flows, sketches, screenshots, and spatial design context"
+      "role": "Official Cowart reference for visual canvas, product flows, sketches, screenshots, and spatial design context",
+      "verification": {
+        "owner": "zhongerxin",
+        "owner_type": "User",
+        "stars": 1723,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Visual canvas and spatial-context routing signal; no assets bundled."
+      }
     },
     {
       "id": "figma-context-mcp",
       "repo": "GLips/Figma-Context-MCP",
       "url": "https://github.com/GLips/Figma-Context-MCP.git",
       "baseline": "24713d888b56bfbec97abf66db3afea4b8ecb9e4",
-      "role": "Official Figma Context MCP reference for design-file context, frames, components, and tokens"
+      "role": "Official Figma Context MCP reference for design-file context, frames, components, and tokens",
+      "verification": {
+        "owner": "GLips",
+        "owner_type": "User",
+        "stars": 15187,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Figma design-context routing signal; no MCP config or code bundled."
+      }
     },
     {
       "id": "pm-skills",
       "repo": "phuryn/pm-skills",
       "url": "https://github.com/phuryn/pm-skills.git",
       "baseline": "a0cd730d4c61e519ca8568b172334402257a74a9",
-      "role": "PM method reference for discovery, PRD, launch, pre-mortem, acceptance, and test-scenario structure"
+      "role": "PM method reference for discovery, PRD, launch, pre-mortem, acceptance, and test-scenario structure",
+      "verification": {
+        "owner": "phuryn",
+        "owner_type": "User",
+        "stars": 20429,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "PM method categories and routing cues; no PRD or launch templates copied."
+      }
     },
     {
       "id": "awesome-shadcn-ui",
       "repo": "birobirobiro/awesome-shadcn-ui",
       "url": "https://github.com/birobirobiro/awesome-shadcn-ui.git",
       "baseline": "f5665e2c7fe77e92661dcff8993147d4b75ead20",
-      "role": "shadcn/ui ecosystem reference for examples, component options, and library discovery"
+      "role": "shadcn/ui ecosystem reference for examples, component options, and library discovery",
+      "verification": {
+        "owner": "birobirobiro",
+        "owner_type": "User",
+        "stars": 19884,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "shadcn/ui ecosystem discovery signal; no fast-changing catalog copied."
+      }
     },
     {
       "id": "taste-skill",
       "repo": "Leonxlnx/taste-skill",
       "url": "https://github.com/Leonxlnx/taste-skill.git",
       "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
-      "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration"
+      "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration",
+      "verification": {
+        "owner": "Leonxlnx",
+        "owner_type": "User",
+        "stars": 48761,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Visual-taste calibration signal; no skill body copied."
+      }
     },
     {
       "id": "ui-ux-pro-max",
       "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
       "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
       "baseline": "53d670cd3050dcbfa19acb0cf0d9e631422f7ca2",
-      "role": "Official UI/UX Pro Max skill reference for UX/design intelligence, pattern comparison, and design rationale"
+      "role": "Official UI/UX Pro Max skill reference for UX/design intelligence, pattern comparison, and design rationale",
+      "verification": {
+        "owner": "nextlevelbuilder",
+        "owner_type": "Organization",
+        "stars": 94918,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "UX/design intelligence lane and pattern-comparison signal; no database or skill body copied."
+      }
     },
     {
       "id": "anthropic-frontend-design",
       "repo": "anthropics/skills",
       "url": "https://github.com/anthropics/skills.git",
       "baseline": "57546260929473d4e0d1c1bb75297be2fdfa1949",
-      "role": "Official Anthropic frontend-design skill reference for distinctive, intentional frontend UI creation"
+      "role": "Official Anthropic frontend-design skill reference for distinctive, intentional frontend UI creation",
+      "verification": {
+        "owner": "anthropics",
+        "owner_type": "Organization",
+        "stars": 153753,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Official frontend-design source link and routing reference; no skill body copied into omyKit."
+      }
     },
     {
       "id": "gsap-skills",
       "repo": "greensock/gsap-skills",
       "url": "https://github.com/greensock/gsap-skills.git",
       "baseline": "aed9cfd3277740755f6bfc1155c7aa645403b760",
-      "role": "Official GSAP skill reference for core tweens, timelines, ScrollTrigger, React/framework integration, plugins, utilities, and animation performance"
+      "role": "Official GSAP skill reference for core tweens, timelines, ScrollTrigger, React/framework integration, plugins, utilities, and animation performance",
+      "verification": {
+        "owner": "greensock",
+        "owner_type": "Organization",
+        "stars": 9717,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Official GSAP API skill routing reference; no skill body copied into omyKit."
+      }
     },
     {
       "id": "headroom",
       "repo": "headroomlabs-ai/headroom",
       "url": "https://github.com/headroomlabs-ai/headroom.git",
       "baseline": "95b2333ee5a3f1cbe512ca04a6563c3572835758",
-      "role": "Optional token and context compression reference for large tool outputs, logs, RAG chunks, files, reversible retrieval, and output shaping"
+      "role": "Optional token and context compression reference for large tool outputs, logs, RAG chunks, files, reversible retrieval, and output shaping",
+      "verification": {
+        "owner": "headroomlabs-ai",
+        "owner_type": "Organization",
+        "stars": 45826,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Optional context-compression and output-shaping reference; no default dependency or proxy bundled."
+      }
     }
   ]
 }

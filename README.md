@@ -78,7 +78,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
-| `upstream-sources.json` | Tracked external reference baselines for official workflow, spec, code-intelligence, docs, design, motion, ecosystem, and context-compression sources. |
+| `upstream-sources.json` | Tracked external reference baselines plus source-integrity snapshots for official workflow, spec, code-intelligence, docs, design, motion, ecosystem, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
 ## Skill Layer
@@ -183,7 +183,7 @@ This repository is intended to contain original workflow instructions, scripts, 
 
 Names such as Codex, GitHub, Docker, Canva, Remotion, Headroom, and other referenced tools are used descriptively to identify integrations or workflow contexts. Those names may be trademarks of their respective owners. This project is not endorsed by, sponsored by, or affiliated with those owners unless explicitly stated.
 
-When adding new content, keep examples, prose, and templates original or clearly licensed for reuse. Do not copy third-party documentation, brand assets, screenshots, icons, or proprietary workflow text into this repository without confirming the applicable license and attribution requirements.
+When adding new content, keep examples, prose, and templates original or clearly licensed for reuse. Do not copy third-party documentation, brand assets, screenshots, icons, or proprietary workflow text into this repository without confirming the applicable license and attribution requirements. Keep external projects as links, source-integrity snapshots, and scoped reference notes unless their license and attribution requirements allow vendoring.
 
 ## License
 

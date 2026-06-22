@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added source-integrity snapshots and validation for external references, including developer/owner, star counts as of 2026-06-22, fork/archive status, and scoped reference boundaries.
+- Added workflow usability controls to the overview so routing, custom answers, language matching, same-lane skill selection, and external reference boundaries are visible in one place.
 - Linked official upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Cowart, Figma Context MCP, UI/UX Pro Max, and design-taste, and added a no-forks/no-mirrors source-integrity rule.
 - Linked `frontend-design` and `gsap-*` to their official skill sources, added them to upstream tracking, and clarified tool-registry source labeling rules.
 - Extended skill validation to require the omyKit `Language` section, user-language matching rule, and private chain-of-thought boundary in every bundled skill.

@@ -8,22 +8,24 @@ omyKit uses external repositories as reference signals, not vendored doctrine. U
 
 Tracked references live in [`upstream-sources.json`](../../upstream-sources.json).
 
-Current tracked sources:
+Officiality means "the exact upstream or home repository omyKit tracks for that capability", not endorsement by the repository owner. The verification snapshot below was checked through the GitHub repository API on 2026-06-22; star counts drift and should be refreshed when source reputation materially affects a decision.
 
-- `obra/Superpowers` for execution discipline and verification workflow references.
-- `github/spec-kit` for strict specification-driven project workflow references.
-- `Fission-AI/openspec` for proposal-based change management references.
-- `colbymchenry/codegraph` for code map and impact-analysis references.
-- `upstash/context7` for current library documentation lookup references.
-- `zhongerxin/Cowart` for visual canvas and spatial design context references.
-- `GLips/Figma-Context-MCP` for Figma design context references.
-- `phuryn/pm-skills` for PM method references.
-- `birobirobiro/awesome-shadcn-ui` for shadcn/ui ecosystem discovery.
-- `Leonxlnx/taste-skill` for design taste calibration.
-- `nextlevelbuilder/ui-ux-pro-max-skill` for UX/design intelligence and pattern comparison.
-- `anthropics/skills` for the official `frontend-design` skill reference.
-- `greensock/gsap-skills` for official GSAP skill references.
-- `headroomlabs-ai/headroom` for optional context compression, reversible retrieval, and output shaping reference signals.
+| Source | Developer / owner | Stars on 2026-06-22 | Status | Reference scope in omyKit |
+| --- | --- | ---: | --- | --- |
+| [`obra/Superpowers`](https://github.com/obra/Superpowers) | `obra` / User | 235,549 | Not forked, active | Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied. |
+| [`github/spec-kit`](https://github.com/github/spec-kit) | `github` / Organization | 114,712 | Not forked, active | Strict SDD and constitution signals for durable projects; no templates copied. |
+| [`Fission-AI/openspec`](https://github.com/Fission-AI/openspec) | `Fission-AI` / Organization | 55,967 | Not forked, active | Proposal and archived-delta change-management pattern; no CLI or templates bundled. |
+| [`colbymchenry/codegraph`](https://github.com/colbymchenry/codegraph) | `colbymchenry` / User | 52,973 | Not forked, active | Code-map and impact-analysis routing signal; no dependency bundled. |
+| [`upstash/context7`](https://github.com/upstash/context7) | `upstash` / Organization | 57,851 | Not forked, active | Current library-doc lookup signal; no documentation mirrored. |
+| [`zhongerxin/Cowart`](https://github.com/zhongerxin/Cowart) | `zhongerxin` / User | 1,723 | Not forked, active | Visual canvas and spatial-context routing signal; no assets bundled. |
+| [`GLips/Figma-Context-MCP`](https://github.com/GLips/Figma-Context-MCP) | `GLips` / User | 15,187 | Not forked, active | Figma design-context routing signal; no MCP config or code bundled. |
+| [`phuryn/pm-skills`](https://github.com/phuryn/pm-skills) | `phuryn` / User | 20,429 | Not forked, active | PM method categories and routing cues; no PRD or launch templates copied. |
+| [`birobirobiro/awesome-shadcn-ui`](https://github.com/birobirobiro/awesome-shadcn-ui) | `birobirobiro` / User | 19,884 | Not forked, active | shadcn/ui ecosystem discovery signal; no fast-changing catalog copied. |
+| [`Leonxlnx/taste-skill`](https://github.com/Leonxlnx/taste-skill) | `Leonxlnx` / User | 48,761 | Not forked, active | Visual-taste calibration signal; no skill body copied. |
+| [`nextlevelbuilder/ui-ux-pro-max-skill`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | `nextlevelbuilder` / Organization | 94,918 | Not forked, active | UX/design intelligence lane and pattern-comparison signal; no database or skill body copied. |
+| [`anthropics/skills`](https://github.com/anthropics/skills) | `anthropics` / Organization | 153,753 | Not forked, active | Official `frontend-design` source link and routing reference; no skill body copied into omyKit. |
+| [`greensock/gsap-skills`](https://github.com/greensock/gsap-skills) | `greensock` / Organization | 9,717 | Not forked, active | Official GSAP API skill routing reference; no skill body copied into omyKit. |
+| [`headroomlabs-ai/headroom`](https://github.com/headroomlabs-ai/headroom) | `headroomlabs-ai` / Organization | 45,826 | Not forked, active | Optional context-compression and output-shaping reference; no default dependency or proxy bundled. |
 
 ## Cadence
 
@@ -36,6 +38,8 @@ Current tracked sources:
 ```bash
 node ./scripts/check-upstream-refs.mjs
 ```
+
+This checks both upstream `HEAD` drift and the required source-integrity snapshot fields in `upstream-sources.json`.
 
 Use strict mode when a changed upstream should block release readiness until reviewed:
 

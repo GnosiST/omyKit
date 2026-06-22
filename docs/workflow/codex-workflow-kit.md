@@ -28,6 +28,14 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 
 Apply the flow at task boundaries and meaningful phase changes. Do not restart the workflow for routine file reads, edits, shell commands, or intermediate checks when the current route still fits.
 
+## Usability Controls
+
+- Keep the route stable after intake; revisit it only when scope, risk, artifact type, or user intent changes.
+- Ask questions only when a safe assumption would be risky. When asking, suggest likely choices while allowing a custom answer.
+- Do not stack same-lane skills by default; pick one primary capability and add a narrower specialist only for a separate gap.
+- Treat external projects as reference signals with links and review notes, not as vendored skill content.
+- Keep visible rationale summaries, status updates, questions, and handoff in the user's latest prompt language.
+
 ## Skill Layer
 
 | Skill | Purpose |
