@@ -13,7 +13,14 @@ This registry describes how Codex should combine tools without loading or using 
 | Context7 | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
 | Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
 | Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
-| frontend-design / ui-ux-pro-max / design-taste-frontend | UI design skill layer | Visually important frontend, redesign, landing page, portfolio, product UI, or design critique. | Backend/docs work, or screens where design judgment will not change the deliverable. |
+| frontend-design | UI creation and implementation direction | Building or redesigning concrete frontend screens, components, landing pages, portfolios, or product UI. | Pure research, accessibility-only fixes, or backend/docs work. |
+| ui-ux-pro-max | UX/design intelligence and pattern comparison | Evaluating flows, information architecture, interaction patterns, design alternatives, or design rationale. | Straight implementation with enough design direction already present. |
+| design-taste-frontend | Visual taste guardrail | High-stakes visual polish, anti-generic UI critique, hierarchy, composition, brand fit, or frontend taste calibration. | Routine dense operational screens where novelty or expressive styling is not useful. |
+| baseline-ui | Baseline UI checks | Tailwind UI scale, typography, animation duration, component accessibility, or common UI anti-pattern checks. | Broad creative direction or product strategy. |
+| fixing-accessibility | Accessibility repair | ARIA, keyboard navigation, focus management, contrast, forms, dialogs, or WCAG-oriented fixes. | General visual polish or layout exploration. |
+| better-icons | Icon strategy | Icon semantics, style consistency, library choice, fallback strategy, or icon-heavy toolbars. | Whole-screen redesign or non-icon UI work. |
+| motion-ai-kit | Motion system | Microinteractions, page transitions, onboarding animation, state feedback, or motion choreography. | Static UI tasks or performance-sensitive work without a motion need. |
+| fixing-motion-performance | Motion performance repair | Layout thrashing, compositor-safe animation, scroll-linked performance, blur cost, or animation smoothness issues. | Motion concepting or static UI work. |
 | imagegen | Raster asset generation/editing | Bitmap visuals, moodboards, slide images, thumbnails, hero images, cutouts. | SVG/icon systems, deterministic UI code, existing vector assets. |
 | Canva | Design/deck production | Canva-native presentations, social formats, brand kits. | Code-native UI or local editable files. |
 | presentations | Deck creation/editing | PPTX/slide artifacts and rendered verification. | App UI or non-slide docs. |
@@ -28,9 +35,9 @@ This registry describes how Codex should combine tools without loading or using 
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
-| [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method pattern source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
-| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste pattern source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
-| [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
+| [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method reference source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
+| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
+| [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
 
 ## Integrated Registry Patterns
 
@@ -45,6 +52,21 @@ Apply them only when the active omyKit route sees the matching signal:
 Use an installed specialist skill directly inside the current route only when it is available and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
 
 When a pattern materially changes a decision, record which pattern was applied, what decision changed, whether a specialist skill or current source was used, and whether any licensed third-party content was copied with license and attribution.
+
+## Same-Lane Selection
+
+Do not stack same-lane skills by default. Choose one primary capability for the next decision, then add a narrower secondary capability only when it covers a separate gap.
+
+| Lane | Prefer first | Add only when |
+| --- | --- | --- |
+| Product/PM method | omyKit's built-in PM pattern; consult `phuryn/pm-skills` only as a reference signal. | The requested deliverable is mainly PRD, discovery, launch, pre-mortem, or acceptance design. |
+| UI creation | `frontend-design`. | Add `design-taste-frontend` for high-stakes visual polish, or `baseline-ui` for implementation checks. |
+| UX critique/research | `ui-ux-pro-max`. | Add `frontend-design` only when the result must become concrete UI. |
+| Visual taste | `design-taste-frontend`; consult `Leonxlnx/taste-skill` only as a reference signal. | Add `frontend-design` when taste critique must be implemented. |
+| Accessibility hardening | `fixing-accessibility`. | Add `baseline-ui` for broader component-scale checks. |
+| Icon systems | `better-icons`. | Add UI creation or audit skills only when icon decisions affect broader layout. |
+| Motion | `motion-ai-kit`. | Add `fixing-motion-performance` only if animation cost or smoothness is a risk. |
+| shadcn/ui resources | Project dependencies and current official/source material first; consult `birobirobiro/awesome-shadcn-ui` as an ecosystem reference. | The task needs current examples, component options, or library discovery. |
 
 ## Versioning Readiness
 

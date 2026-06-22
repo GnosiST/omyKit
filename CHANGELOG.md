@@ -4,7 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
-- Integrated PM, UI-design, design-taste, and shadcn ecosystem reference patterns directly into the tool registry instead of a separate page.
+- Clarified same-lane skill selection so omyKit chooses PM, UI, taste, accessibility, icon, motion, and shadcn capabilities by fit instead of stacking them by default.
+- Registered PM, UI-design, design-taste, and shadcn ecosystem reference patterns in the tool registry instead of a separate page.
 - Added language-aware output rules so visible rationale, plans, questions, progress, and handoff follow the user's prompt language.
 - Added Mermaid workflow and skill-coordination diagrams, plus Chinese mirrors for workflow documentation.
 - Clarified Quick Start command blocks by separating shell install commands from Codex chat prompts.

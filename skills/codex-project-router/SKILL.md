@@ -36,7 +36,7 @@ Route once per task or meaningful phase. Do not re-run routing for routine file 
    - `delivery` -> `codex-delivery-gate`.
    - app change requiring middleware -> include `codex-runtime-readiness`.
    - durable, release, migration, rollback, or customization concern -> include `codex-version-readiness`.
-   - PM-method, UI-design, design-taste, or ecosystem-discovery signal -> apply the matching tool-registry pattern inside the active route; use a specialist skill or current source only when available and useful.
+   - PM-method, UI-design, design-taste, or ecosystem-discovery signal -> choose one primary tool-registry pattern inside the active route; add a narrower specialist skill or current source only when it covers a separate gap.
 
 ## Output
 

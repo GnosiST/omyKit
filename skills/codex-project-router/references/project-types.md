@@ -35,6 +35,7 @@ Include `codex-version-readiness` when the task touches releases, migrations, de
 
 ## Tool Registry Pattern Route
 
-- Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active workflow; use PM-specialist skills only when installed and useful.
-- Visual frontend work: add design-quality checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA; use UI design or frontend taste skills only when installed and useful.
+- Do not stack same-lane skills by default; choose one primary capability, then add a narrower secondary only when it covers a separate gap.
+- Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active workflow; use PM-specialist skills only when the PM deliverable is primary.
+- Visual frontend work: use `frontend-design` for concrete UI creation, `ui-ux-pro-max` for UX/pattern judgment, `design-taste-frontend` for visual taste calibration, and narrow skills such as `baseline-ui`, `fixing-accessibility`, `better-icons`, or `motion-ai-kit` for their specific lanes.
 - shadcn/ui ecosystem research: consult current project dependencies or current external sources only when examples or ecosystem options are needed; do not copy fast-changing resource lists into omyKit.

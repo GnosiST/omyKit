@@ -12,7 +12,7 @@
 ## Tools
 
 - Cowart/Figma for visual context.
-- ui-ux-pro-max/frontend-design for direction and implementation.
+- `frontend-design` for concrete UI creation, `ui-ux-pro-max` for UX/pattern judgment, and `design-taste-frontend` only when visual taste calibration is needed.
 - imagegen for raster assets and visual references.
 - Chrome/Playwright for web checks.
 - Computer Use for local design apps or export panels without an API path.
