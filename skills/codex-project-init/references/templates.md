@@ -23,6 +23,13 @@ Use these as shapes, not mandatory text.
 - Standard:
 - Strict:
 
+## Versioning
+- Branching:
+- Version source:
+- Changelog/release notes:
+- Rollback:
+- Customization:
+
 ## Tool Routing
 - Code structure:
 - Runtime:
@@ -44,10 +51,13 @@ Use these as shapes, not mandatory text.
 | Spec source | |
 | Runtime dependencies | |
 | Delivery gates | |
+| Versioning readiness | |
 
 ## Source Of Truth
 
 ## Runtime Readiness
+
+## Versioning And Rollback
 
 ## Tool Registry
 

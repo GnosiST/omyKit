@@ -10,19 +10,22 @@ Add Codex Workflow Kit to an existing project without rewriting the project.
 ## Workflow
 
 1. Apply `codex-context-budget`; start in `scan`.
-2. Inspect existing files: `AGENTS.md`/`CLAUDE.md`, `README.md`, package/build config, docs index, specs/plans, runtime scripts, Docker/Compose files.
+2. Inspect existing files: `AGENTS.md`/`CLAUDE.md`, `README.md`, package/build config, docs index, specs/plans, runtime scripts, Docker/Compose files, version/changelog/release files.
 3. Produce a project profile:
    - project type and artifacts
    - current commands and gates
    - existing source-of-truth docs
    - required middleware and local runtime setup
+   - versioning, rollback, and customization readiness
    - missing workflow pieces
 4. Add only missing pieces:
    - Link existing rules instead of duplicating them.
    - Put workflow docs under `docs/workflow/`.
    - Put repeatable Codex behavior under `.agents/skills/`.
-5. For app/code projects, check CodeGraph availability before architecture or impact claims. If not initialized, record that limitation and use targeted reads.
-6. Leave business docs and code untouched unless the user explicitly asks for product changes.
+   - Add versioning docs only when existing branch/release/rollback conventions are absent or unclear.
+5. Invoke `codex-version-readiness` when branch, release, rollback, history lookup, or customization conventions are unclear.
+6. For app/code projects, check CodeGraph availability before architecture or impact claims. If not initialized, record that limitation and use targeted reads.
+7. Leave business docs and code untouched unless the user explicitly asks for product changes.
 
 ## Output
 

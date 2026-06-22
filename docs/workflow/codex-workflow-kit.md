@@ -11,6 +11,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Progressive context loading: `scan -> focus -> deep`.
 - Repeatable workflows encoded as Codex repo skills.
 - Runtime readiness, including Docker-backed middleware, before local verification.
+- Versioning readiness for history lookup, rollback, releases, and project-specific customization.
 - Artifact-specific delivery evidence before claiming completion.
 
 ## Core Flow
@@ -18,6 +19,8 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 ```text
 intake -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> review -> deliver -> learn
 ```
+
+Apply the flow at task boundaries and meaningful phase changes. Do not restart the workflow for routine file reads, edits, shell commands, or intermediate checks when the current route still fits.
 
 ## Skill Layer
 
@@ -30,6 +33,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 | `codex-project-retrofit` | Add the kit to an existing project without disrupting it. |
 | `codex-change-workflow` | Run a concrete change from brief/spec to verification. |
 | `codex-runtime-readiness` | Prepare databases, caches, object storage, queues, emulators, Docker, or GUI runtime dependencies. |
+| `codex-version-readiness` | Check target-project branch, release, rollback, history, and customization readiness. |
 | `codex-delivery-gate` | Verify app, deck, video, design, research, or data deliverables before handoff. |
 
 ## Mode Selection
@@ -77,4 +81,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, and [external-collaboration.md](external-collaboration.md) for third-party skill collaboration.

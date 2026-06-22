@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Version Readiness"
+  short_description: "Check versioning and rollback readiness."
+  default_prompt: "Use codex-version-readiness to assess branch, release, rollback, history, and customization readiness for this project."

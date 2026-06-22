@@ -10,6 +10,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `初始化旧项目`, `改造旧项目`, `接入现有项目`, `retrofit` | `retrofit` |
 | `开始一个需求`, `做一个功能`, `修 bug`, `重构`, `设计一个页面`, `做 PPT`, `剪视频` | `change` |
 | `交付检查`, `发布前检查`, `验收`, `handoff`, `ship it` | `delivery` |
+| `版本管理`, `回滚`, `历史版本`, `定制化修改`, `release readiness` | Route by task stage, then include `codex-version-readiness` |
 
 ## Recommended Prompts
 
@@ -26,4 +27,4 @@ If prompt aliases are enabled:
 /prompts:omykit 初始化项目
 ```
 
-Ask the user to choose entry, project type, and mode only when the phrase cannot be routed safely.
+Ask the user to choose entry, project type, and mode only when the phrase cannot be routed safely. When asking, always allow a custom answer.

@@ -2,17 +2,138 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${OMYKIT_SOURCE_ROOT:-$repo_root}"
+source_ref="${OMYKIT_SOURCE_REF:-working-tree}"
 codex_home="${CODEX_HOME:-$HOME/.codex}"
+version_file="$source_root/VERSION"
+version="unknown"
 
-mkdir -p "$codex_home/skills" "$codex_home/prompts"
+if [ -f "$version_file" ]; then
+  version="$(tr -d '[:space:]' < "$version_file")"
+fi
 
-for skill_dir in "$repo_root"/skills/*; do
+if [ ! -d "$source_root/skills" ]; then
+  echo "Cannot find source skills directory: $source_root/skills" >&2
+  exit 1
+fi
+
+if [ ! -f "$source_root/prompts/omykit.md" ]; then
+  echo "Cannot find source prompt: $source_root/prompts/omykit.md" >&2
+  exit 1
+fi
+
+"$repo_root/scripts/validate-skills.sh" "$source_root"
+
+installed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+install_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+git_commit="unknown"
+git_dirty="unknown"
+
+if git -C "$source_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git_commit="$(git -C "$source_root" rev-parse HEAD)"
+  if git -C "$source_root" diff --quiet --ignore-submodules -- && git -C "$source_root" diff --cached --quiet --ignore-submodules --; then
+    git_dirty="false"
+  else
+    git_dirty="true"
+  fi
+elif [ "$source_ref" != "working-tree" ] && git -C "$repo_root" rev-parse --verify "$source_ref^{commit}" >/dev/null 2>&1; then
+  git_commit="$(git -C "$repo_root" rev-parse "$source_ref^{commit}")"
+  git_dirty="false"
+fi
+
+short_commit="$git_commit"
+if [ "$git_commit" != "unknown" ]; then
+  short_commit="${git_commit:0:12}"
+fi
+install_id="$install_stamp-v$version-$short_commit"
+backup_candidate="$codex_home/omykit/backups/$install_id"
+backup_dir="none"
+backup_any="false"
+
+mkdir -p "$codex_home/skills" "$codex_home/prompts" "$codex_home/omykit/backups"
+mkdir -p "$backup_candidate/skills" "$backup_candidate/prompts"
+
+for skill_dir in "$source_root"/skills/*; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
-  rm -rf "$codex_home/skills/$skill_name"
-  cp -R "$skill_dir" "$codex_home/skills/$skill_name"
+  target_skill="$codex_home/skills/$skill_name"
+  if [ -e "$target_skill" ]; then
+    cp -R "$target_skill" "$backup_candidate/skills/$skill_name"
+    backup_any="true"
+  fi
 done
 
-cp "$repo_root/prompts/omykit.md" "$codex_home/prompts/omykit.md"
+target_prompt="$codex_home/prompts/omykit.md"
+if [ -e "$target_prompt" ]; then
+  cp "$target_prompt" "$backup_candidate/prompts/omykit.md"
+  backup_any="true"
+fi
 
-echo "Installed omyKit skills and prompt into $codex_home"
+if [ -f "$codex_home/omykit/install-manifest" ]; then
+  cp "$codex_home/omykit/install-manifest" "$backup_candidate/install-manifest.previous"
+fi
+
+if [ "$backup_any" = "true" ]; then
+  backup_dir="$backup_candidate"
+  {
+    echo "created_at=$installed_at"
+    echo "version=$version"
+    echo "source_ref=$source_ref"
+    echo "git_commit=$git_commit"
+    echo "git_dirty=$git_dirty"
+  } > "$backup_candidate/manifest"
+else
+  rm -rf "$backup_candidate"
+fi
+
+for skill_dir in "$source_root"/skills/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  target_skill="$codex_home/skills/$skill_name"
+  tmp_skill="$codex_home/skills/.$skill_name.tmp.$$"
+  backup_skill="$codex_home/skills/.$skill_name.backup.$$"
+  rm -rf "$tmp_skill"
+  rm -rf "$backup_skill"
+  cp -R "$skill_dir" "$tmp_skill"
+  if [ -e "$target_skill" ]; then
+    mv "$target_skill" "$backup_skill"
+  fi
+  if mv "$tmp_skill" "$target_skill"; then
+    rm -rf "$backup_skill"
+  else
+    if [ -e "$backup_skill" ]; then
+      mv "$backup_skill" "$target_skill"
+    fi
+    exit 1
+  fi
+done
+
+tmp_prompt="$codex_home/prompts/.omykit.md.tmp.$$"
+backup_prompt="$codex_home/prompts/.omykit.md.backup.$$"
+rm -f "$backup_prompt"
+cp "$source_root/prompts/omykit.md" "$tmp_prompt"
+if [ -e "$target_prompt" ]; then
+  mv "$target_prompt" "$backup_prompt"
+fi
+if mv "$tmp_prompt" "$target_prompt"; then
+  rm -f "$backup_prompt"
+else
+  if [ -e "$backup_prompt" ]; then
+    mv "$backup_prompt" "$target_prompt"
+  fi
+  exit 1
+fi
+
+{
+  echo "version=$version"
+  echo "installed_at=$installed_at"
+  echo "source_root=$source_root"
+  echo "source_ref=$source_ref"
+  echo "git_commit=$git_commit"
+  echo "git_dirty=$git_dirty"
+  echo "backup_dir=$backup_dir"
+} > "$codex_home/omykit/install-manifest"
+
+echo "Installed omyKit $version into $codex_home"
+echo "Manifest: $codex_home/omykit/install-manifest"
+echo "Backup: $backup_dir"

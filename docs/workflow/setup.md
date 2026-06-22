@@ -105,6 +105,16 @@ Install only what the project needs:
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion for non-code artifacts.
 - GitHub/Linear/Sentry/CodeRabbit/Sonar/Chromatic for delivery and quality workflows.
 
+## Versioning Readiness
+
+For durable projects, ask omyKit to check versioning readiness during init or retrofit:
+
+```text
+$omykit 初始化项目，并检查版本管理、回滚、历史版本和定制化修改路径
+```
+
+The check should identify branch state, remotes, tags/releases, version files, changelog or release notes, rollback path, and project-local customization points. Keep the result proportional to the project risk; do not add heavy release process to throwaway work.
+
 ## Validation
 
 Check:
@@ -113,6 +123,7 @@ Check:
 - frontmatter has matching `name`
 - no unfinished stubs remain
 - docs are generic until a project profile specializes them
+- versioning and rollback expectations are documented for durable projects
 - `git diff --check` passes
 
-If official skill validation fails because local Python lacks `PyYAML`, install the dependency in a disposable environment or use a bundled runtime that includes it.
+If official skill validation fails because local Python lacks `PyYAML`, the validation script prints disposable environment commands. Use those commands or another Python runtime that already includes the dependency.

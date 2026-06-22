@@ -7,4 +7,6 @@ Use $omykit with these user arguments:
 
 $ARGUMENTS
 
-If the arguments are unclear, ask the user to choose the entry type, project type, and workflow mode.
+If the arguments are unclear, infer safe defaults and state assumptions. Ask only when routing is risky; when asking, offer suggested choices and allow a custom answer.
+
+Use the workflow at task boundaries and meaningful phase changes, not for every individual action.

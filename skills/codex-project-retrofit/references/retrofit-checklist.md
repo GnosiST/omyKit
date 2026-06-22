@@ -9,6 +9,7 @@ Use this to add Codex Workflow Kit to an existing project without disrupting it.
 - Read existing agent instructions, README, docs index, package/build config, and workflow docs.
 - Detect runtime scripts, Docker/Compose files, env examples, and test commands.
 - Detect existing specs/plans/issues conventions.
+- Detect version sources, changelog/release notes, tags/releases, remotes, branch convention, rollback docs, and customization points.
 - Check whether CodeGraph or equivalent index exists for code projects.
 
 ## Decide Missing Pieces
@@ -17,6 +18,7 @@ Add only missing pieces:
 - `docs/workflow/project-profile.md`
 - `docs/workflow/tool-registry.md`
 - `docs/workflow/delivery-gates.md`
+- `docs/workflow/versioning.md`
 - repo skills in `.agents/skills/`
 - reminder hooks, only if the project accepts them
 

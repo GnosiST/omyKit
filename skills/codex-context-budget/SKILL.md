@@ -17,6 +17,8 @@ Use progressive context:
 
 Default to `scan`. Escalate one level at a time.
 
+Apply the budget when choosing context or crossing a task phase. Do not restart the budget workflow for each command, file read, or edit once the current context level is adequate.
+
 ## Workflow
 
 1. State the current context level.

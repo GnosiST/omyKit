@@ -16,13 +16,15 @@ Create the minimum durable workflow layer for a new project.
    - `docs/workflow/project-profile.md`: project type, artifacts, tools, gates.
    - `docs/workflow/tool-registry.md`: tool roles and when not to use them.
    - `docs/workflow/delivery-gates.md`: evidence required before handoff.
+   - `docs/workflow/versioning.md`: branch, release, history, customization, and rollback expectations.
    - `.agents/skills/`: repo skills only when the workflow will repeat.
 4. Choose spec source:
    - Lite: one-page brief.
    - Standard: OpenSpec-style change or `docs/specs`.
    - Strict: Spec-Kit constitution plus change specs.
-5. For app projects, define runtime readiness: required middleware, Docker/Compose path, health checks, reset/seed commands, and fallback if Docker is unavailable.
-6. Add hooks only after the workflow is accepted; begin with reminders before hard blocking.
+5. Invoke `codex-version-readiness` for durable projects to define git state, branch convention, version source, changelog/release notes, rollback expectations, and customization boundary.
+6. For app projects, define runtime readiness: required middleware, Docker/Compose path, health checks, reset/seed commands, and fallback if Docker is unavailable.
+7. Add hooks only after the workflow is accepted; begin with reminders before hard blocking.
 
 ## Guardrails
 

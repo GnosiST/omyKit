@@ -7,6 +7,10 @@ description: Run a concrete Codex change from brief or spec through plan, execut
 
 Execute a scoped change with the smallest spec and context that can still produce a reviewable deliverable.
 
+## Control
+
+Run this workflow once to frame the change, then execute directly. Re-enter the workflow only when the request changes, the blast radius grows, verification exposes a new problem class, or the user asks to re-plan.
+
 ## Workflow
 
 1. Apply `codex-context-budget`; begin with `scan`, then move to `focus` for implementation.
@@ -21,10 +25,11 @@ Execute a scoped change with the smallest spec and context that can still produc
    - bug -> `superpowers:systematic-debugging`
    - risky logic -> `superpowers:test-driven-development`
 4. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
-5. Load only the current project-type reference.
-6. Execute surgically.
-7. Run focused verification as soon as something is testable.
-8. Before handoff, invoke `codex-delivery-gate`.
+5. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
+6. Load only the current project-type reference.
+7. Execute surgically.
+8. Run focused verification as soon as something is testable.
+9. Before handoff, invoke `codex-delivery-gate`.
 
 ## App-Code Rules
 

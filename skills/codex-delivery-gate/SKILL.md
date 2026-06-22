@@ -7,18 +7,23 @@ description: Verify and package Codex deliverables before claiming completion. U
 
 Do not claim completion until there is artifact-specific evidence.
 
+Use this gate at handoff, export, commit, PR, release, or when making a completion claim. Do not invoke it after every intermediate check.
+
 ## Workflow
 
 1. Apply `codex-context-budget`; use `focus` for expected gates, `deep` only for failures.
 2. Identify project type and deliverable.
 3. For app projects, confirm runtime readiness or explicitly state which middleware was unavailable.
-4. Run the smallest relevant gate first, then the full gate required for handoff.
-5. Capture evidence:
+4. For meaningful code/config/data releases, invoke `codex-version-readiness` if rollback/version status is unknown.
+5. Run the smallest relevant gate first, then the full gate required for handoff.
+6. Capture evidence:
    - command names and pass/fail
    - rendered/exported artifact path, if any
    - browser or visual check used, if any
    - skipped checks and residual risk
-6. Review whether stable lessons should update `AGENTS.md`, `docs/workflow`, or a skill.
+   - version/changelog/tag status, if applicable
+   - rollback path or missing rollback gap
+7. Review whether stable lessons should update `AGENTS.md`, `docs/workflow`, or a skill.
 
 ## Do Not
 

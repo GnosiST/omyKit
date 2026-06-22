@@ -8,6 +8,7 @@ Use gates by artifact type. Do not run irrelevant gates.
 - Build/lint when shared code or packaging changed.
 - Runtime readiness for middleware-dependent checks.
 - Browser/app smoke for user-visible behavior.
+- Version, changelog, rollback, and migration status when the change is durable or release-bound.
 - Diff hygiene.
 
 ## Deck

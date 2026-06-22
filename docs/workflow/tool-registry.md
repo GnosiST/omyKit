@@ -28,6 +28,20 @@ This registry describes how Codex should combine tools without loading or using 
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
 
+## External Skill Collaboration
+
+Use external skill projects as collaborators, not as content to merge wholesale:
+
+- PM-focused skills can support product discovery, PRDs, launch planning, pre-mortems, and test scenarios.
+- Design taste skills can support visually important frontend and redesign work after omyKit routes the task.
+- shadcn ecosystem catalogs can support current resource discovery without copying their resource lists.
+
+Record external references when they materially change a decision, and preserve license/attribution if any third-party content is vendored.
+
+## Versioning Readiness
+
+Use `codex-version-readiness` when a target project needs traceable history, release notes, rollback, migration safety, dependency rollback, or project-local customization. This is a governance check, not a requirement to add heavyweight release tooling to every project.
+
 ## Default Selection Rule
 
 Use the narrowest tool that can answer the next question. If a tool would add broad context but not change the next decision, skip it.

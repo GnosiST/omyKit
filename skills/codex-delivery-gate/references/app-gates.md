@@ -9,6 +9,7 @@ Choose gates by risk and touched surface.
 - Runtime readiness status for required middleware.
 - Browser/app smoke for user-visible behavior.
 - Diff hygiene such as whitespace checks.
+- Versioning and rollback status for release, migration, dependency, or durable config changes.
 
 ## Runtime
 
@@ -24,4 +25,4 @@ Choose gates by risk and touched surface.
 
 ## Handoff
 
-Report commands run, results, browser/visual checks, skipped checks, residual risk, and artifact paths.
+Report commands run, results, browser/visual checks, skipped checks, residual risk, artifact paths, version/changelog status, and rollback path.

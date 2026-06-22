@@ -21,8 +21,20 @@ Route by deliverable, not by repository technology.
 
 ## Tool Ordering
 
+Keep the selected route until scope, risk, artifact type, or user intent changes.
+
 1. Native/project APIs and files.
 2. Semantic/indexed tools such as CodeGraph or outline readers.
 3. Dedicated MCP/plugins such as Figma, Canva, GitHub, Context7.
 4. Browser automation for web runtime checks.
 5. Computer Use only for local GUI workflows without a better API/plugin.
+
+## Versioning Route
+
+Include `codex-version-readiness` when the task touches releases, migrations, deployments, dependency upgrades, generated artifacts, global skills/tools, project customization, or any change where rollback/history lookup matters.
+
+## External Collaboration Route
+
+- Product or PM-method work: route to PM-specialist skills when available; keep omyKit responsible for implementation governance and delivery evidence.
+- Visual frontend work: route to design/frontend taste skills for visual judgment; keep omyKit responsible for scope, risk, and verification gates.
+- shadcn/ui ecosystem research: consult current external catalogs or project dependencies; do not copy fast-changing resource lists into omyKit.

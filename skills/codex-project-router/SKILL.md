@@ -7,6 +7,10 @@ description: Route Codex work by project type, mode, risk, and context budget. U
 
 Route work before loading heavy context or invoking implementation tools.
 
+## Control
+
+Route once per task or meaningful phase. Do not re-run routing for routine file reads, edits, shell commands, or verification steps unless scope, risk, artifact type, or user intent changes.
+
 ## Workflow
 
 1. Apply `codex-context-budget`; start in `scan`.
@@ -20,12 +24,14 @@ Route work before loading heavy context or invoking implementation tools.
    - `Lite`: one-off or low-risk artifact.
    - `Standard`: default project work.
    - `Strict`: long-lived, core, security-sensitive, paid/client, or high-blast-radius work.
-5. Route:
+5. Infer missing values when safe and state assumptions. If user input is required, offer suggested choices but allow free-form/custom answers.
+6. Route:
    - `init` -> `codex-project-init`.
    - `retrofit` -> `codex-project-retrofit`.
    - `change` -> `codex-change-workflow`.
    - `delivery` -> `codex-delivery-gate`.
    - app change requiring middleware -> include `codex-runtime-readiness`.
+   - durable, release, migration, rollback, or customization concern -> include `codex-version-readiness`.
 
 ## Output
 
