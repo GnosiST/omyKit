@@ -1,0 +1,31 @@
+---
+name: codex-project-retrofit
+description: Retrofit an existing project with a Codex-centered workflow layer. Use when adding Codex Workflow Kit to a maintained repository, legacy project, design folder, deck project, video project, or data/research workspace without disrupting existing structure.
+---
+
+# Codex Project Retrofit
+
+Add Codex Workflow Kit to an existing project without rewriting the project.
+
+## Workflow
+
+1. Apply `codex-context-budget`; start in `scan`.
+2. Inspect existing files: `AGENTS.md`/`CLAUDE.md`, `README.md`, package/build config, docs index, specs/plans, runtime scripts, Docker/Compose files.
+3. Produce a project profile:
+   - project type and artifacts
+   - current commands and gates
+   - existing source-of-truth docs
+   - required middleware and local runtime setup
+   - missing workflow pieces
+4. Add only missing pieces:
+   - Link existing rules instead of duplicating them.
+   - Put workflow docs under `docs/workflow/`.
+   - Put repeatable Codex behavior under `.agents/skills/`.
+5. For app/code projects, check CodeGraph availability before architecture or impact claims. If not initialized, record that limitation and use targeted reads.
+6. Leave business docs and code untouched unless the user explicitly asks for product changes.
+
+## Output
+
+Create or update `docs/workflow/project-profile.md` and a short handoff note listing what changed and what remains optional.
+
+Read [retrofit-checklist.md](references/retrofit-checklist.md) for inspection details.

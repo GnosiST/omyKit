@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Project Router"
+  short_description: "Route projects by type, mode, and tools."
+  default_prompt: "Use codex-project-router to classify this task and select the smallest effective workflow."

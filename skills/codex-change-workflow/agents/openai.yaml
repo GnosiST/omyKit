@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Change Workflow"
+  short_description: "Run scoped changes through checks."
+  default_prompt: "Use codex-change-workflow to plan, execute, and verify this scoped change."

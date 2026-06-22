@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Project Init"
+  short_description: "Initialize a new project for Codex-centered delivery."
+  default_prompt: "Use codex-project-init to create the minimum Codex workflow layer for a new project."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Delivery Gate"
+  short_description: "Verify before handoff or completion."
+  default_prompt: "Use codex-delivery-gate before claiming the deliverable is complete."

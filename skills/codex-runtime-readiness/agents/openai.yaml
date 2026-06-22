@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Runtime Readiness"
+  short_description: "Prepare local services with Docker when needed."
+  default_prompt: "Use codex-runtime-readiness to check local middleware and prepare Docker-backed services before running app checks."

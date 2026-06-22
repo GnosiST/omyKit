@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Context Budget"
+  short_description: "Minimize token use while preserving delivery quality."
+  default_prompt: "Use codex-context-budget to choose scan, focus, or deep context before loading files or tools."

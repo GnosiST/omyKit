@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Project Retrofit"
+  short_description: "Add Codex workflow to existing projects."
+  default_prompt: "Use codex-project-retrofit to inspect this project and add only missing workflow pieces."
