@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added `codex-workflow-evolution` for evidence-based omyKit improvement, with project isolation and abstraction rules.
+- Expanded same-lane tool selection to cover design-context capture, audit, UI baseline checks, responsive adaptation, UX copy, hardening, onboarding, design-system extraction, performance, metadata, icons, motion, GSAP implementation, PM, and shadcn resource discovery.
 - Added CI and a local Markdown link validator so skill and documentation checks are repeatable.
 - Standardized the recommended existing-project prompt on `$omykit 改造旧项目` while keeping `$omykit 初始化旧项目` as a supported alias.
 - Clarified same-lane skill selection so omyKit chooses PM, UI, taste, accessibility, icon, motion, and shadcn capabilities by fit instead of stacking them by default.

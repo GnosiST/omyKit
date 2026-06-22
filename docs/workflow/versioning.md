@@ -1,5 +1,7 @@
 # Versioning Readiness
 
+Language: [English](versioning.md) | [简体中文](versioning.zh-CN.md)
+
 Use this guide to check whether a target project can be changed, reviewed, customized, and rolled back safely. omyKit should surface gaps; it should not force a release process that does not fit the project.
 
 ## Target Project Checklist

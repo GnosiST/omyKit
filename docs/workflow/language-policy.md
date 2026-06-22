@@ -1,6 +1,6 @@
 # Language Policy
 
-Languages: [English](language-policy.md) | [简体中文](language-policy.zh-CN.md)
+Language: [English](language-policy.md) | [简体中文](language-policy.zh-CN.md)
 
 omyKit should make visible agent output readable in the user's language.
 

@@ -27,7 +27,7 @@ Use this gate at handoff, export, commit, PR, release, or when making a completi
    - skipped checks and residual risk
    - version/changelog/tag status, if applicable
    - rollback path or missing rollback gap
-7. Review whether stable lessons should update `AGENTS.md`, `docs/workflow`, or a skill.
+7. Review whether stable lessons should trigger `codex-workflow-evolution`; do not promote one-off project facts into omyKit.
 
 ## Do Not
 

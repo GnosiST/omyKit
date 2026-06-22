@@ -1,5 +1,7 @@
 # Codex Workflow Kit
 
+Language: [English](codex-workflow-kit.md) | [简体中文](codex-workflow-kit.zh-CN.md)
+
 Codex Workflow Kit is a Codex-centered operating layer for initializing or retrofitting any project: app development, maintenance, presentations, video, design, research, and data work.
 
 The kit keeps Codex as the control plane. Other tools are context sources, execution helpers, visual canvases, runtime aids, or delivery gates.
@@ -14,6 +16,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Versioning readiness for history lookup, rollback, releases, and project-specific customization.
 - Language-aware visible output for rationale summaries, questions, progress, and handoff.
 - Artifact-specific delivery evidence before claiming completion.
+- Evidence-based workflow evolution without importing target-project facts into the generic kit.
 
 ## Core Flow
 
@@ -36,6 +39,7 @@ Apply the flow at task boundaries and meaningful phase changes. Do not restart t
 | `codex-runtime-readiness` | Prepare databases, caches, object storage, queues, emulators, Docker, or GUI runtime dependencies. |
 | `codex-version-readiness` | Check target-project branch, release, rollback, history, and customization readiness. |
 | `codex-delivery-gate` | Verify app, deck, video, design, research, or data deliverables before handoff. |
+| `codex-workflow-evolution` | Promote repeated workflow lessons into omyKit after evidence and abstraction checks. |
 
 For ownership boundaries and conflict-prevention rules, see [skill-coordination.md](skill-coordination.md).
 
@@ -78,10 +82,10 @@ Every completion should state:
 - which checks ran
 - which checks were skipped
 - residual risk
-- whether stable lessons should update docs, skills, hooks, or project rules
+- whether stable lessons should trigger `codex-workflow-evolution`
 
 ## Build Or Retrofit
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, and [tool-registry.md](tool-registry.md) for optional PM, UI design, design-taste, and ecosystem-discovery selection rules.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional PM, UI design, design-taste, and ecosystem-discovery selection rules, and [evolution.md](evolution.md) for evidence-based workflow improvement.

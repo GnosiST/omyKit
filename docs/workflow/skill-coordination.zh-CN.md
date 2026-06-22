@@ -8,7 +8,7 @@ omyKit 的 skills 是一个协作式工作流层，不是一组互相竞争的 a
 
 1. `omykit` 是统一入口，只在任务入口、范围变化、风险变化或交付前做路由。
 2. 路由一旦确定，就保持稳定，直到任务类型、风险、交付物或用户意图发生变化。
-3. 每个 specialist skill 只负责一个窄边界：上下文、项目接入、执行、运行时、版本管理或交付。
+3. 每个 specialist skill 只负责一个窄边界：上下文、项目接入、执行、运行时、版本管理、交付或 workflow 进化。
 4. 横切检查是补充关系。运行时、版本管理和交付门禁支持当前 workflow，不替代它。
 5. 使用最小适用模式。不要每个任务都运行所有 skill。
 
@@ -28,6 +28,7 @@ flowchart TD
     U -. 证据 .-> D
     V -. 证据 .-> D
     C --> D
+    D --> E["codex-workflow-evolution<br/>证据驱动学习"]
 ```
 
 ## 集成 Skill 功能表
@@ -43,6 +44,7 @@ flowchart TD
 | `codex-runtime-readiness` | 本地中间件和验证依赖。 | 测试、dev server、迁移、浏览器检查或 smoke test 需要数据库、缓存、队列、对象存储、浏览器或模拟器。 | 当前 change 或 delivery workflow。 | 它只准备依赖，不改变应用行为或发布策略。 |
 | `codex-version-readiness` | 分支、发布、回滚、历史追踪和定制化准备度。 | 工作是持久的、高风险的、发布相关的、迁移相关的、依赖相关的，或需要回滚/历史查询。 | 当前 change 或 delivery workflow。 | 它只报告准备度和缺口，不强行给每个任务加重型发布流程。 |
 | `codex-delivery-gate` | handoff、导出、提交、PR 或发布前的最终证据。 | agent 准备声明完成或 ready。 | 最终回复、提交、PR、导出或发布动作。 | 它只在交付边界运行，不打断每个中间命令。 |
+| `codex-workflow-evolution` | 基于证据改进 omyKit skills、docs、validators 和 registry rules。 | 反复反馈、路由遗漏、workflow docs 过期、工具选择歧义、验证缺口或复盘表明通用 kit 需要变化。 | 最小 owner surface：docs、skill、reference、script，或不做持久变更。 | 它区分通用 omyKit 经验和目标项目事实，不会每个任务都运行。 |
 
 ## 常见组合
 
@@ -53,6 +55,7 @@ flowchart TD
 | 功能或 bug 修复 | `codex-change-workflow` | 中间件需要时用 `codex-runtime-readiness`；需要回滚时用 `codex-version-readiness`；交付前用 `codex-delivery-gate`。 |
 | 文档或研究交付物 | `codex-change-workflow` | `codex-context-budget`、`codex-delivery-gate`；只有持久或发布相关时才用 version readiness。 |
 | 发布准备 | `codex-delivery-gate` | `codex-version-readiness`、运行时检查、交付物类型门禁。 |
+| 反复出现的 workflow 摩擦 | `codex-workflow-evolution` | `codex-context-budget`、相关 owner skill、validation scripts。 |
 
 ## 防冲突原则
 
@@ -60,6 +63,7 @@ flowchart TD
 - **router vs change workflow：**router 分类，change workflow 执行。
 - **runtime vs versioning：**runtime 准备服务，versioning 检查回滚和历史。
 - **change workflow vs delivery gate：**change workflow 产出交付物，delivery gate 在完成前验证证据。
+- **delivery gate vs workflow evolution：**delivery gate 捕获证据，workflow evolution 判断证据是否应进入通用 omyKit。
 - **context budget vs 其他 skill：**context budget 限制读取和工具输出，不覆盖 specialist workflow。
 
 如果一个任务看起来需要很多 skills，先确定主 workflow，再只加入会影响下一步决策的支持检查。

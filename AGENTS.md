@@ -7,6 +7,7 @@ This repository packages omyKit as global Codex skills plus human-readable workf
 - Keep each `skills/*/SKILL.md` concise and procedural.
 - Put user-facing setup, release, and publishing notes in `README.md` or `docs/`, not inside skill folders.
 - Keep skill references one level deep under `references/`.
+- During omyKit maintenance, keep scope to this generic kit; do not inspect or edit sibling projects unless the user explicitly requests cross-project synchronization.
 - Do not add project-specific assumptions, stack choices, ports, credentials, or product rules to the generic kit.
 - Keep detailed target-project versioning checks in `codex-version-readiness`; reference it from other skills instead of duplicating the checklist.
 - When adding, removing, or changing skills, update `README.md`, `CHANGELOG.md`, and relevant `docs/workflow/` files.

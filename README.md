@@ -23,6 +23,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
 - **Reference-aware selection:** use PM, design, and ecosystem-discovery signals only when they improve the active workflow, without copying third-party content.
+- **Evidence-based evolution:** promote only reusable workflow lessons into omyKit, while keeping target-project facts isolated.
 
 ## Workflow At A Glance
 
@@ -90,6 +91,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `codex-runtime-readiness` | Prepares local services such as databases, caches, object storage, queues, browsers, or emulators when verification needs them. |
 | `codex-version-readiness` | Checks target-project branch, release, rollback, history lookup, and customization readiness. |
 | `codex-delivery-gate` | Checks artifact-specific evidence before handoff, export, commit, PR, or release. |
+| `codex-workflow-evolution` | Promotes repeated workflow lessons into omyKit only when they pass evidence and abstraction tests. |
 
 See [Skill coordination](docs/workflow/skill-coordination.md) for what each integrated skill owns, when it hands off, and why the skills do not conflict.
 
@@ -119,6 +121,7 @@ Operational rules:
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [Tool registry](docs/workflow/tool-registry.md)
+- [Workflow evolution](docs/workflow/evolution.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)
 
 ## Validation

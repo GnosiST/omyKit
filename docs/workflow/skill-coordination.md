@@ -1,6 +1,6 @@
 # Skill Coordination
 
-Languages: [English](skill-coordination.md) | [简体中文](skill-coordination.zh-CN.md)
+Language: [English](skill-coordination.md) | [简体中文](skill-coordination.zh-CN.md)
 
 omyKit skills are designed as a coordinated workflow layer, not as competing agents. Each skill owns one phase or concern, then hands control back to the main task.
 
@@ -8,7 +8,7 @@ omyKit skills are designed as a coordinated workflow layer, not as competing age
 
 1. `omykit` is the front door. It routes the task once at intake, scope change, risk change, or delivery.
 2. The selected route stays stable until new evidence changes the task type, risk, artifact, or user intent.
-3. Each specialist skill owns a narrow concern: context, setup, execution, runtime, versioning, or delivery.
+3. Each specialist skill owns a narrow concern: context, setup, execution, runtime, versioning, delivery, or workflow evolution.
 4. Cross-cutting checks are additive. Runtime, versioning, and delivery skills support the active workflow; they do not replace it.
 5. Use the smallest applicable mode. Do not run every skill for every task.
 
@@ -28,6 +28,7 @@ flowchart TD
     U -. evidence .-> D
     V -. evidence .-> D
     C --> D
+    D --> E["codex-workflow-evolution<br/>evidence-based learning"]
 ```
 
 ## Integrated Skill Map
@@ -43,6 +44,7 @@ flowchart TD
 | `codex-runtime-readiness` | Local middleware and verification dependencies. | Tests, dev servers, migrations, browser checks, or smoke tests need services such as databases, caches, queues, object storage, browsers, or emulators. | The active change or delivery workflow. | It prepares dependencies; it does not change app behavior or release policy. |
 | `codex-version-readiness` | Branch, release, rollback, history, and customization readiness. | Work is durable, risky, release-bound, migration-related, dependency-related, or needs rollback/history lookup. | The active change or delivery workflow. | It reports readiness and gaps; it does not force heavyweight release machinery onto every task. |
 | `codex-delivery-gate` | Final evidence before handoff, export, commit, PR, or release. | The agent is about to claim work is complete or ready. | Final response, commit, PR, export, or release action. | It runs at handoff boundaries; it does not interrupt every intermediate command. |
+| `codex-workflow-evolution` | Evidence-based improvement of omyKit skills, docs, validators, and registry rules. | Repeated feedback, missed routing, stale workflow docs, tool-selection ambiguity, validation gaps, or retrospectives show the generic kit should change. | The smallest owner surface: docs, skill, reference, script, or no durable change. | It separates generic omyKit lessons from target-project facts and does not run for every task. |
 
 ## Common Combinations
 
@@ -53,6 +55,7 @@ flowchart TD
 | Feature or bug fix | `codex-change-workflow` | `codex-context-budget`, `codex-runtime-readiness` for middleware, `codex-version-readiness` for rollback, `codex-delivery-gate` before handoff. |
 | Documentation or research artifact | `codex-change-workflow` | `codex-context-budget`, `codex-delivery-gate`; version readiness only when the work is durable or release-bound. |
 | Release preparation | `codex-delivery-gate` | `codex-version-readiness`, runtime checks, artifact-specific gates. |
+| Repeated workflow friction | `codex-workflow-evolution` | `codex-context-budget`, relevant owner skill, validation scripts. |
 
 ## Conflict Prevention
 
@@ -60,6 +63,7 @@ flowchart TD
 - **Router vs change workflow:** router classifies; change workflow executes.
 - **Runtime vs versioning:** runtime prepares services; versioning checks rollback and history.
 - **Change workflow vs delivery gate:** change workflow builds the deliverable; delivery gate verifies evidence before completion.
+- **Delivery gate vs workflow evolution:** delivery gate captures evidence; workflow evolution decides whether that evidence becomes a generic omyKit change.
 - **Context budget vs every other skill:** context budget limits reading and tool output; it never overrides the specialist workflow.
 
 If a task appears to need many skills, start with the primary workflow and add only the supporting checks that change the next decision.

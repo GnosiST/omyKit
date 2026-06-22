@@ -27,7 +27,7 @@ Load only the section for the current deliverable.
 - Start with audience, use case, brand personality, platform, constraints.
 - Use Cowart/Figma selected context before full design docs.
 - Use `frontend-design` for concrete UI creation, `ui-ux-pro-max` for UX/pattern judgment, and `design-taste-frontend` only when visual taste calibration is needed.
-- For visually important frontend, choose one primary UI capability first; add narrow skills only for separate gaps such as accessibility, icons, motion, or implementation baseline checks.
+- For visually important frontend, choose one primary UI capability first; add narrow skills only for separate gaps such as audit, responsive adaptation, accessibility, copy, hardening, onboarding, durable design-context capture, design-system extraction, metadata, icons, motion, GSAP implementation, performance, or implementation baseline checks.
 - Use imagegen only for bitmap assets or visual references.
 - Verify responsive layout, text overflow, accessibility, and visual consistency.
 

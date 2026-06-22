@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Workflow Evolution"
+  short_description: "Evolve workflow rules from evidence."
+  default_prompt: "Use codex-workflow-evolution to decide whether feedback should update omyKit, a target project, or no durable rule."

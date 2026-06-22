@@ -1,5 +1,7 @@
 # Runtime Readiness
 
+Language: [English](runtime-readiness.md) | [简体中文](runtime-readiness.zh-CN.md)
+
 Runtime readiness prepares local services before app verification.
 
 ## Dependency Classes

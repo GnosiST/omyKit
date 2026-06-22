@@ -1,5 +1,7 @@
 # Tool Registry
 
+Language: [English](tool-registry.md) | [简体中文](tool-registry.zh-CN.md)
+
 This registry describes how Codex should combine tools without loading or using all of them by default.
 
 | Tool | Role | Use when | Avoid when |
@@ -13,14 +15,25 @@ This registry describes how Codex should combine tools without loading or using 
 | Context7 | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
 | Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
 | Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
+| teach-impeccable | Durable design context capture | One-time capture of stable product/design context into AI configuration for future sessions. | One-off visual tweaks or project facts that are not stable design guidance. |
 | frontend-design | UI creation and implementation direction | Building or redesigning concrete frontend screens, components, landing pages, portfolios, or product UI. | Pure research, accessibility-only fixes, or backend/docs work. |
 | ui-ux-pro-max | UX/design intelligence and pattern comparison | Evaluating flows, information architecture, interaction patterns, design alternatives, or design rationale. | Straight implementation with enough design direction already present. |
 | design-taste-frontend | Visual taste guardrail | High-stakes visual polish, anti-generic UI critique, hierarchy, composition, brand fit, or frontend taste calibration. | Routine dense operational screens where novelty or expressive styling is not useful. |
+| critique | UX critique | Visual hierarchy, information architecture, cognitive load, or user-experience review. | Implementation or code-level remediation. |
+| audit | Technical UI audit | Accessibility, performance, theming, responsive behavior, and UI anti-pattern review. | Creative direction or product strategy. |
 | baseline-ui | Baseline UI checks | Tailwind UI scale, typography, animation duration, component accessibility, or common UI anti-pattern checks. | Broad creative direction or product strategy. |
+| adapt | Responsive adaptation | Breakpoints, fluid layout, touch targets, device/platform adaptation, or cross-context layout fixes. | Brand direction, content strategy, or non-layout work. |
 | fixing-accessibility | Accessibility repair | ARIA, keyboard navigation, focus management, contrast, forms, dialogs, or WCAG-oriented fixes. | General visual polish or layout exploration. |
+| clarify | UX copy clarity | Labels, errors, microcopy, empty-state text, or instructions that confuse users. | Visual layout, architecture, or copywriting outside the interface. |
+| harden | Interface resilience | Error states, i18n, text overflow, edge cases, and production robustness. | Pure visual ideation or backend-only hardening. |
+| onboard | Onboarding and first-run UX | First-use flows, empty states, activation, or time-to-value improvements. | Mature repeated-use workflows that do not involve onboarding. |
+| extract | Design-system extraction | Reusable components, design tokens, and repeated UI patterns that should become a system. | One-off screens or unvalidated visual experiments. |
+| optimize | UI performance | Loading, rendering, animation, images, bundle size, and perceived speed. | Non-UI performance or visual taste work. |
+| fixing-metadata | HTML metadata and previews | Title, description, canonical, Open Graph, Twitter cards, favicon, JSON-LD, robots, or share previews. | In-app copy, layout, or backend SEO strategy. |
 | better-icons | Icon strategy | Icon semantics, style consistency, library choice, fallback strategy, or icon-heavy toolbars. | Whole-screen redesign or non-icon UI work. |
 | motion-ai-kit | Motion system | Microinteractions, page transitions, onboarding animation, state feedback, or motion choreography. | Static UI tasks or performance-sensitive work without a motion need. |
 | fixing-motion-performance | Motion performance repair | Layout thrashing, compositor-safe animation, scroll-linked performance, blur cost, or animation smoothness issues. | Motion concepting or static UI work. |
+| gsap-* skills | GSAP implementation | GSAP timelines, ScrollTrigger, React/framework integration, plugins, utilities, or performance tuning when GSAP is already chosen or requested. | General motion strategy, CSS-only animation, or projects without GSAP. |
 | imagegen | Raster asset generation/editing | Bitmap visuals, moodboards, slide images, thumbnails, hero images, cutouts. | SVG/icon systems, deterministic UI code, existing vector assets. |
 | Canva | Design/deck production | Canva-native presentations, social formats, brand kits. | Code-native UI or local editable files. |
 | presentations | Deck creation/editing | PPTX/slide artifacts and rendered verification. | App UI or non-slide docs. |
@@ -63,10 +76,23 @@ Do not stack same-lane skills by default. Choose one primary capability for the 
 | UI creation | `frontend-design`. | Add `design-taste-frontend` for high-stakes visual polish, or `baseline-ui` for implementation checks. |
 | UX critique/research | `ui-ux-pro-max`. | Add `frontend-design` only when the result must become concrete UI. |
 | Visual taste | `design-taste-frontend`; consult `Leonxlnx/taste-skill` only as a reference signal. | Add `frontend-design` when taste critique must be implemented. |
+| Design context capture | `teach-impeccable`. | Use only for stable design guidance that should persist across sessions; do not use for a one-off page tweak. |
+| UX critique | `critique`. | Add `audit` only when technical checks are required. |
+| Technical UI audit | `audit`. | Add focused fixing skills only for confirmed issues. |
+| UI implementation baseline | `baseline-ui`. | Add `audit` only when the review must cover broader accessibility, performance, theming, or responsive behavior. |
+| Responsive adaptation | `adapt`. | Add `harden` for text overflow/i18n edge cases. |
 | Accessibility hardening | `fixing-accessibility`. | Add `baseline-ui` for broader component-scale checks. |
+| UX copy | `clarify`. | Add `onboard` only when the copy is part of first-run activation. |
+| Interface resilience | `harden`. | Add `adapt` for device-specific layout fixes. |
+| Onboarding | `onboard`. | Add `clarify` for microcopy or `motion-ai-kit` for meaningful guided motion. |
+| Design-system extraction | `extract`. | Add `frontend-design` only when extracted patterns must be implemented. |
+| UI performance | `optimize`. | Add `fixing-motion-performance` only for animation-specific performance. |
+| Metadata and previews | `fixing-metadata`. | Add browser checks only when rendered page output matters. |
 | Icon systems | `better-icons`. | Add UI creation or audit skills only when icon decisions affect broader layout. |
 | Motion | `motion-ai-kit`. | Add `fixing-motion-performance` only if animation cost or smoothness is a risk. |
+| GSAP implementation | The matching `gsap-*` skill for the concrete API or integration concern. | Add `motion-ai-kit` only when the intended choreography is unclear; add `fixing-motion-performance` only for confirmed performance risk. |
 | shadcn/ui resources | Project dependencies and current official/source material first; consult `birobirobiro/awesome-shadcn-ui` as an ecosystem reference. | The task needs current examples, component options, or library discovery. |
+| Workflow evolution | `codex-workflow-evolution`. | Add owner skills only after evidence shows the generic kit should change. |
 
 ## Versioning Readiness
 

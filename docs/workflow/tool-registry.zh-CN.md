@@ -15,14 +15,25 @@
 | Context7 | 当前库文档 | 精确 API/framework 用法问题。 | 仓库里已有的一般项目事实。 |
 | Cowart | 视觉画布 | 产品流程、草图、截图、空间思考、设计参考。 | 替代 specs 或实现文件。 |
 | Figma MCP | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
+| teach-impeccable | 持久设计上下文采集 | 一次性把稳定产品/设计上下文写入 AI 配置，供后续会话使用。 | 一次性视觉微调，或不属于稳定设计指导的项目事实。 |
 | frontend-design | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
 | ui-ux-pro-max | UX/设计智能和模式比较 | 评估 flows、information architecture、interaction patterns、设计备选方案或设计理由。 | 已有足够设计方向的直接实现。 |
 | design-taste-frontend | 视觉品味护栏 | 高风险视觉打磨、反通用 UI 评审、层级、构图、品牌适配或 frontend 品味校准。 | 不需要新颖或表达性风格的常规高密度运营页面。 |
+| critique | UX 评审 | 视觉层级、信息架构、认知负担或用户体验评审。 | 实现或代码级修复。 |
+| audit | 技术 UI 审计 | 可访问性、性能、主题、响应式和 UI 反模式审查。 | 创意方向或产品策略。 |
 | baseline-ui | 基线 UI 检查 | Tailwind UI scale、typography、animation duration、component accessibility 或常见 UI 反模式检查。 | 大范围创意方向或产品策略。 |
+| adapt | 响应式适配 | 断点、流式布局、触控目标、设备/平台适配或跨上下文布局修复。 | 品牌方向、内容策略或非布局工作。 |
 | fixing-accessibility | 可访问性修复 | ARIA、键盘导航、焦点管理、对比度、表单、对话框或 WCAG-oriented 修复。 | 通用视觉打磨或布局探索。 |
+| clarify | UX 文案清晰度 | 让用户困惑的标签、错误、microcopy、空状态文案或说明。 | 视觉布局、架构或界面外文案。 |
+| harden | 界面韧性 | 错误状态、i18n、文本溢出、边界情况和生产韧性。 | 纯视觉构思或后端加固。 |
+| onboard | 引导和首次使用体验 | 首次使用流程、空状态、激活或 time-to-value 优化。 | 不涉及 onboarding 的成熟重复使用流程。 |
+| extract | 设计系统提取 | 可复用组件、设计令牌和需要沉淀成系统的重复 UI patterns。 | 一次性页面或未经验证的视觉实验。 |
+| optimize | UI 性能 | 加载、渲染、动画、图片、包体积和感知速度。 | 非 UI 性能或视觉品味工作。 |
+| fixing-metadata | HTML metadata 和预览 | title、description、canonical、Open Graph、Twitter cards、favicon、JSON-LD、robots 或分享预览。 | 应用内文案、布局或后端 SEO 策略。 |
 | better-icons | 图标策略 | 图标语义、风格一致性、库选择、fallback 策略或图标密集工具栏。 | 整屏重设计或非图标 UI 工作。 |
 | motion-ai-kit | 动效系统 | 微交互、页面转场、onboarding animation、状态反馈或动效编排。 | 静态 UI 任务，或没有动效需求的性能敏感工作。 |
 | fixing-motion-performance | 动效性能修复 | 布局抖动、合成层安全动画、滚动联动性能、模糊成本或动画流畅度问题。 | 动效概念设计或静态 UI 工作。 |
+| gsap-* skills | GSAP 实现 | 已选择或明确要求 GSAP 时，处理 timeline、ScrollTrigger、React/framework 集成、plugins、utils 或性能调优。 | 通用动效策略、CSS-only 动画，或未使用 GSAP 的项目。 |
 | imagegen | 位图资产生成/编辑 | Bitmap visuals、moodboards、slide images、thumbnails、hero images、cutouts。 | SVG/icon systems、确定性 UI code、已有 vector assets。 |
 | Canva | 设计/deck 生产 | Canva-native presentations、social formats、brand kits。 | Code-native UI 或本地 editable files。 |
 | presentations | Deck 创建/编辑 | PPTX/slide artifacts 和 rendered verification。 | App UI 或非 slide docs。 |
@@ -65,10 +76,23 @@
 | UI 创建 | `frontend-design`。 | 高风险视觉打磨时补 `design-taste-frontend`，实现检查时补 `baseline-ui`。 |
 | UX 评审/研究 | `ui-ux-pro-max`。 | 结果必须落成具体 UI 时才补 `frontend-design`。 |
 | 视觉品味 | `design-taste-frontend`；`Leonxlnx/taste-skill` 只作为参考信号。 | 品味评审需要落地实现时补 `frontend-design`。 |
+| 设计上下文采集 | `teach-impeccable`。 | 只在稳定设计指导需要跨会话保留时使用；不要用于一次性页面微调。 |
+| UX 评审 | `critique`。 | 需要技术检查时才补 `audit`。 |
+| 技术 UI 审计 | `audit`。 | 已确认具体问题时才补 focused fixing skill。 |
+| UI 实现基线 | `baseline-ui`。 | 需要覆盖更宽的可访问性、性能、主题或响应式问题时才补 `audit`。 |
+| 响应式适配 | `adapt`。 | 文本溢出/i18n 边界情况明显时补 `harden`。 |
 | 可访问性加固 | `fixing-accessibility`。 | 需要更宽的组件基线检查时补 `baseline-ui`。 |
+| UX 文案 | `clarify`。 | 文案属于首次使用激活时才补 `onboard`。 |
+| 界面韧性 | `harden`。 | 设备特定布局问题时才补 `adapt`。 |
+| Onboarding | `onboard`。 | 需要 microcopy 时补 `clarify`，需要有意义引导动效时补 `motion-ai-kit`。 |
+| 设计系统提取 | `extract`。 | 提取后的 pattern 必须实现时才补 `frontend-design`。 |
+| UI 性能 | `optimize`。 | 动画性能问题才补 `fixing-motion-performance`。 |
+| Metadata 和预览 | `fixing-metadata`。 | 需要确认渲染页面输出时才补 browser checks。 |
 | 图标系统 | `better-icons`。 | 图标决策影响整体布局时才补 UI 创建或审计 skill。 |
 | 动效 | `motion-ai-kit`。 | 动画成本或流畅度有风险时才补 `fixing-motion-performance`。 |
+| GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；只有确认性能风险时才补 `fixing-motion-performance`。 |
 | shadcn/ui 资源 | 先看项目依赖和当前官方/source material；`birobirobiro/awesome-shadcn-ui` 只作为生态参考。 | 任务需要当前示例、组件选项或 library discovery。 |
+| Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |
 
 ## 版本管理准备度
 

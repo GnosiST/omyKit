@@ -1,5 +1,7 @@
 # Setup Codex Workflow Kit
 
+Language: [English](setup.md) | [简体中文](setup.zh-CN.md)
+
 Use this guide to install the kit into any project.
 
 ## Global Install

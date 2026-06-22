@@ -1,5 +1,7 @@
 # Delivery Gates
 
+Language: [English](delivery-gates.md) | [简体中文](delivery-gates.zh-CN.md)
+
 Use gates by artifact type. Do not run irrelevant gates.
 
 ## App / Code

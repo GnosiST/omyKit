@@ -1,5 +1,7 @@
 # Context Budget
 
+Language: [English](context-budget.md) | [简体中文](context-budget.zh-CN.md)
+
 The kit optimizes for high-quality delivery with low token waste.
 
 ## Progression
