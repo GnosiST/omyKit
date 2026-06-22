@@ -18,7 +18,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Language-aware visible output for rationale summaries, questions, progress, and handoff.
 - Artifact-specific delivery evidence before claiming completion.
 - Evidence-based workflow evolution without importing target-project facts into the generic kit.
-- Periodic upstream reference checks for third-party sources that inform PM, official UI/motion skills, design taste, ecosystem discovery, and context compression.
+- Periodic upstream reference checks for official workflow, spec, code-intelligence, documentation, design, motion, ecosystem, and context-compression sources.
 
 ## Core Flow
 
@@ -92,4 +92,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional PM, UI design, motion, design-taste, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, and [evolution.md](evolution.md) for evidence-based workflow improvement.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional workflow, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, and [evolution.md](evolution.md) for evidence-based workflow improvement.

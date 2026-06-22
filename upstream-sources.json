@@ -6,6 +6,55 @@
   },
   "sources": [
     {
+      "id": "superpowers",
+      "repo": "obra/Superpowers",
+      "url": "https://github.com/obra/Superpowers.git",
+      "baseline": "896224c4b1879920ab573417e68fd51d2ccc9072",
+      "role": "Official Superpowers reference for execution discipline, planning, debugging, TDD, verification, and review workflows"
+    },
+    {
+      "id": "spec-kit",
+      "repo": "github/spec-kit",
+      "url": "https://github.com/github/spec-kit.git",
+      "baseline": "487af97864901462874f18f1c7f8d8adec0b7ddd",
+      "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow"
+    },
+    {
+      "id": "openspec",
+      "repo": "Fission-AI/openspec",
+      "url": "https://github.com/Fission-AI/openspec.git",
+      "baseline": "1b06fddd59d8e592d5b5794a1970b22867e85b1f",
+      "role": "Official OpenSpec reference for proposal-based change management and archived deltas"
+    },
+    {
+      "id": "codegraph",
+      "repo": "colbymchenry/codegraph",
+      "url": "https://github.com/colbymchenry/codegraph.git",
+      "baseline": "e43ac82cdf76998f78bc871a741235a4c02e5bd0",
+      "role": "Official CodeGraph reference for code maps, symbol exploration, callers/callees, and impact analysis"
+    },
+    {
+      "id": "context7",
+      "repo": "upstash/context7",
+      "url": "https://github.com/upstash/context7.git",
+      "baseline": "18e6d4727bbcfb4001a8a17337b0f0f717f1b4fd",
+      "role": "Official Context7 reference for current library documentation lookup"
+    },
+    {
+      "id": "cowart",
+      "repo": "zhongerxin/Cowart",
+      "url": "https://github.com/zhongerxin/Cowart.git",
+      "baseline": "43134e975670adb3a204671900eaef3c83b528a0",
+      "role": "Official Cowart reference for visual canvas, product flows, sketches, screenshots, and spatial design context"
+    },
+    {
+      "id": "figma-context-mcp",
+      "repo": "GLips/Figma-Context-MCP",
+      "url": "https://github.com/GLips/Figma-Context-MCP.git",
+      "baseline": "24713d888b56bfbec97abf66db3afea4b8ecb9e4",
+      "role": "Official Figma Context MCP reference for design-file context, frames, components, and tokens"
+    },
+    {
       "id": "pm-skills",
       "repo": "phuryn/pm-skills",
       "url": "https://github.com/phuryn/pm-skills.git",
@@ -25,6 +74,13 @@
       "url": "https://github.com/Leonxlnx/taste-skill.git",
       "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
       "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration"
+    },
+    {
+      "id": "ui-ux-pro-max",
+      "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+      "baseline": "53d670cd3050dcbfa19acb0cf0d9e631422f7ca2",
+      "role": "Official UI/UX Pro Max skill reference for UX/design intelligence, pattern comparison, and design rationale"
     },
     {
       "id": "anthropic-frontend-design",

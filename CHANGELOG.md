@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Linked official upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Cowart, Figma Context MCP, UI/UX Pro Max, and design-taste, and added a no-forks/no-mirrors source-integrity rule.
 - Linked `frontend-design` and `gsap-*` to their official skill sources, added them to upstream tracking, and clarified tool-registry source labeling rules.
 - Extended skill validation to require the omyKit `Language` section, user-language matching rule, and private chain-of-thought boundary in every bundled skill.
 - Added Headroom as an optional upstream reference and expanded context-budget guidance with compression gates, original-retrieval safeguards, and output-shaping rules.

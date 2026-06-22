@@ -10,9 +10,17 @@ Tracked references live in [`upstream-sources.json`](../../upstream-sources.json
 
 Current tracked sources:
 
+- `obra/Superpowers` for execution discipline and verification workflow references.
+- `github/spec-kit` for strict specification-driven project workflow references.
+- `Fission-AI/openspec` for proposal-based change management references.
+- `colbymchenry/codegraph` for code map and impact-analysis references.
+- `upstash/context7` for current library documentation lookup references.
+- `zhongerxin/Cowart` for visual canvas and spatial design context references.
+- `GLips/Figma-Context-MCP` for Figma design context references.
 - `phuryn/pm-skills` for PM method references.
 - `birobirobiro/awesome-shadcn-ui` for shadcn/ui ecosystem discovery.
 - `Leonxlnx/taste-skill` for design taste calibration.
+- `nextlevelbuilder/ui-ux-pro-max-skill` for UX/design intelligence and pattern comparison.
 - `anthropics/skills` for the official `frontend-design` skill reference.
 - `greensock/gsap-skills` for official GSAP skill references.
 - `headroomlabs-ai/headroom` for optional context compression, reversible retrieval, and output shaping reference signals.
@@ -48,5 +56,6 @@ When an upstream source changed:
 ## Guardrails
 
 - Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
+- Do not substitute a linked official source with a similarly named fork, marketplace mirror, or repackaged skill unless the user explicitly asks for that alternate source.
 - Do not turn a fast-changing ecosystem list into a fixed rule.
 - Do not run this check for every task; use it at learning, release, or current-source dependency boundaries.

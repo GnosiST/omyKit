@@ -23,7 +23,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
-- **Reference-aware selection:** use PM, design, motion, ecosystem-discovery, and context-compression signals only when they improve the active workflow, without copying third-party content.
+- **Reference-aware selection:** use workflow-discipline, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression signals only when they improve the active workflow, without copying third-party content.
 - **Evidence-based evolution:** promote only reusable workflow lessons into omyKit, while keeping target-project facts isolated.
 - **Upstream reference watch:** periodically check referenced external sources for changes, then review useful workflow lessons before adopting anything.
 
@@ -78,7 +78,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
-| `upstream-sources.json` | Tracked external reference baselines for PM, official frontend-design, official GSAP, shadcn/ui, design-taste, and context-compression sources. |
+| `upstream-sources.json` | Tracked external reference baselines for official workflow, spec, code-intelligence, docs, design, motion, ecosystem, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
 ## Skill Layer

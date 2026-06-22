@@ -4,24 +4,24 @@ Language: [English](tool-registry.md) | [简体中文](tool-registry.zh-CN.md)
 
 This registry describes how Codex should combine tools without loading or using all of them by default.
 
-Linked tool names identify external upstream reference sources that should be tracked in `upstream-sources.json`. Plain tool names identify local skills, platform capabilities, or tool categories without a single stable upstream repo. If a local skill is based on an official upstream skill, link the official source and track it as a reference signal.
+Linked tool names identify external upstream reference sources that should be tracked in `upstream-sources.json`. Plain tool names identify local skills, platform capabilities, or tool categories without a single stable upstream repo. If a local skill is based on an official upstream skill, link the official source and track it as a reference signal. Do not replace a linked official source with a similarly named fork, marketplace mirror, or repackaged skill unless the user explicitly asks for that alternate source.
 
 | Tool | Role | Use when | Avoid when |
 | --- | --- | --- | --- |
 | Codex | Control plane | Always. It routes, plans, edits, verifies, and summarizes. | Do not bypass with separate uncoordinated tools. |
 | AGENTS.md | Durable repo rules | Stable conventions, commands, boundaries, and definition of done. | One-off notes, history, or long mechanisms better suited to docs. |
-| Superpowers | Execution discipline | Brainstorming, planning, debugging, TDD, verification, review. | As a spec source or project fact source. |
-| Spec-Kit | Project constitution and strict SDD | New durable projects or major product foundations. | Small changes or existing projects with lighter spec systems. |
-| OpenSpec | Change management | Standard feature/bug/refactor proposals and archived deltas. | One-off throwaway artifacts. |
-| CodeGraph | Code map and impact | Existing code structure, callers/callees, blast radius. | Replacing tests, source confirmation, or runtime checks. |
-| Context7 | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
+| [Superpowers](https://github.com/obra/Superpowers) | Execution discipline | Brainstorming, planning, debugging, TDD, verification, review. | As a spec source or project fact source. |
+| [Spec-Kit](https://github.com/github/spec-kit) | Project constitution and strict SDD | New durable projects or major product foundations. | Small changes or existing projects with lighter spec systems. |
+| [OpenSpec](https://github.com/Fission-AI/openspec) | Change management | Standard feature/bug/refactor proposals and archived deltas. | One-off throwaway artifacts. |
+| [CodeGraph](https://github.com/colbymchenry/codegraph) | Code map and impact | Existing code structure, callers/callees, blast radius. | Replacing tests, source confirmation, or runtime checks. |
+| [Context7](https://github.com/upstash/context7) | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
 | [Headroom](https://github.com/headroomlabs-ai/headroom) | Optional context compression reference or installed layer | Large repetitive tool outputs, logs, RAG chunks, files, diffs, conversation handoffs, or output shaping after native narrowing is insufficient. | Default dependency, every task, exact source-of-truth edits, security/legal/privacy evidence, citations, or untrusted data paths without local retrieval. |
-| Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
-| Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
+| [Cowart](https://github.com/zhongerxin/Cowart) | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
+| [Figma MCP](https://github.com/GLips/Figma-Context-MCP) | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
 | teach-impeccable | Durable design context capture | One-time capture of stable product/design context into AI configuration for future sessions. | One-off visual tweaks or project facts that are not stable design guidance. |
 | [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | UI creation and implementation direction | Building or redesigning concrete frontend screens, components, landing pages, portfolios, or product UI. | Pure research, accessibility-only fixes, or backend/docs work. |
-| ui-ux-pro-max | UX/design intelligence and pattern comparison | Evaluating flows, information architecture, interaction patterns, design alternatives, or design rationale. | Straight implementation with enough design direction already present. |
-| design-taste-frontend | Visual taste guardrail | High-stakes visual polish, anti-generic UI critique, hierarchy, composition, brand fit, or frontend taste calibration. | Routine dense operational screens where novelty or expressive styling is not useful. |
+| [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | UX/design intelligence and pattern comparison | Evaluating flows, information architecture, interaction patterns, design alternatives, or design rationale. | Straight implementation with enough design direction already present. |
+| [design-taste-frontend](https://github.com/Leonxlnx/taste-skill) | Visual taste guardrail | High-stakes visual polish, anti-generic UI critique, hierarchy, composition, brand fit, or frontend taste calibration. | Routine dense operational screens where novelty or expressive styling is not useful. |
 | critique | UX critique | Visual hierarchy, information architecture, cognitive load, or user-experience review. | Implementation or code-level remediation. |
 | audit | Technical UI audit | Accessibility, performance, theming, responsive behavior, and UI anti-pattern review. | Creative direction or product strategy. |
 | baseline-ui | Baseline UI checks | Tailwind UI scale, typography, animation duration, component accessibility, or common UI anti-pattern checks. | Broad creative direction or product strategy. |
@@ -51,7 +51,7 @@ Linked tool names identify external upstream reference sources that should be tr
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
-| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/motion/ecosystem/context-compression routing depends on current third-party behavior. | Every task or as automatic permission to copy upstream content. |
+| Upstream Watch | External reference drift check | Monthly, before releases, or when workflow/spec/code-intelligence/docs/design/motion/ecosystem/context-compression routing depends on current third-party behavior. | Every task or as automatic permission to copy upstream content. |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method reference source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
@@ -66,7 +66,7 @@ Apply them only when the active omyKit route sees the matching signal:
 - Visual frontend work: add checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA.
 - shadcn/ui ecosystem work: consult current project dependencies or current sources only when examples, component options, or ecosystem research are needed.
 - Context compression work: first narrow source context with indexes, outlines, focused commands, and evidence notes; use Headroom-style compression only when large retrievable outputs still exceed the useful budget.
-- Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson.
+- Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson, and prefer the exact linked official source over forks or mirrors.
 
 Use an installed specialist skill directly inside the current route only when it is available and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
 

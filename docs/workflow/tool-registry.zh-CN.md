@@ -4,24 +4,24 @@
 
 本注册表说明 Codex 如何组合工具，同时避免默认加载或使用所有工具。
 
-带链接的工具名表示外部上游参考来源，应记录到 `upstream-sources.json` 里跟踪。普通工具名表示本地 skill、平台能力或没有单一稳定上游仓库的工具类别。如果某个本地 skill 基于官方上游 skill，应链接官方来源，并把它作为参考信号跟踪。
+带链接的工具名表示外部上游参考来源，应记录到 `upstream-sources.json` 里跟踪。普通工具名表示本地 skill、平台能力或没有单一稳定上游仓库的工具类别。如果某个本地 skill 基于官方上游 skill，应链接官方来源，并把它作为参考信号跟踪。不要用同名 fork、marketplace 镜像或二次打包 skill 替代已链接的官方来源，除非用户明确要求使用那个替代来源。
 
 | Tool | 角色 | 使用场景 | 避免场景 |
 | --- | --- | --- | --- |
 | Codex | 控制面 | 始终使用。它负责路由、规划、编辑、验证和总结。 | 不要用不协调的独立工具绕过它。 |
 | AGENTS.md | 持久仓库规则 | 稳定约定、命令、边界和 definition of done。 | 一次性 notes、历史或长机制更适合 docs。 |
-| Superpowers | 执行纪律 | Brainstorming、planning、debugging、TDD、verification、review。 | 不作为 spec source 或项目事实来源。 |
-| Spec-Kit | 项目 constitution 和 strict SDD | 新的持久项目或重大产品基础。 | 小变更或已有轻量 spec system 的项目。 |
-| OpenSpec | 变更管理 | 标准 feature/bug/refactor proposal 和 archived deltas。 | 一次性临时交付物。 |
-| CodeGraph | 代码地图和影响分析 | 现有代码结构、callers/callees、blast radius。 | 替代测试、源码确认或运行时检查。 |
-| Context7 | 当前库文档 | 精确 API/framework 用法问题。 | 仓库里已有的一般项目事实。 |
+| [Superpowers](https://github.com/obra/Superpowers) | 执行纪律 | Brainstorming、planning、debugging、TDD、verification、review。 | 不作为 spec source 或项目事实来源。 |
+| [Spec-Kit](https://github.com/github/spec-kit) | 项目 constitution 和 strict SDD | 新的持久项目或重大产品基础。 | 小变更或已有轻量 spec system 的项目。 |
+| [OpenSpec](https://github.com/Fission-AI/openspec) | 变更管理 | 标准 feature/bug/refactor proposal 和 archived deltas。 | 一次性临时交付物。 |
+| [CodeGraph](https://github.com/colbymchenry/codegraph) | 代码地图和影响分析 | 现有代码结构、callers/callees、blast radius。 | 替代测试、源码确认或运行时检查。 |
+| [Context7](https://github.com/upstash/context7) | 当前库文档 | 精确 API/framework 用法问题。 | 仓库里已有的一般项目事实。 |
 | [Headroom](https://github.com/headroomlabs-ai/headroom) | 可选上下文压缩参考或已安装压缩层 | 原生缩小范围仍不够时，用于大型重复 tool outputs、logs、RAG chunks、files、diffs、conversation handoffs 或输出整形。 | 默认依赖、每个任务、精确源码编辑、安全/法律/隐私证据、引用出处，或没有本地可取回原文的非可信数据路径。 |
-| Cowart | 视觉画布 | 产品流程、草图、截图、空间思考、设计参考。 | 替代 specs 或实现文件。 |
-| Figma MCP | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
+| [Cowart](https://github.com/zhongerxin/Cowart) | 视觉画布 | 产品流程、草图、截图、空间思考、设计参考。 | 替代 specs 或实现文件。 |
+| [Figma MCP](https://github.com/GLips/Figma-Context-MCP) | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
 | teach-impeccable | 持久设计上下文采集 | 一次性把稳定产品/设计上下文写入 AI 配置，供后续会话使用。 | 一次性视觉微调，或不属于稳定设计指导的项目事实。 |
 | [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
-| ui-ux-pro-max | UX/设计智能和模式比较 | 评估 flows、information architecture、interaction patterns、设计备选方案或设计理由。 | 已有足够设计方向的直接实现。 |
-| design-taste-frontend | 视觉品味护栏 | 高风险视觉打磨、反通用 UI 评审、层级、构图、品牌适配或 frontend 品味校准。 | 不需要新颖或表达性风格的常规高密度运营页面。 |
+| [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | UX/设计智能和模式比较 | 评估 flows、information architecture、interaction patterns、设计备选方案或设计理由。 | 已有足够设计方向的直接实现。 |
+| [design-taste-frontend](https://github.com/Leonxlnx/taste-skill) | 视觉品味护栏 | 高风险视觉打磨、反通用 UI 评审、层级、构图、品牌适配或 frontend 品味校准。 | 不需要新颖或表达性风格的常规高密度运营页面。 |
 | critique | UX 评审 | 视觉层级、信息架构、认知负担或用户体验评审。 | 实现或代码级修复。 |
 | audit | 技术 UI 审计 | 可访问性、性能、主题、响应式和 UI 反模式审查。 | 创意方向或产品策略。 |
 | baseline-ui | 基线 UI 检查 | Tailwind UI scale、typography、animation duration、component accessibility 或常见 UI 反模式检查。 | 大范围创意方向或产品策略。 |
@@ -51,7 +51,7 @@
 | GitHub/Linear | 工作追踪 | Issues、PRs、review threads、handoff。 | 仓库本地已有的代码事实。 |
 | Sentry/observability | 运行时失败 | 部署系统中的 logs、errors、traces。 | 本地 build 或 unit test failures。 |
 | CodeRabbit/Sonar/Chromatic | 外部质量门禁 | PR review、static quality/security、visual regression。 | 替代本地验证。 |
-| Upstream Watch | 外部参考漂移检查 | 每月、release 前，或 PM/设计/动效/生态/上下文压缩路由依赖当前第三方行为时。 | 每个任务都运行，或把它当成自动复制上游内容的许可。 |
+| Upstream Watch | 外部参考漂移检查 | 每月、release 前，或 workflow/spec/代码智能/文档/设计/动效/生态/上下文压缩路由依赖当前第三方行为时。 | 每个任务都运行，或把它当成自动复制上游内容的许可。 |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM 方法参考来源 | 产品发现、策略框架、PRD、发布规划、pre-mortem、验收或测试场景结构。 | 复制模板，或把小实现任务套进重型 PM 流程。 |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | 设计品味参考来源 | 更严格的视觉判断、反通用 UI 评审或 frontend 设计质量校准。 | 复制 skill 文本，或把营销页审美强行套到运营 dashboard。 |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui 生态参考来源 | 当前 shadcn 资源、组件示例、库选项或生态发现。 | 把快速变化的目录复制进 omyKit，或把资源列表当成稳定 doctrine。 |
@@ -66,7 +66,7 @@
 - 视觉前端工作：加入层级、品牌适配、布局韧性、响应式、基础可访问性和视觉 QA 检查。
 - shadcn/ui 生态工作：只有任务需要当前示例、组件选项或生态研究时，才查询当前项目依赖或当前来源。
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用 Headroom 类压缩。
-- 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`。
+- 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
 
 只有 specialist skill 已安装且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
 

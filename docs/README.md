@@ -16,7 +16,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Runtime readiness](workflow/runtime-readiness.md) | How to prepare local middleware before verification. |
 | [Versioning readiness](workflow/versioning.md) | How to assess branch, release, rollback, history, and customization readiness. |
 | [Delivery gates](workflow/delivery-gates.md) | Artifact-specific checks before handoff or release. |
-| [Tool registry](workflow/tool-registry.md) | How Codex selects tools and optional PM, UI design, motion, design-taste, ecosystem, and context-compression patterns without using all tools by default. |
+| [Tool registry](workflow/tool-registry.md) | How Codex selects tools and optional workflow, spec, code-intelligence, docs, design, motion, ecosystem, and context-compression patterns without using all tools by default. |
 | [Upstream reference watch](workflow/upstream-watch.md) | How omyKit checks referenced external sources for changes before adopting workflow lessons. |
 | [Workflow evolution](workflow/evolution.md) | How omyKit promotes repeated workflow lessons without importing target-project facts. |
 
