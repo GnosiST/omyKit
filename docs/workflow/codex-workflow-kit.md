@@ -36,6 +36,8 @@ Apply the flow at task boundaries and meaningful phase changes. Do not restart t
 | `codex-version-readiness` | Check target-project branch, release, rollback, history, and customization readiness. |
 | `codex-delivery-gate` | Verify app, deck, video, design, research, or data deliverables before handoff. |
 
+For ownership boundaries and conflict-prevention rules, see [skill-coordination.md](skill-coordination.md).
+
 ## Mode Selection
 
 | Mode | Use when | Shape |

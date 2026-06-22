@@ -71,6 +71,8 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `codex-version-readiness` | Checks target-project branch, release, rollback, history lookup, and customization readiness. |
 | `codex-delivery-gate` | Checks artifact-specific evidence before handoff, export, commit, PR, or release. |
 
+See [Skill coordination](docs/workflow/skill-coordination.md) for what each integrated skill owns, when it hands off, and why the skills do not conflict.
+
 ## Workflow Model
 
 ```text
@@ -93,6 +95,7 @@ Operational rules:
 - [中文文档索引](docs/README.zh-CN.md)
 - [Setup guide](docs/workflow/setup.md)
 - [Workflow overview](docs/workflow/codex-workflow-kit.md)
+- [Skill coordination](docs/workflow/skill-coordination.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [External skill collaboration](docs/workflow/external-collaboration.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)

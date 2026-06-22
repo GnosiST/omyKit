@@ -71,6 +71,8 @@ $omykit 交付检查
 | `codex-version-readiness` | 检查目标项目的分支、发布、回滚、历史版本和定制化修改准备度。 |
 | `codex-delivery-gate` | 在 handoff、导出、提交、PR 或发布前检查交付证据。 |
 
+查看 [Skill 协调机制](docs/workflow/skill-coordination.zh-CN.md)，了解每个集成 skill 负责什么、何时交接，以及为什么它们不会互相打架。
+
 ## 工作流模型
 
 ```text
@@ -93,6 +95,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 - [Documentation index](docs/README.md)
 - [安装与使用](docs/workflow/setup.md)
 - [工作流总览](docs/workflow/codex-workflow-kit.md)
+- [Skill 协调机制](docs/workflow/skill-coordination.zh-CN.md)
 - [版本与回滚准备度](docs/workflow/versioning.md)
 - [外部 skill 协作](docs/workflow/external-collaboration.md)
 - [交付门禁](docs/workflow/delivery-gates.md)
