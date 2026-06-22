@@ -29,7 +29,7 @@
   - fork 或 branch
   - project-local config
   - project-local `AGENTS.md`
-  - repo-local `.agents/skills/`
+  - repo-local skill directory，例如 Codex 的 `.codex/skills/`
   - environment-specific settings
 - Historical lookup 可行：
   - tags/releases
@@ -119,8 +119,8 @@
 安装历史 omyKit git ref：
 
 ```bash
-./scripts/install-ref.sh v0.1.0
 ./scripts/install-ref.sh main
+./scripts/install-ref.sh <release-tag>
 ./scripts/install-ref.sh <commit-sha>
 ```
 

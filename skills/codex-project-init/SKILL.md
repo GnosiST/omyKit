@@ -21,7 +21,7 @@ Match user-facing language to the latest user prompt. Use that language for visi
    - `docs/workflow/tool-registry.md`: tool roles and when not to use them.
    - `docs/workflow/delivery-gates.md`: evidence required before handoff.
    - `docs/workflow/versioning.md`: branch, release, history, customization, and rollback expectations.
-   - `.agents/skills/`: repo skills only when the workflow will repeat.
+   - repo-local skill directory, such as `.codex/skills/` for Codex: add skills only when the workflow will repeat.
 4. Choose spec source:
    - Lite: one-page brief.
    - Standard: OpenSpec-style change or `docs/specs`.

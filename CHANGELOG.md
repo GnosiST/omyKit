@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Replaced hard-coded historical install examples with generic git refs so rollback docs do not depend on tags that may not exist yet.
+- Clarified repo-local skill vendoring paths so Codex examples use `.codex/skills/` instead of an unmapped neutral directory.
 - Added `codex-workflow-evolution` for evidence-based omyKit improvement, with project isolation and abstraction rules.
 - Expanded same-lane tool selection to cover design-context capture, audit, UI baseline checks, responsive adaptation, UX copy, hardening, onboarding, design-system extraction, performance, metadata, icons, motion, GSAP implementation, PM, and shadcn resource discovery.
 - Added CI and a local Markdown link validator so skill and documentation checks are repeatable.

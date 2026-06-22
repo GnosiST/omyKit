@@ -5,7 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <git-ref>" >&2
-  echo "Example: $0 v0.1.0" >&2
+  echo "Example: $0 main" >&2
   exit 1
 fi
 

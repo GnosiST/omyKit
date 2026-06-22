@@ -60,10 +60,12 @@ $omykit 改造旧项目
 Use this only when a project needs to vendor the workflow for a team or CI environment:
 
 ```bash
-mkdir -p .agents/skills docs
-cp -R /path/to/omyKit/skills/* .agents/skills/
+mkdir -p .codex/skills docs
+cp -R /path/to/omyKit/skills/* .codex/skills/
 cp -R /path/to/omyKit/docs/workflow docs/workflow
 ```
+
+For non-Codex agents, use that agent's project-level skill directory. Keep `.agents/skills/` only as a neutral vendor directory when project tooling explicitly maps it to the active agent.
 
 Then ask Codex:
 

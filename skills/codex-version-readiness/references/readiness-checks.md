@@ -36,7 +36,7 @@ Map rollback to artifact type:
 - fork or long-lived branch
 - project-local config file
 - project-local `AGENTS.md`
-- repo-local `.agents/skills/`
+- repo-local skill directory, such as `.codex/skills/` for Codex
 - `docs/workflow/project-profile.md`
 - environment-specific settings
 - plugin/skill pinning by version or commit

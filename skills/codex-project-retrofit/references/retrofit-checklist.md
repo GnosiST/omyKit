@@ -19,7 +19,7 @@ Add only missing pieces:
 - `docs/workflow/tool-registry.md`
 - `docs/workflow/delivery-gates.md`
 - `docs/workflow/versioning.md`
-- repo skills in `.agents/skills/`
+- repo skills in the active project-level skill directory, such as `.codex/skills/` for Codex
 - reminder hooks, only if the project accepts them
 
 ## Preserve

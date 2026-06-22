@@ -29,7 +29,7 @@ Check these in `init`, `retrofit`, significant `change`, and `delivery` work:
   - fork or branch
   - project-local config
   - project-local `AGENTS.md`
-  - repo-local `.agents/skills/`
+  - repo-local skill directory such as `.codex/skills/` for Codex
   - environment-specific settings
 - Historical lookup is practical:
   - tags/releases
@@ -119,8 +119,8 @@ Install current working tree:
 Install a historical omyKit git ref:
 
 ```bash
-./scripts/install-ref.sh v0.1.0
 ./scripts/install-ref.sh main
+./scripts/install-ref.sh <release-tag>
 ./scripts/install-ref.sh <commit-sha>
 ```
 

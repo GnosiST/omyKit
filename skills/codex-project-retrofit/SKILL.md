@@ -25,7 +25,7 @@ Match user-facing language to the latest user prompt. Use that language for visi
 4. Add only missing pieces:
    - Link existing rules instead of duplicating them.
    - Put workflow docs under `docs/workflow/`.
-   - Put repeatable Codex behavior under `.agents/skills/`.
+   - Put repeatable Codex behavior under the active project-level skill directory, such as `.codex/skills/` for Codex.
    - Add versioning docs only when existing branch/release/rollback conventions are absent or unclear.
 5. Invoke `codex-version-readiness` when branch, release, rollback, history lookup, or customization conventions are unclear.
 6. For app/code projects, check CodeGraph availability before architecture or impact claims. If not initialized, record that limitation and use targeted reads.

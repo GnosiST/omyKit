@@ -68,6 +68,6 @@ Use these as shapes, not mandatory text.
 
 Keep gates grouped by artifact type. Include command names and manual/visual checks. Do not require irrelevant gates for every task.
 
-## .agents/skills
+## Repo-Local Skills
 
-Create repo skills only for repeated workflows. Keep `SKILL.md` short and move artifact-type detail into one-level `references/`.
+Use the active agent's project-level skill directory, such as `.codex/skills/` for Codex. Create repo skills only for repeated workflows. Keep `SKILL.md` short and move artifact-type detail into one-level `references/`.

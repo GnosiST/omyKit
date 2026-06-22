@@ -154,7 +154,8 @@ For this repository itself:
 
 ```bash
 ./scripts/install-global.sh
-./scripts/install-ref.sh v0.1.0
+./scripts/install-ref.sh main
+./scripts/install-ref.sh <release-tag-or-commit-sha>
 ./scripts/rollback-global.sh latest
 ```
 

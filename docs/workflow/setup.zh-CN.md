@@ -60,10 +60,12 @@ $omykit 改造旧项目
 只有当项目需要为团队或 CI 环境 vendor workflow 时才使用：
 
 ```bash
-mkdir -p .agents/skills docs
-cp -R /path/to/omyKit/skills/* .agents/skills/
+mkdir -p .codex/skills docs
+cp -R /path/to/omyKit/skills/* .codex/skills/
 cp -R /path/to/omyKit/docs/workflow docs/workflow
 ```
+
+非 Codex agent 请使用该 agent 的项目级 skill 目录。只有当项目工具明确把 `.agents/skills/` 映射到当前 agent 时，才把它作为中立 vendor 目录。
 
 然后询问 Codex：
 
