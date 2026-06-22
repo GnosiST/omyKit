@@ -39,7 +39,7 @@ This registry describes how Codex should combine tools without loading or using 
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
 
-## Integrated Registry Patterns
+## Optional Registry Patterns
 
 These entries are part of the tool registry. They do not create a separate route, and they do not require a separate handoff by default.
 

@@ -15,6 +15,8 @@ This repository packages omyKit as global Codex skills plus human-readable workf
 
 ```bash
 ./scripts/validate-skills.sh
+node ./scripts/validate-docs.mjs
+git diff --check
 ```
 
 If local Python lacks `PyYAML`, run the validator with a disposable virtual environment or another Python runtime that has it installed.

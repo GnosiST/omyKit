@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added CI and a local Markdown link validator so skill and documentation checks are repeatable.
+- Standardized the recommended existing-project prompt on `$omykit 改造旧项目` while keeping `$omykit 初始化旧项目` as a supported alias.
 - Clarified same-lane skill selection so omyKit chooses PM, UI, taste, accessibility, icon, motion, and shadcn capabilities by fit instead of stacking them by default.
 - Registered PM, UI-design, design-taste, and shadcn ecosystem reference patterns in the tool registry instead of a separate page.
 - Added language-aware output rules so visible rationale, plans, questions, progress, and handoff follow the user's prompt language.

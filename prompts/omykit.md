@@ -1,6 +1,6 @@
 ---
 description: Start omyKit project workflow
-argument-hint: 初始化项目 | 初始化旧项目 | 开始一个需求 | 交付检查
+argument-hint: 初始化项目 | 改造旧项目 | 开始一个需求 | 交付检查
 ---
 
 Use $omykit with these user arguments:

@@ -50,7 +50,7 @@ $omykit 初始化项目
 3. 询问 Codex：
 
 ```text
-$omykit 初始化旧项目
+$omykit 改造旧项目
 ```
 
 4. 审查生成的 project profile，只保留符合现有项目的规则。
@@ -84,7 +84,7 @@ $omykit 初始化项目
 现有项目：
 
 ```text
-$omykit 初始化旧项目
+$omykit 改造旧项目
 ```
 
 任意任务：
@@ -136,6 +136,8 @@ $omykit 初始化项目，并检查版本管理、回滚、历史版本和定制
 - 没有未完成 stub
 - 在 project profile 专门化之前，docs 保持通用
 - 持久项目记录了 versioning 和 rollback expectations
+- `./scripts/validate-skills.sh` 通过
+- `node ./scripts/validate-docs.mjs` 通过
 - `git diff --check` 通过
 
 如果官方 skill validation 因本地 Python 缺少 `PyYAML` 而失败，validation script 会输出一次性环境命令。使用这些命令，或换用已经有该依赖的 Python runtime。

@@ -18,7 +18,7 @@ These are Codex chat prompts, not shell commands.
 
 ```text
 $omykit 初始化项目
-$omykit 初始化旧项目
+$omykit 改造旧项目
 $omykit 开始一个需求
 $omykit 交付检查
 ```

@@ -41,7 +41,7 @@
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | 设计品味参考来源 | 更严格的视觉判断、反通用 UI 评审或 frontend 设计质量校准。 | 复制 skill 文本，或把营销页审美强行套到运营 dashboard。 |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui 生态参考来源 | 当前 shadcn 资源、组件示例、库选项或生态发现。 | 把快速变化的目录复制进 omyKit，或把资源列表当成稳定 doctrine。 |
 
-## 注册表内置模式
+## 注册表可选模式
 
 这些条目属于工具注册表，不是单独 route，也不默认要求额外 handoff。
 

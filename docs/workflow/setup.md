@@ -48,7 +48,7 @@ $omykit 初始化项目
 3. Ask Codex:
 
 ```text
-$omykit 初始化旧项目
+$omykit 改造旧项目
 ```
 
 4. Review the generated project profile and keep only rules that match the existing project.
@@ -82,7 +82,7 @@ $omykit 初始化项目
 For existing projects:
 
 ```text
-$omykit 初始化旧项目
+$omykit 改造旧项目
 ```
 
 For any task:
@@ -134,6 +134,8 @@ Check:
 - no unfinished stubs remain
 - docs are generic until a project profile specializes them
 - versioning and rollback expectations are documented for durable projects
+- `./scripts/validate-skills.sh` passes
+- `node ./scripts/validate-docs.mjs` passes
 - `git diff --check` passes
 
 If official skill validation fails because local Python lacks `PyYAML`, the validation script prints disposable environment commands. Use those commands or another Python runtime that already includes the dependency.

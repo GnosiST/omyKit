@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
 [![Codex Skills](https://img.shields.io/badge/Codex-skills-2563eb)](skills)
 [![Docs](https://img.shields.io/badge/docs-English%20%7C%20Chinese-7c3aed)](docs/README.md)
+[![Validate](https://github.com/GnosiST/omyKit/actions/workflows/validate.yml/badge.svg)](https://github.com/GnosiST/omyKit/actions/workflows/validate.yml)
 
 **A lightweight Codex workflow kit for context-aware project routing, low-waste execution, verification gates, runtime readiness, and rollback-aware delivery.**
 
@@ -21,7 +22,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
-- **Reference-aware patterns:** fold PM, design, and ecosystem-discovery signals into the active workflow without copying third-party content.
+- **Reference-aware selection:** use PM, design, and ecosystem-discovery signals only when they improve the active workflow, without copying third-party content.
 
 ## Workflow At A Glance
 
@@ -51,7 +52,7 @@ Open a fresh Codex thread so the skill list refreshes, then type one of these in
 
 ```text
 $omykit 初始化项目
-$omykit 初始化旧项目
+$omykit 改造旧项目
 $omykit 开始一个需求
 $omykit 交付检查
 ```
@@ -72,7 +73,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | --- | --- |
 | `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
-| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, capability patterns, and delivery gates. |
+| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
@@ -136,6 +137,7 @@ Recommended pre-handoff checks:
 
 ```bash
 ./scripts/validate-skills.sh
+node ./scripts/validate-docs.mjs
 git diff --check
 ```
 
@@ -158,10 +160,11 @@ For this repository itself:
 After changing skill files:
 
 1. Run `./scripts/validate-skills.sh`.
-2. Run `./scripts/install-global.sh` to update the global Codex skill copy.
-3. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
-4. Review `git diff --check`.
-5. Commit and push only after the local and global copies are verified.
+2. Run `node ./scripts/validate-docs.mjs`.
+3. Run `./scripts/install-global.sh` to update the global Codex skill copy.
+4. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
+5. Review `git diff --check`.
+6. Commit and push only after the local and global copies are verified.
 
 ## Copyright And Third-Party References
 
