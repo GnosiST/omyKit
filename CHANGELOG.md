@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Extended skill validation to require the omyKit `Language` section, user-language matching rule, and private chain-of-thought boundary in every bundled skill.
 - Added Headroom as an optional upstream reference and expanded context-budget guidance with compression gates, original-retrieval safeguards, and output-shaping rules.
 - Refreshed the `phuryn/pm-skills` upstream baseline after reviewing a README badge-only change; no omyKit workflow rule was promoted.
 

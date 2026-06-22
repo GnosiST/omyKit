@@ -135,7 +135,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 ./scripts/validate-skills.sh
 ```
 
-校验脚本使用 Codex 的 `skill-creator` validator。如果当前 Python 没有 `PyYAML`，脚本会输出一次性虚拟环境命令。也可以显式指定 Python：
+校验脚本使用 Codex 的 `skill-creator` validator，并额外强制检查 omyKit 必需的 `Language` 段，确保用户语言匹配和私有思维链边界不被删掉。如果当前 Python 没有 `PyYAML`，脚本会输出一次性虚拟环境命令。也可以显式指定 Python：
 
 ```bash
 PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh

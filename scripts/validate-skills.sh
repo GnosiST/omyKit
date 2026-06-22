@@ -36,6 +36,20 @@ fi
 for skill_dir in "$source_root"/skills/*; do
   [ -d "$skill_dir" ] || continue
   "$python_bin" "$validator" "$skill_dir"
+
+  skill_file="$skill_dir/SKILL.md"
+  if ! grep -q '^## Language$' "$skill_file"; then
+    echo "Skill is missing a Language section: $skill_file" >&2
+    exit 1
+  fi
+  if ! grep -q 'Match user-facing language to the latest user prompt' "$skill_file"; then
+    echo "Skill is missing latest-prompt language matching rule: $skill_file" >&2
+    exit 1
+  fi
+  if ! grep -q 'Do not expose private chain-of-thought' "$skill_file"; then
+    echo "Skill is missing private chain-of-thought boundary: $skill_file" >&2
+    exit 1
+  fi
 done
 
 echo "All omyKit skills are valid."

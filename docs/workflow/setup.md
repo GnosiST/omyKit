@@ -136,6 +136,7 @@ Check:
 
 - every skill has `SKILL.md`
 - frontmatter has matching `name`
+- every skill keeps the required `Language` section for user-language matching and private chain-of-thought boundaries
 - no unfinished stubs remain
 - docs are generic until a project profile specializes them
 - versioning and rollback expectations are documented for durable projects

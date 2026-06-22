@@ -135,7 +135,7 @@ Operational rules:
 ./scripts/validate-skills.sh
 ```
 
-The validator uses Codex's `skill-creator` validation script. If the selected Python runtime does not include `PyYAML`, the script prints disposable virtual environment commands. You can also provide a Python executable explicitly:
+The validator uses Codex's `skill-creator` validation script and also enforces omyKit's required `Language` section for user-language matching and private chain-of-thought boundaries. If the selected Python runtime does not include `PyYAML`, the script prints disposable virtual environment commands. You can also provide a Python executable explicitly:
 
 ```bash
 PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh

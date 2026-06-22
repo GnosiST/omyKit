@@ -136,6 +136,7 @@ $omykit 初始化项目，并检查版本管理、回滚、历史版本和定制
 
 - 每个 skill 都有 `SKILL.md`
 - frontmatter 中有匹配的 `name`
+- 每个 skill 都保留必需的 `Language` 段，用于用户语言匹配和私有思维链边界
 - 没有未完成 stub
 - 在 project profile 专门化之前，docs 保持通用
 - 持久项目记录了 versioning 和 rollback expectations
