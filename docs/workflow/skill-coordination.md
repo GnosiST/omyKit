@@ -1,5 +1,7 @@
 # Skill Coordination
 
+Languages: [English](skill-coordination.md) | [简体中文](skill-coordination.zh-CN.md)
+
 omyKit skills are designed as a coordinated workflow layer, not as competing agents. Each skill owns one phase or concern, then hands control back to the main task.
 
 ## Coordination Rules
@@ -9,6 +11,24 @@ omyKit skills are designed as a coordinated workflow layer, not as competing age
 3. Each specialist skill owns a narrow concern: context, setup, execution, runtime, versioning, or delivery.
 4. Cross-cutting checks are additive. Runtime, versioning, and delivery skills support the active workflow; they do not replace it.
 5. Use the smallest applicable mode. Do not run every skill for every task.
+
+## Coordination Diagram
+
+```mermaid
+flowchart TD
+    O["omykit<br/>front door"] --> R["codex-project-router<br/>route once"]
+    R --> I["codex-project-init<br/>new project"]
+    R --> F["codex-project-retrofit<br/>existing project"]
+    R --> C["codex-change-workflow<br/>execute scoped work"]
+    R --> D["codex-delivery-gate<br/>handoff evidence"]
+    B["codex-context-budget<br/>scan/focus/deep"] -. supports .-> R
+    B -. supports .-> C
+    U["codex-runtime-readiness<br/>local services"] -. when needed .-> C
+    V["codex-version-readiness<br/>history/rollback"] -. when needed .-> C
+    U -. evidence .-> D
+    V -. evidence .-> D
+    C --> D
+```
 
 ## Integrated Skill Map
 

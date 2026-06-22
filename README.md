@@ -22,6 +22,20 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Original workflow docs:** collaborate with external skills without copying third-party content.
 
+## Workflow At A Glance
+
+```mermaid
+flowchart LR
+    Intake["Intake<br/>user goal"] --> Route["Route<br/>entry, type, risk"]
+    Route --> Budget["Context budget<br/>scan -> focus -> deep"]
+    Budget --> Work["Execute<br/>project-native work"]
+    Work --> Runtime["Runtime readiness<br/>only when needed"]
+    Work --> Version["Version readiness<br/>history and rollback"]
+    Runtime --> Verify["Verify<br/>focused checks"]
+    Version --> Verify
+    Verify --> Deliver["Deliver<br/>evidence and risks"]
+```
+
 ## Quick Start
 
 Install from GitHub:

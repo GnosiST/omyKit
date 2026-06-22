@@ -1,5 +1,7 @@
 # Skill 协调机制
 
+语言：[English](skill-coordination.md) | [简体中文](skill-coordination.zh-CN.md)
+
 omyKit 的 skills 是一个协作式工作流层，不是一组互相竞争的 agent。每个 skill 只负责一个阶段或一个横切关注点，完成后把控制权交回当前任务。
 
 ## 协调规则
@@ -9,6 +11,24 @@ omyKit 的 skills 是一个协作式工作流层，不是一组互相竞争的 a
 3. 每个 specialist skill 只负责一个窄边界：上下文、项目接入、执行、运行时、版本管理或交付。
 4. 横切检查是补充关系。运行时、版本管理和交付门禁支持当前 workflow，不替代它。
 5. 使用最小适用模式。不要每个任务都运行所有 skill。
+
+## 协调图
+
+```mermaid
+flowchart TD
+    O["omykit<br/>统一入口"] --> R["codex-project-router<br/>只路由一次"]
+    R --> I["codex-project-init<br/>新项目"]
+    R --> F["codex-project-retrofit<br/>旧项目"]
+    R --> C["codex-change-workflow<br/>执行具体任务"]
+    R --> D["codex-delivery-gate<br/>交付证据"]
+    B["codex-context-budget<br/>scan/focus/deep"] -. 支持 .-> R
+    B -. 支持 .-> C
+    U["codex-runtime-readiness<br/>本地服务"] -. 按需 .-> C
+    V["codex-version-readiness<br/>历史/回滚"] -. 按需 .-> C
+    U -. 证据 .-> D
+    V -. 证据 .-> D
+    C --> D
+```
 
 ## 集成 Skill 功能表
 
