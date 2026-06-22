@@ -117,7 +117,7 @@ Operational rules:
 - [Skill coordination](docs/workflow/skill-coordination.md)
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
-- [Capability patterns](docs/workflow/capability-patterns.md)
+- [Tool registry](docs/workflow/tool-registry.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)
 
 ## Validation

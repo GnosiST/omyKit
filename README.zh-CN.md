@@ -72,7 +72,7 @@ $omykit 交付检查
 | --- | --- |
 | `skills/` | 安装到 `${CODEX_HOME:-$HOME/.codex}/skills/` 的 Codex skills。 |
 | `prompts/` | 可选 prompt 别名，用于从支持 prompt 文件的客户端启动 omyKit。 |
-| `docs/workflow/` | 设置、路由、上下文预算、运行时准备、版本管理、按需能力增强和交付门禁文档。 |
+| `docs/workflow/` | 设置、路由、上下文预算、运行时准备、版本管理、工具注册表和交付门禁文档。 |
 | `scripts/` | 校验、全局安装、按 git ref 安装、回滚等脚本。 |
 | `AGENTS.md` | 本仓库维护规则。 |
 
@@ -117,7 +117,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 - [Skill 协调机制](docs/workflow/skill-coordination.zh-CN.md)
 - [语言策略](docs/workflow/language-policy.zh-CN.md)
 - [版本与回滚准备度](docs/workflow/versioning.zh-CN.md)
-- [按需能力增强](docs/workflow/capability-patterns.zh-CN.md)
+- [工具注册表](docs/workflow/tool-registry.zh-CN.md)
 - [交付门禁](docs/workflow/delivery-gates.zh-CN.md)
 
 ## 校验

@@ -13,6 +13,7 @@ This registry describes how Codex should combine tools without loading or using 
 | Context7 | Current library docs | Exact API/framework usage questions. | General project facts already in the repo. |
 | Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
 | Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
+| frontend-design / ui-ux-pro-max / design-taste-frontend | UI design skill layer | Visually important frontend, redesign, landing page, portfolio, product UI, or design critique. | Backend/docs work, or screens where design judgment will not change the deliverable. |
 | imagegen | Raster asset generation/editing | Bitmap visuals, moodboards, slide images, thumbnails, hero images, cutouts. | SVG/icon systems, deterministic UI code, existing vector assets. |
 | Canva | Design/deck production | Canva-native presentations, social formats, brand kits. | Code-native UI or local editable files. |
 | presentations | Deck creation/editing | PPTX/slide artifacts and rendered verification. | App UI or non-slide docs. |
@@ -27,16 +28,23 @@ This registry describes how Codex should combine tools without loading or using 
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
+| [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method pattern source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
+| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste pattern source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
+| [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
 
-## Capability Patterns
+## Integrated Registry Patterns
 
-Apply PM, design, and ecosystem-discovery patterns inside the active omyKit route:
+These entries are part of the tool registry. They do not create a separate route, and they do not require a separate handoff by default.
 
-- PM patterns can support product discovery, PRDs, launch planning, pre-mortems, and test scenarios.
-- Design-quality patterns can support visually important frontend and redesign work after omyKit routes the task.
-- shadcn ecosystem signals can trigger current resource discovery without copying fast-changing resource lists.
+Apply them only when the active omyKit route sees the matching signal:
 
-Record external references when they materially change a decision, and preserve license/attribution if any third-party content is vendored.
+- Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active brief/change workflow.
+- Visual frontend work: add checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA.
+- shadcn/ui ecosystem work: consult current project dependencies or current sources only when examples, component options, or ecosystem research are needed.
+
+Use an installed specialist skill directly inside the current route only when it is available and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
+
+When a pattern materially changes a decision, record which pattern was applied, what decision changed, whether a specialist skill or current source was used, and whether any licensed third-party content was copied with license and attribution.
 
 ## Versioning Readiness
 

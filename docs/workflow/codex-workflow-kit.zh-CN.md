@@ -86,4 +86,4 @@ already running service -> project compose/script -> testcontainer/in-memory pat
 
 新项目使用 `$omykit 初始化项目`。现有项目使用 `$omykit 改造旧项目`。在项目 profile 提供具体工具、命令和门禁之前，生成的规则应保持通用。
 
-安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、设计和生态资源发现模式见 [capability-patterns.zh-CN.md](capability-patterns.zh-CN.md)。
+安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、UI 设计、设计品味和生态资源发现模式见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)。
