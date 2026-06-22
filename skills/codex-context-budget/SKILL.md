@@ -7,6 +7,10 @@ description: Minimize Codex token and context use while preserving delivery qual
 
 Load the smallest context that can support the next safe decision.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Rule
 
 Use progressive context:

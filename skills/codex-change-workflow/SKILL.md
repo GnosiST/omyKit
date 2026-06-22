@@ -7,6 +7,10 @@ description: Run a concrete Codex change from brief or spec through plan, execut
 
 Execute a scoped change with the smallest spec and context that can still produce a reviewable deliverable.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Control
 
 Run this workflow once to frame the change, then execute directly. Re-enter the workflow only when the request changes, the blast radius grows, verification exposes a new problem class, or the user asks to re-plan.

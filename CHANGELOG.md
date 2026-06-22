@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added language-aware output rules so visible rationale, plans, questions, progress, and handoff follow the user's prompt language.
 - Added Mermaid workflow and skill-coordination diagrams, plus Chinese mirrors for workflow documentation.
 - Clarified Quick Start command blocks by separating shell install commands from Codex chat prompts.
 - Added explicit integrated-skill coordination docs explaining responsibilities, handoffs, and conflict-prevention rules.

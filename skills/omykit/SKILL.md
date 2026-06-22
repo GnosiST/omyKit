@@ -7,6 +7,10 @@ description: User-facing entry point for Codex Workflow Kit. Use when the user s
 
 Use this as the front door for Codex Workflow Kit. Keep it short; route to the specific workflow skill after the first decision.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Control
 
 Use omyKit at task boundaries, not for every action. Route once at intake, when scope/risk changes, or before final delivery. After routing, continue normal execution until new evidence requires a different workflow.

@@ -7,6 +7,10 @@ description: Retrofit an existing project with a Codex-centered workflow layer. 
 
 Add Codex Workflow Kit to an existing project without rewriting the project.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Workflow
 
 1. Apply `codex-context-budget`; start in `scan`.

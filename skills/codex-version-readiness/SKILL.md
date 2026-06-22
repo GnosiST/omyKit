@@ -7,6 +7,10 @@ description: Assess and improve a target project's version management, rollback,
 
 Check whether the target project can be changed, reviewed, customized, and rolled back safely.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Control
 
 Use this at task boundaries: init, retrofit, risky change planning, migration/deploy work, release preparation, or final delivery. Do not run it after every command or small edit.

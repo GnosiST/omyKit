@@ -20,6 +20,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
+- **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
 - **Original workflow docs:** collaborate with external skills without copying third-party content.
 
 ## Workflow At A Glance
@@ -114,6 +115,7 @@ Operational rules:
 - [Setup guide](docs/workflow/setup.md)
 - [Workflow overview](docs/workflow/codex-workflow-kit.md)
 - [Skill coordination](docs/workflow/skill-coordination.md)
+- [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [External skill collaboration](docs/workflow/external-collaboration.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)

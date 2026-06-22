@@ -7,6 +7,10 @@ description: Route Codex work by project type, mode, risk, and context budget. U
 
 Route work before loading heavy context or invoking implementation tools.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Control
 
 Route once per task or meaningful phase. Do not re-run routing for routine file reads, edits, shell commands, or verification steps unless scope, risk, artifact type, or user intent changes.

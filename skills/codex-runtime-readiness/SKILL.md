@@ -7,6 +7,10 @@ description: Prepare local runtime dependencies for Codex app development and ve
 
 Prepare middleware before running local verification. Prefer project-defined runtime paths over ad hoc containers.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 ## Workflow
 
 1. Apply `codex-context-budget`; start in `scan`.

@@ -7,6 +7,10 @@ description: Verify and package Codex deliverables before claiming completion. U
 
 Do not claim completion until there is artifact-specific evidence.
 
+## Language
+
+Match user-facing language to the latest user prompt. Use that language for visible rationale summaries, plans, questions, progress notes, and handoff. Do not expose private chain-of-thought; provide concise reasoning summaries and evidence instead.
+
 Use this gate at handoff, export, commit, PR, release, or when making a completion claim. Do not invoke it after every intermediate check.
 
 ## Workflow

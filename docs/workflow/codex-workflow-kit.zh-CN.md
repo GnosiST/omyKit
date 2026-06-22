@@ -14,6 +14,7 @@ Codex Workflow Kit 是一个以 Codex 为控制面的操作层，用于初始化
 - 用 Codex repo skills 编码可重复工作流。
 - 本地验证前准备运行时依赖，包括 Docker 支持的中间件。
 - 为历史追踪、回滚、发布和项目特定定制检查版本准备度。
+- 可见推理摘要、问题、进度和 handoff 跟随用户语言。
 - 在声明完成前提供交付物类型对应的证据。
 
 ## 核心流程
@@ -85,4 +86,4 @@ already running service -> project compose/script -> testcontainer/in-memory pat
 
 新项目使用 `$omykit 初始化项目`。现有项目使用 `$omykit 改造旧项目`。在项目 profile 提供具体工具、命令和门禁之前，生成的规则应保持通用。
 
-安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，第三方 skill 协作见 [external-collaboration.zh-CN.md](external-collaboration.zh-CN.md)。
+安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，第三方 skill 协作见 [external-collaboration.zh-CN.md](external-collaboration.zh-CN.md)。

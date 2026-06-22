@@ -10,6 +10,7 @@
 | --- | --- |
 | [工作流套件](workflow/codex-workflow-kit.zh-CN.md) | 端到端模型、skill 映射、模式选择和工具哲学。 |
 | [Skill 协调机制](workflow/skill-coordination.zh-CN.md) | 集成 skill 的职责、交接方式和防冲突规则。 |
+| [语言策略](workflow/language-policy.zh-CN.md) | 可见推理摘要、问题、状态和 handoff 如何跟随用户语言。 |
 | [安装与使用](workflow/setup.zh-CN.md) | 全局安装、首次使用 prompt、可选 repo-local 副本和校验说明。 |
 | [上下文预算](workflow/context-budget.zh-CN.md) | 如何让 Codex 以小而渐进的方式加载上下文。 |
 | [运行时准备](workflow/runtime-readiness.zh-CN.md) | 在验证前准备本地中间件和服务。 |

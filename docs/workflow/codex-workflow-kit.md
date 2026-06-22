@@ -12,6 +12,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Repeatable workflows encoded as Codex repo skills.
 - Runtime readiness, including Docker-backed middleware, before local verification.
 - Versioning readiness for history lookup, rollback, releases, and project-specific customization.
+- Language-aware visible output for rationale summaries, questions, progress, and handoff.
 - Artifact-specific delivery evidence before claiming completion.
 
 ## Core Flow
