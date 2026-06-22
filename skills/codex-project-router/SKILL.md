@@ -36,6 +36,7 @@ Route once per task or meaningful phase. Do not re-run routing for routine file 
    - `delivery` -> `codex-delivery-gate`.
    - app change requiring middleware -> include `codex-runtime-readiness`.
    - durable, release, migration, rollback, or customization concern -> include `codex-version-readiness`.
+   - PM-method, visual-quality, or ecosystem-discovery signal -> apply the matching capability pattern inside the active route; use a specialist skill or current source only when available and useful.
 
 ## Output
 

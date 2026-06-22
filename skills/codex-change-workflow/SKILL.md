@@ -30,10 +30,11 @@ Run this workflow once to frame the change, then execute directly. Re-enter the 
    - risky logic -> `superpowers:test-driven-development`
 4. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
 5. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
-6. Load only the current project-type reference.
-7. Execute surgically.
-8. Run focused verification as soon as something is testable.
-9. Before handoff, invoke `codex-delivery-gate`.
+6. Apply capability patterns inline when signals match: PM structure for product-method work, design-quality checks for visually important frontend, and current-source discovery for shadcn/ecosystem research.
+7. Load only the current project-type reference.
+8. Execute surgically.
+9. Run focused verification as soon as something is testable.
+10. Before handoff, invoke `codex-delivery-gate`.
 
 ## App-Code Rules
 

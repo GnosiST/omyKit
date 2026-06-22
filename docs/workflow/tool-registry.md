@@ -28,13 +28,13 @@ This registry describes how Codex should combine tools without loading or using 
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
 
-## External Skill Collaboration
+## Capability Patterns
 
-Use external skill projects as collaborators, not as content to merge wholesale:
+Apply PM, design, and ecosystem-discovery patterns inside the active omyKit route:
 
-- PM-focused skills can support product discovery, PRDs, launch planning, pre-mortems, and test scenarios.
-- Design taste skills can support visually important frontend and redesign work after omyKit routes the task.
-- shadcn ecosystem catalogs can support current resource discovery without copying their resource lists.
+- PM patterns can support product discovery, PRDs, launch planning, pre-mortems, and test scenarios.
+- Design-quality patterns can support visually important frontend and redesign work after omyKit routes the task.
+- shadcn ecosystem signals can trigger current resource discovery without copying fast-changing resource lists.
 
 Record external references when they materially change a decision, and preserve license/attribution if any third-party content is vendored.
 

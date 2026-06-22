@@ -21,7 +21,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
-- **Original workflow docs:** collaborate with external skills without copying third-party content.
+- **Reference-aware patterns:** fold PM, design, and ecosystem-discovery signals into the active workflow without copying third-party content.
 
 ## Workflow At A Glance
 
@@ -72,7 +72,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | --- | --- |
 | `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
-| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, external collaboration, and delivery gates. |
+| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, capability patterns, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
@@ -117,7 +117,7 @@ Operational rules:
 - [Skill coordination](docs/workflow/skill-coordination.md)
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
-- [External skill collaboration](docs/workflow/external-collaboration.md)
+- [Capability patterns](docs/workflow/capability-patterns.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)
 
 ## Validation

@@ -84,4 +84,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, and [external-collaboration.md](external-collaboration.md) for third-party skill collaboration.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, and [capability-patterns.md](capability-patterns.md) for PM, design, and ecosystem-discovery patterns.

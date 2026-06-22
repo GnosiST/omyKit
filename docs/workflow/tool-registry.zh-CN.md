@@ -30,13 +30,13 @@
 | Sentry/observability | 运行时失败 | 部署系统中的 logs、errors、traces。 | 本地 build 或 unit test failures。 |
 | CodeRabbit/Sonar/Chromatic | 外部质量门禁 | PR review、static quality/security、visual regression。 | 替代本地验证。 |
 
-## 外部 Skill 协作
+## 按需能力增强
 
-把外部 skill 项目作为协作者，而不是要整体合并的内容：
+在当前 omyKit route 中应用 PM、设计和生态资源发现模式：
 
-- PM-focused skills 可支持产品发现、PRD、发布规划、pre-mortem 和测试场景。
-- Design taste skills 可在 omyKit 路由任务后支持视觉重要的 frontend 和 redesign 工作。
-- shadcn ecosystem catalogs 可支持当前资源发现，但不要复制其资源列表。
+- PM 模式可支持产品发现、PRD、发布规划、pre-mortem 和测试场景。
+- 设计质量模式可在 omyKit 路由任务后支持视觉重要的 frontend 和 redesign 工作。
+- shadcn 生态信号可触发当前资源发现，但不要复制快速变化的资源列表。
 
 当外部参考实质改变决策时记录来源；如果 vendoring 第三方内容，保留 license/attribution。
 

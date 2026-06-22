@@ -27,6 +27,7 @@ Load only the section for the current deliverable.
 - Start with audience, use case, brand personality, platform, constraints.
 - Use Cowart/Figma selected context before full design docs.
 - Use ui-ux-pro-max/frontend-design for UI direction.
+- For visually important frontend, apply design-quality checks inline; use a taste/design skill only when installed and useful.
 - Use imagegen only for bitmap assets or visual references.
 - Verify responsive layout, text overflow, accessibility, and visual consistency.
 
@@ -34,6 +35,7 @@ Load only the section for the current deliverable.
 
 - Start with research question, audience, source quality, citation needs.
 - Use web/current sources for volatile facts.
+- For product/PM method work, add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure without copying third-party templates.
 - Verify citations, date clarity, and claims.
 
 ## Data

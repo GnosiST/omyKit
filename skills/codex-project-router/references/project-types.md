@@ -33,8 +33,8 @@ Keep the selected route until scope, risk, artifact type, or user intent changes
 
 Include `codex-version-readiness` when the task touches releases, migrations, deployments, dependency upgrades, generated artifacts, global skills/tools, project customization, or any change where rollback/history lookup matters.
 
-## External Collaboration Route
+## Capability Pattern Route
 
-- Product or PM-method work: route to PM-specialist skills when available; keep omyKit responsible for implementation governance and delivery evidence.
-- Visual frontend work: route to design/frontend taste skills for visual judgment; keep omyKit responsible for scope, risk, and verification gates.
-- shadcn/ui ecosystem research: consult current external catalogs or project dependencies; do not copy fast-changing resource lists into omyKit.
+- Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active workflow; use PM-specialist skills only when installed and useful.
+- Visual frontend work: add design-quality checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA; use design/frontend taste skills only when installed and useful.
+- shadcn/ui ecosystem research: consult current project dependencies or current external sources only when examples or ecosystem options are needed; do not copy fast-changing resource lists into omyKit.

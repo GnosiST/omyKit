@@ -17,7 +17,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Versioning readiness](workflow/versioning.md) | How to assess branch, release, rollback, history, and customization readiness. |
 | [Delivery gates](workflow/delivery-gates.md) | Artifact-specific checks before handoff or release. |
 | [Tool registry](workflow/tool-registry.md) | How Codex should combine tools without using all of them by default. |
-| [External collaboration](workflow/external-collaboration.md) | How to use external skills and resource catalogs without copying their content. |
+| [Capability patterns](workflow/capability-patterns.md) | How PM, design, and ecosystem-discovery patterns are folded into the active workflow. |
 
 ## Documentation Policy
 
