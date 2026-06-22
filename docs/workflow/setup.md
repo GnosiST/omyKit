@@ -113,8 +113,8 @@ Install only what the project needs:
 
 - CodeGraph for code maps.
 - Context7 for current library docs.
-- Headroom or similar local compression only for high-volume retrievable tool output, logs, RAG chunks, or conversation handoffs.
-- Cowart or Figma for visual context.
+- Optional local compression only for high-volume retrievable tool output, logs, RAG chunks, or conversation handoffs.
+- Figma or another selected design source for visual context.
 - Chrome Extension or Playwright for browser checks.
 - Computer Use for local GUI workflows.
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion for non-code artifacts.

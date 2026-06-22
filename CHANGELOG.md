@@ -4,17 +4,20 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Removed community PM/taste/catalog/meta-UX skill references and low-signal platform sample repos from default tool routing and upstream tracking to keep omyKit conservative, reliable, and non-fusionary.
+- Tightened source admission rules so stars are supporting evidence, not sufficient proof for default routing.
 - Added source marks and verified sources to every tool-registry row, covering installed local skills, platform tools, OpenAI bundled tools, and repo-local mechanisms.
 - Added star-count suffixes to verified GitHub sources in the tool registry and documented a no-low-signal-community-skill admission rule.
-- Added source-integrity baselines for local skill origins and platform-tool GitHub references such as Impeccable, UI Skills, Better Icons, Motion, Canva skills, Remotion, FFmpeg, Docker, Playwright, GitHub MCP, Linear, Sentry, SonarQube, Chromatic, CodeRabbit, and OpenAI CUA samples.
+- Added source-integrity baselines for admitted local skill origins and platform-tool GitHub references such as Impeccable, UI Skills, Better Icons, Motion, Remotion, FFmpeg, Docker, Playwright, GitHub MCP, Linear, Sentry, SonarQube, and OpenAI CUA samples.
 - Added source-integrity snapshots and validation for external references, including developer/owner, star counts as of 2026-06-22, fork/archive status, and scoped reference boundaries.
 - Refreshed the `openai/codex` upstream baseline after reviewing a remote-exec sandboxing change; no omyKit workflow rule was promoted.
+- Refreshed the `getsentry/sentry` upstream baseline after reviewing an internal migration-helper change; no omyKit workflow rule was promoted.
+- Refreshed the `FFmpeg/FFmpeg` upstream baseline after reviewing a D3D11VA pixel-format support change; no omyKit workflow rule was promoted.
 - Added workflow usability controls to the overview so routing, custom answers, language matching, same-lane skill selection, and external reference boundaries are visible in one place.
-- Linked official upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Cowart, Figma Context MCP, UI/UX Pro Max, and design-taste, and added a no-forks/no-mirrors source-integrity rule.
+- Linked admitted upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Figma Context MCP, frontend-design, and GSAP skills, and added a no-forks/no-mirrors source-integrity rule.
 - Linked `frontend-design` and `gsap-*` to their official skill sources, added them to upstream tracking, and clarified tool-registry source labeling rules.
 - Extended skill validation to require the omyKit `Language` section, user-language matching rule, and private chain-of-thought boundary in every bundled skill.
-- Added Headroom as an optional upstream reference and expanded context-budget guidance with compression gates, original-retrieval safeguards, and output-shaping rules.
-- Refreshed the `phuryn/pm-skills` upstream baseline after reviewing a README badge-only change; no omyKit workflow rule was promoted.
+- Generalized context-budget guidance around optional local compression with original-retrieval safeguards and output-shaping rules.
 
 ## 0.1.0 - 2026-06-22
 
@@ -25,8 +28,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 - Expanded same-lane tool selection to cover design-context capture, audit, UI baseline checks, responsive adaptation, UX copy, hardening, onboarding, design-system extraction, performance, metadata, icons, motion, GSAP implementation, PM, and shadcn resource discovery.
 - Added CI and a local Markdown link validator so skill and documentation checks are repeatable.
 - Standardized the recommended existing-project prompt on `$omykit 改造旧项目` while keeping `$omykit 初始化旧项目` as a supported alias.
-- Clarified same-lane skill selection so omyKit chooses PM, UI, taste, accessibility, icon, motion, and shadcn capabilities by fit instead of stacking them by default.
-- Registered PM, UI-design, design-taste, and shadcn ecosystem reference patterns in the tool registry instead of a separate page.
+- Clarified same-lane skill selection so omyKit chooses PM, UI, visual-quality, accessibility, icon, motion, and ecosystem capabilities by fit instead of stacking them by default.
+- Registered initial PM, UI, visual-quality, and ecosystem reference patterns in the tool registry instead of a separate page.
 - Added language-aware output rules so visible rationale, plans, questions, progress, and handoff follow the user's prompt language.
 - Added Mermaid workflow and skill-coordination diagrams, plus Chinese mirrors for workflow documentation.
 - Clarified Quick Start command blocks by separating shell install commands from Codex chat prompts.

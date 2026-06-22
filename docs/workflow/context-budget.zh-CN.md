@@ -62,8 +62,8 @@ scan -> focus -> deep
 5. 只有内容足够大、重复、可取回原文且来源可信时，才使用可选本地压缩。
 6. 在精确代码编辑、引用、出处、安全/法律/隐私判断，或任何压缩丢失可能隐藏失败的决策前，必须回到原文。
 
-## 可选 Headroom 适用范围
+## 可选本地压缩适用范围
 
-Headroom 适合作为可选参考或已安装的压缩层，用于大型 tool outputs、JSON arrays、search results、logs、diffs、RAG chunks、长文档、会话交接和输出整形。它不应该成为 omyKit 默认依赖。
+可选本地压缩只适合在缩小范围仍不够时处理大型 tool outputs、JSON arrays、search results、logs、diffs、RAG chunks、长文档、会话交接和输出整形。它不应该成为 omyKit 默认依赖。
 
 小上下文、用户最新指令、凭据或密钥、合规敏感数据、精确源码编辑、法律/医疗/金融事实、引用出处，以及任何省略 warning 会改变结果的输出，都不应使用压缩替代原文。

@@ -11,8 +11,8 @@
 
 ## Tools
 
-- Cowart/Figma for visual context.
-- `frontend-design` for concrete UI creation, `ui-ux-pro-max` for UX/pattern judgment, `design-taste-frontend` only when visual taste calibration is needed, and `teach-impeccable` only for stable design-context capture.
+- Figma or selected design-source context for visual context.
+- `frontend-design` for concrete UI creation, `critique` for UX/pattern judgment, `audit` for technical UI checks, and `teach-impeccable` only for stable design-context capture.
 - Use focused UI skills by lane: `critique`, `audit`, `adapt`, `baseline-ui`, `fixing-accessibility`, `clarify`, `harden`, `onboard`, `extract`, `optimize`, `fixing-metadata`, `better-icons`, `motion-ai-kit`, `fixing-motion-performance`, or matching `gsap-*` implementation skills.
 - imagegen for raster assets and visual references.
 - Chrome/Playwright for web checks.

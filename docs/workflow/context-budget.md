@@ -59,8 +59,8 @@ Compression is useful only after narrowing fails. Use this order:
 5. Use optional local compression only for large, repetitive, retrievable, trusted content.
 6. Retrieve the original before exact code edits, quotes, citations, security/legal/privacy claims, or any decision where lossiness can hide a failure.
 
-## Optional Headroom Fit
+## Optional Local Compression Fit
 
-Headroom is useful as an optional reference or installed compression layer for large tool outputs, JSON arrays, search results, logs, diffs, RAG chunks, long docs, conversation handoffs, and output shaping. It should not become a default omyKit dependency.
+Optional local compression is useful only for large tool outputs, JSON arrays, search results, logs, diffs, RAG chunks, long docs, conversation handoffs, and output shaping after narrowing fails. It should not become a default omyKit dependency.
 
 Avoid it for small contexts, fresh user instructions, credentials or secrets, compliance-sensitive data, exact source-of-truth edits, legal/medical/financial facts, citations, or any output where omitted warnings could change the result.

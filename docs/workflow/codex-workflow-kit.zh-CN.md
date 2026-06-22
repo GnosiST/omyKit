@@ -67,9 +67,9 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 
 1. 项目原生命令、API 和文件。
 2. 语义化或索引化上下文，例如 CodeGraph。
-3. 通过 Context7、Cowart 或 Figma 等工具获取聚焦文档或选中交付物上下文。
+3. 通过 Context7、Figma 或其他选中的设计来源获取聚焦文档或选中交付物上下文。
 4. 原生缩小范围仍不够时，对大型可取回输出使用可选本地压缩。
-5. 当 Canva、GitHub、Sentry、Headroom 或 artifact 工具能实质改变下一步决策时，才调用专用 MCP/plugins。
+5. 当 Canva、GitHub、Sentry、可选本地压缩或 artifact 工具能实质改变下一步决策时，才调用专用 MCP/plugins。
 6. 浏览器自动化，例如 Chrome Extension 或 Playwright。
 7. 只有在本地 GUI 工作流没有更好接口时才使用 Computer Use。
 

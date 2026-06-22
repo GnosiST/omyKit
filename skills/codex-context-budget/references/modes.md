@@ -9,7 +9,7 @@ Use for routing and estimating.
 Allowed context:
 - `AGENTS.md`, README, docs index, file tree, manifests, package scripts.
 - CodeGraph status/files/explore summaries.
-- Current selected Cowart/Figma objects, not the whole board.
+- Current selected Figma/design-source objects, not the whole board or file.
 - Deck/video/document outlines, not full rendered artifacts.
 - Latest command error summary, not raw logs.
 
@@ -57,9 +57,9 @@ Use this order before moving to heavier context:
 5. Use optional local compression only when the content is large, repetitive, retrievable, and trusted.
 6. Retrieve the original before exact edits, quotes, citations, security/legal/privacy claims, or any decision where lossiness can hide a failure.
 
-## Optional Headroom Fit
+## Optional Local Compression Fit
 
-Headroom-style compression is useful as a reference pattern or optional installed tool for:
+Local compression is useful as an optional installed tool for:
 
 - large JSON arrays, search results, logs, diffs, RAG chunks, long docs, conversation handoffs, and repetitive tool output
 - reversible workflows where the original can be retrieved on demand

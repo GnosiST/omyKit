@@ -9,7 +9,7 @@
     "verification_source": "GitHub repository API",
     "officiality_meaning": "Exact upstream or home repository tracked for the capability; not repository-owner endorsement of omyKit.",
     "stars_are_snapshot": true,
-    "specialist_skill_bar": "Prefer verified, non-forked, non-archived third-party specialist skill repos with roughly 1000+ stars; allow lower-star first-party platform repos only as official platform/connector references, not as community-skill quality endorsements."
+    "specialist_skill_bar": "Admit only omyKit-owned skills, first-party platform/tool sources, official upstream skill sources, or installed narrow specialist skills with clear non-overlapping value. Public stars are supporting evidence, not sufficient admission proof; community skill repos that duplicate omyKit lanes stay out of default routing unless the user explicitly requests them."
   },
   "sources": [
     {
@@ -21,7 +21,7 @@
       "verification": {
         "owner": "obra",
         "owner_type": "User",
-        "stars": 235577,
+        "stars": 235582,
         "fork": false,
         "archived": false,
         "reference_scope": "Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied."
@@ -51,7 +51,7 @@
       "verification": {
         "owner": "Fission-AI",
         "owner_type": "Organization",
-        "stars": 55969,
+        "stars": 55971,
         "fork": false,
         "archived": false,
         "reference_scope": "Proposal and archived-delta change-management pattern; no CLI or templates bundled."
@@ -66,7 +66,7 @@
       "verification": {
         "owner": "colbymchenry",
         "owner_type": "User",
-        "stars": 52986,
+        "stars": 52991,
         "fork": false,
         "archived": false,
         "reference_scope": "Code-map and impact-analysis routing signal; no dependency bundled."
@@ -81,25 +81,10 @@
       "verification": {
         "owner": "upstash",
         "owner_type": "Organization",
-        "stars": 57851,
+        "stars": 57852,
         "fork": false,
         "archived": false,
         "reference_scope": "Current library-doc lookup signal; no documentation mirrored."
-      }
-    },
-    {
-      "id": "cowart",
-      "repo": "zhongerxin/Cowart",
-      "url": "https://github.com/zhongerxin/Cowart.git",
-      "baseline": "43134e975670adb3a204671900eaef3c83b528a0",
-      "role": "Official Cowart reference for visual canvas, product flows, sketches, screenshots, and spatial design context",
-      "verification": {
-        "owner": "zhongerxin",
-        "owner_type": "User",
-        "stars": 1735,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Visual canvas and spatial-context routing signal; no assets bundled."
       }
     },
     {
@@ -115,66 +100,6 @@
         "fork": false,
         "archived": false,
         "reference_scope": "Figma design-context routing signal; no MCP config or code bundled."
-      }
-    },
-    {
-      "id": "pm-skills",
-      "repo": "phuryn/pm-skills",
-      "url": "https://github.com/phuryn/pm-skills.git",
-      "baseline": "a0cd730d4c61e519ca8568b172334402257a74a9",
-      "role": "PM method reference for discovery, PRD, launch, pre-mortem, acceptance, and test-scenario structure",
-      "verification": {
-        "owner": "phuryn",
-        "owner_type": "User",
-        "stars": 20433,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "PM method categories and routing cues; no PRD or launch templates copied."
-      }
-    },
-    {
-      "id": "awesome-shadcn-ui",
-      "repo": "birobirobiro/awesome-shadcn-ui",
-      "url": "https://github.com/birobirobiro/awesome-shadcn-ui.git",
-      "baseline": "f5665e2c7fe77e92661dcff8993147d4b75ead20",
-      "role": "shadcn/ui ecosystem reference for examples, component options, and library discovery",
-      "verification": {
-        "owner": "birobirobiro",
-        "owner_type": "User",
-        "stars": 19884,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "shadcn/ui ecosystem discovery signal; no fast-changing catalog copied."
-      }
-    },
-    {
-      "id": "taste-skill",
-      "repo": "Leonxlnx/taste-skill",
-      "url": "https://github.com/Leonxlnx/taste-skill.git",
-      "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
-      "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration",
-      "verification": {
-        "owner": "Leonxlnx",
-        "owner_type": "User",
-        "stars": 48774,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Visual-taste calibration signal; no skill body copied."
-      }
-    },
-    {
-      "id": "ui-ux-pro-max",
-      "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
-      "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
-      "baseline": "53d670cd3050dcbfa19acb0cf0d9e631422f7ca2",
-      "role": "Official UI/UX Pro Max skill reference for UX/design intelligence, pattern comparison, and design rationale",
-      "verification": {
-        "owner": "nextlevelbuilder",
-        "owner_type": "Organization",
-        "stars": 94930,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "UX/design intelligence lane and pattern-comparison signal; no database or skill body copied."
       }
     },
     {
@@ -208,21 +133,6 @@
       }
     },
     {
-      "id": "headroom",
-      "repo": "headroomlabs-ai/headroom",
-      "url": "https://github.com/headroomlabs-ai/headroom.git",
-      "baseline": "95b2333ee5a3f1cbe512ca04a6563c3572835758",
-      "role": "Optional token and context compression reference for large tool outputs, logs, RAG chunks, files, reversible retrieval, and output shaping",
-      "verification": {
-        "owner": "headroomlabs-ai",
-        "owner_type": "Organization",
-        "stars": 45899,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Optional context-compression and output-shaping reference; no default dependency or proxy bundled."
-      }
-    },
-    {
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
@@ -231,7 +141,7 @@
       "verification": {
         "owner": "openai",
         "owner_type": "Organization",
-        "stars": 92646,
+        "stars": 92647,
         "fork": false,
         "archived": false,
         "reference_scope": "Codex platform/source reference; omyKit does not vendor Codex."
@@ -246,7 +156,7 @@
       "verification": {
         "owner": "pbakaus",
         "owner_type": "User",
-        "stars": 40158,
+        "stars": 40159,
         "fork": false,
         "archived": false,
         "reference_scope": "Installed local design-skill family reference; omyKit records routing boundaries and does not copy additional upstream text."
@@ -298,21 +208,6 @@
       }
     },
     {
-      "id": "canva-claude-skills",
-      "repo": "canva-sdks/canva-claude-skills",
-      "url": "https://github.com/canva-sdks/canva-claude-skills.git",
-      "baseline": "66d54fb317509c04752a163255f4af098af23c5f",
-      "role": "Official Canva agent-skill reference for Canva Connector creative workflows",
-      "verification": {
-        "owner": "canva-sdks",
-        "owner_type": "Organization",
-        "stars": 41,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Canva connector/agent-skill source reference; omyKit does not vendor Canva skills."
-      }
-    },
-    {
       "id": "remotion",
       "repo": "remotion-dev/remotion",
       "url": "https://github.com/remotion-dev/remotion.git",
@@ -321,7 +216,7 @@
       "verification": {
         "owner": "remotion-dev",
         "owner_type": "Organization",
-        "stars": 50848,
+        "stars": 50849,
         "fork": false,
         "archived": false,
         "reference_scope": "Video-rendering platform reference; no dependency bundled."
@@ -331,7 +226,7 @@
       "id": "ffmpeg",
       "repo": "FFmpeg/FFmpeg",
       "url": "https://github.com/FFmpeg/FFmpeg.git",
-      "baseline": "ff1e1b5b72bc7110257334735ceb3f05e6642034",
+      "baseline": "64ce854ef5cd71d730fa03f187e139c46272ff7d",
       "role": "Official FFmpeg GitHub mirror reference for media processing and export workflows",
       "verification": {
         "owner": "FFmpeg",
@@ -366,7 +261,7 @@
       "verification": {
         "owner": "moby",
         "owner_type": "Organization",
-        "stars": 71727,
+        "stars": 71728,
         "fork": false,
         "archived": false,
         "reference_scope": "Container runtime ecosystem reference; Docker Compose remains the preferred project-level route."
@@ -436,7 +331,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "eede9e73f6c7d4ba6f68946037e4adf481e3a5e7",
+      "baseline": "fad0e6df592a962eba67491f2339a2ef89189398",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",
@@ -460,36 +355,6 @@
         "fork": false,
         "archived": false,
         "reference_scope": "External quality-gate reference; does not replace local verification."
-      }
-    },
-    {
-      "id": "chromatic-cli",
-      "repo": "chromaui/chromatic-cli",
-      "url": "https://github.com/chromaui/chromatic-cli.git",
-      "baseline": "8caa6791b3d04517b46d894d24ef06d712463ee4",
-      "role": "Official Chromatic CLI reference for Storybook visual regression workflows",
-      "verification": {
-        "owner": "chromaui",
-        "owner_type": "Organization",
-        "stars": 337,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Visual regression tool reference; no CLI bundled."
-      }
-    },
-    {
-      "id": "coderabbit-awesome",
-      "repo": "coderabbitai/awesome-coderabbit",
-      "url": "https://github.com/coderabbitai/awesome-coderabbit.git",
-      "baseline": "4d37d6e9fe29b6e28c51560071eec0d6e0a75bd2",
-      "role": "Official CodeRabbit resource reference for AI PR review workflow context",
-      "verification": {
-        "owner": "coderabbitai",
-        "owner_type": "Organization",
-        "stars": 402,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "CodeRabbit resource reference; product behavior should be verified through current docs/app output."
       }
     },
     {

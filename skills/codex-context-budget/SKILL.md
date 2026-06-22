@@ -27,7 +27,7 @@ Apply the budget when choosing context or crossing a task phase. Do not restart 
 
 1. State the current context level.
 2. Load only context needed for the next decision.
-3. Prefer semantic/indexed tools over raw bulk reads: CodeGraph for code structure, Context7 for exact library docs, Cowart/Figma selected objects for design context, outlines for decks/docs.
+3. Prefer semantic/indexed tools over raw bulk reads: CodeGraph for code structure, Context7 for exact library docs, selected Figma/design-source objects for design context, outlines for decks/docs.
 4. Apply the compression gate before `deep`: avoid loading first, narrow with indexes/outlines second, compact native command output third, summarize fourth, and use optional local compression only when content is large, repetitive, retrievable, and trusted.
 5. Summarize large outputs into task-local notes before continuing.
 6. Retrieve the original source before exact code edits, quotes, citations, legal/security/privacy claims, or decisions where lossy compression could hide a failure.
@@ -40,7 +40,7 @@ Apply the budget when choosing context or crossing a task phase. Do not restart 
 - Do not paste raw logs into follow-up reasoning; extract command, failure, and owner.
 - Do not use Strict workflow for low-risk one-off work.
 - Do not put one-off discoveries into `AGENTS.md`; only stable rules graduate there.
-- Do not add Headroom, proxies, MCP compression, or any compression layer as a default omyKit dependency; route to it only when installed, trusted, and useful for the current task.
+- Do not add proxies, MCP compression, or any compression layer as a default omyKit dependency; route to optional local compression only when installed, trusted, and useful for the current task.
 - Do not send secrets, credentials, private data, or compliance-sensitive material through an untrusted or remote compression path.
 - Do not treat compressed output as the source of truth when exact wording, line numbers, or complete data matters.
 
