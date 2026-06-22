@@ -18,7 +18,7 @@ Codex Workflow Kit 是一个以 Codex 为控制面的操作层，用于初始化
 - 可见推理摘要、问题、进度和 handoff 跟随用户语言。
 - 在声明完成前提供交付物类型对应的证据。
 - 基于证据改进 workflow，同时避免把目标项目事实导入通用 kit。
-- 定期检查影响 PM、设计品味、生态发现和上下文压缩的第三方参考来源。
+- 定期检查影响 PM、官方 UI/动效 skills、设计品味、生态发现和上下文压缩的第三方参考来源。
 
 ## 核心流程
 
@@ -92,4 +92,4 @@ already running service -> project compose/script -> testcontainer/in-memory pat
 
 新项目使用 `$omykit 初始化项目`。现有项目使用 `$omykit 改造旧项目`。在项目 profile 提供具体工具、命令和门禁之前，生成的规则应保持通用。
 
-安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、UI 设计、设计品味、生态资源发现和上下文压缩的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。
+安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，PM、UI 设计、动效、设计品味、生态资源发现和上下文压缩的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。

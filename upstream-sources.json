@@ -27,6 +27,20 @@
       "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration"
     },
     {
+      "id": "anthropic-frontend-design",
+      "repo": "anthropics/skills",
+      "url": "https://github.com/anthropics/skills.git",
+      "baseline": "57546260929473d4e0d1c1bb75297be2fdfa1949",
+      "role": "Official Anthropic frontend-design skill reference for distinctive, intentional frontend UI creation"
+    },
+    {
+      "id": "gsap-skills",
+      "repo": "greensock/gsap-skills",
+      "url": "https://github.com/greensock/gsap-skills.git",
+      "baseline": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "role": "Official GSAP skill reference for core tweens, timelines, ScrollTrigger, React/framework integration, plugins, utilities, and animation performance"
+    },
+    {
       "id": "headroom",
       "repo": "headroomlabs-ai/headroom",
       "url": "https://github.com/headroomlabs-ai/headroom.git",

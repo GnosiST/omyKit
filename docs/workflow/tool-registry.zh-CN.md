@@ -4,6 +4,8 @@
 
 本注册表说明 Codex 如何组合工具，同时避免默认加载或使用所有工具。
 
+带链接的工具名表示外部上游参考来源，应记录到 `upstream-sources.json` 里跟踪。普通工具名表示本地 skill、平台能力或没有单一稳定上游仓库的工具类别。如果某个本地 skill 基于官方上游 skill，应链接官方来源，并把它作为参考信号跟踪。
+
 | Tool | 角色 | 使用场景 | 避免场景 |
 | --- | --- | --- | --- |
 | Codex | 控制面 | 始终使用。它负责路由、规划、编辑、验证和总结。 | 不要用不协调的独立工具绕过它。 |
@@ -17,7 +19,7 @@
 | Cowart | 视觉画布 | 产品流程、草图、截图、空间思考、设计参考。 | 替代 specs 或实现文件。 |
 | Figma MCP | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
 | teach-impeccable | 持久设计上下文采集 | 一次性把稳定产品/设计上下文写入 AI 配置，供后续会话使用。 | 一次性视觉微调，或不属于稳定设计指导的项目事实。 |
-| frontend-design | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
+| [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
 | ui-ux-pro-max | UX/设计智能和模式比较 | 评估 flows、information architecture、interaction patterns、设计备选方案或设计理由。 | 已有足够设计方向的直接实现。 |
 | design-taste-frontend | 视觉品味护栏 | 高风险视觉打磨、反通用 UI 评审、层级、构图、品牌适配或 frontend 品味校准。 | 不需要新颖或表达性风格的常规高密度运营页面。 |
 | critique | UX 评审 | 视觉层级、信息架构、认知负担或用户体验评审。 | 实现或代码级修复。 |
@@ -34,7 +36,7 @@
 | better-icons | 图标策略 | 图标语义、风格一致性、库选择、fallback 策略或图标密集工具栏。 | 整屏重设计或非图标 UI 工作。 |
 | motion-ai-kit | 动效系统 | 微交互、页面转场、onboarding animation、状态反馈或动效编排。 | 静态 UI 任务，或没有动效需求的性能敏感工作。 |
 | fixing-motion-performance | 动效性能修复 | 布局抖动、合成层安全动画、滚动联动性能、模糊成本或动画流畅度问题。 | 动效概念设计或静态 UI 工作。 |
-| gsap-* skills | GSAP 实现 | 已选择或明确要求 GSAP 时，处理 timeline、ScrollTrigger、React/framework 集成、plugins、utils 或性能调优。 | 通用动效策略、CSS-only 动画，或未使用 GSAP 的项目。 |
+| [gsap-* skills](https://github.com/greensock/gsap-skills) | GSAP 实现 | 已选择或明确要求 GSAP 时，处理 timeline、ScrollTrigger、React/framework 集成、plugins、utils 或性能调优。 | 通用动效策略、CSS-only 动画，或未使用 GSAP 的项目。 |
 | imagegen | 位图资产生成/编辑 | Bitmap visuals、moodboards、slide images、thumbnails、hero images、cutouts。 | SVG/icon systems、确定性 UI code、已有 vector assets。 |
 | Canva | 设计/deck 生产 | Canva-native presentations、social formats、brand kits。 | Code-native UI 或本地 editable files。 |
 | presentations | Deck 创建/编辑 | PPTX/slide artifacts 和 rendered verification。 | App UI 或非 slide docs。 |
@@ -49,7 +51,7 @@
 | GitHub/Linear | 工作追踪 | Issues、PRs、review threads、handoff。 | 仓库本地已有的代码事实。 |
 | Sentry/observability | 运行时失败 | 部署系统中的 logs、errors、traces。 | 本地 build 或 unit test failures。 |
 | CodeRabbit/Sonar/Chromatic | 外部质量门禁 | PR review、static quality/security、visual regression。 | 替代本地验证。 |
-| Upstream Watch | 外部参考漂移检查 | 每月、release 前，或 PM/设计/生态/上下文压缩路由依赖当前第三方行为时。 | 每个任务都运行，或把它当成自动复制上游内容的许可。 |
+| Upstream Watch | 外部参考漂移检查 | 每月、release 前，或 PM/设计/动效/生态/上下文压缩路由依赖当前第三方行为时。 | 每个任务都运行，或把它当成自动复制上游内容的许可。 |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM 方法参考来源 | 产品发现、策略框架、PRD、发布规划、pre-mortem、验收或测试场景结构。 | 复制模板，或把小实现任务套进重型 PM 流程。 |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | 设计品味参考来源 | 更严格的视觉判断、反通用 UI 评审或 frontend 设计质量校准。 | 复制 skill 文本，或把营销页审美强行套到运营 dashboard。 |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui 生态参考来源 | 当前 shadcn 资源、组件示例、库选项或生态发现。 | 把快速变化的目录复制进 omyKit，或把资源列表当成稳定 doctrine。 |

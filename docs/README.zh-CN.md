@@ -16,7 +16,7 @@
 | [运行时准备](workflow/runtime-readiness.zh-CN.md) | 在验证前准备本地中间件和服务。 |
 | [版本管理准备度](workflow/versioning.zh-CN.md) | 检查分支、发布、回滚、历史追踪和定制化边界。 |
 | [交付门禁](workflow/delivery-gates.zh-CN.md) | handoff 或 release 前按交付物类型运行检查。 |
-| [工具注册表](workflow/tool-registry.zh-CN.md) | 如何选择工具，并在不默认启用所有工具的前提下按需使用 PM、UI 设计、设计品味、生态和上下文压缩模式。 |
+| [工具注册表](workflow/tool-registry.zh-CN.md) | 如何选择工具，并在不默认启用所有工具的前提下按需使用 PM、UI 设计、动效、设计品味、生态和上下文压缩模式。 |
 | [上游参考监控](workflow/upstream-watch.zh-CN.md) | 如何检查被引用的外部来源变化，并只吸收可复用 workflow 经验。 |
 | [Workflow 进化](workflow/evolution.zh-CN.md) | 如何把反复出现的 workflow 经验提升进 omyKit，同时避免导入目标项目事实。 |
 

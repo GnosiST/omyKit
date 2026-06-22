@@ -4,6 +4,8 @@ Language: [English](tool-registry.md) | [简体中文](tool-registry.zh-CN.md)
 
 This registry describes how Codex should combine tools without loading or using all of them by default.
 
+Linked tool names identify external upstream reference sources that should be tracked in `upstream-sources.json`. Plain tool names identify local skills, platform capabilities, or tool categories without a single stable upstream repo. If a local skill is based on an official upstream skill, link the official source and track it as a reference signal.
+
 | Tool | Role | Use when | Avoid when |
 | --- | --- | --- | --- |
 | Codex | Control plane | Always. It routes, plans, edits, verifies, and summarizes. | Do not bypass with separate uncoordinated tools. |
@@ -17,7 +19,7 @@ This registry describes how Codex should combine tools without loading or using 
 | Cowart | Visual canvas | Product flows, sketches, screenshots, spatial thinking, design references. | Replacing specs or implementation files. |
 | Figma MCP | Design source | Existing design files, frames, components, tokens. | Guessing design without access. |
 | teach-impeccable | Durable design context capture | One-time capture of stable product/design context into AI configuration for future sessions. | One-off visual tweaks or project facts that are not stable design guidance. |
-| frontend-design | UI creation and implementation direction | Building or redesigning concrete frontend screens, components, landing pages, portfolios, or product UI. | Pure research, accessibility-only fixes, or backend/docs work. |
+| [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | UI creation and implementation direction | Building or redesigning concrete frontend screens, components, landing pages, portfolios, or product UI. | Pure research, accessibility-only fixes, or backend/docs work. |
 | ui-ux-pro-max | UX/design intelligence and pattern comparison | Evaluating flows, information architecture, interaction patterns, design alternatives, or design rationale. | Straight implementation with enough design direction already present. |
 | design-taste-frontend | Visual taste guardrail | High-stakes visual polish, anti-generic UI critique, hierarchy, composition, brand fit, or frontend taste calibration. | Routine dense operational screens where novelty or expressive styling is not useful. |
 | critique | UX critique | Visual hierarchy, information architecture, cognitive load, or user-experience review. | Implementation or code-level remediation. |
@@ -34,7 +36,7 @@ This registry describes how Codex should combine tools without loading or using 
 | better-icons | Icon strategy | Icon semantics, style consistency, library choice, fallback strategy, or icon-heavy toolbars. | Whole-screen redesign or non-icon UI work. |
 | motion-ai-kit | Motion system | Microinteractions, page transitions, onboarding animation, state feedback, or motion choreography. | Static UI tasks or performance-sensitive work without a motion need. |
 | fixing-motion-performance | Motion performance repair | Layout thrashing, compositor-safe animation, scroll-linked performance, blur cost, or animation smoothness issues. | Motion concepting or static UI work. |
-| gsap-* skills | GSAP implementation | GSAP timelines, ScrollTrigger, React/framework integration, plugins, utilities, or performance tuning when GSAP is already chosen or requested. | General motion strategy, CSS-only animation, or projects without GSAP. |
+| [gsap-* skills](https://github.com/greensock/gsap-skills) | GSAP implementation | GSAP timelines, ScrollTrigger, React/framework integration, plugins, utilities, or performance tuning when GSAP is already chosen or requested. | General motion strategy, CSS-only animation, or projects without GSAP. |
 | imagegen | Raster asset generation/editing | Bitmap visuals, moodboards, slide images, thumbnails, hero images, cutouts. | SVG/icon systems, deterministic UI code, existing vector assets. |
 | Canva | Design/deck production | Canva-native presentations, social formats, brand kits. | Code-native UI or local editable files. |
 | presentations | Deck creation/editing | PPTX/slide artifacts and rendered verification. | App UI or non-slide docs. |
@@ -49,7 +51,7 @@ This registry describes how Codex should combine tools without loading or using 
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
-| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/ecosystem/context-compression routing depends on current third-party behavior. | Every task or as automatic permission to copy upstream content. |
+| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/motion/ecosystem/context-compression routing depends on current third-party behavior. | Every task or as automatic permission to copy upstream content. |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method reference source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
