@@ -109,6 +109,7 @@
 - Git tags 标记已发布版本。使用 `vMAJOR.MINOR.PATCH`。
 - 全局安装会在 `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest` 写入 manifest。
 - 全局安装会在 `${CODEX_HOME:-$HOME/.codex}/omykit/backups/` 保留 backups。
+- release 和 handoff 安装应从最终干净提交运行，这样 manifest 会记录当前 commit 且 `git_dirty=false`。
 
 安装当前工作树：
 

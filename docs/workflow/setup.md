@@ -118,7 +118,7 @@ Install only what the project needs:
 - Chrome Extension or Playwright for browser checks.
 - Computer Use for local GUI workflows.
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion for non-code artifacts.
-- GitHub/Linear/Sentry/CodeRabbit/Sonar/Chromatic for delivery and quality workflows.
+- GitHub/Linear/Sentry/Sonar or project-configured quality tools for delivery and quality workflows.
 
 ## Versioning Readiness
 

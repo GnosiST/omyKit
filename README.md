@@ -174,7 +174,7 @@ After changing skill files:
 2. Run `node ./scripts/validate-docs.mjs`.
 3. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
 4. Run `./scripts/install-global.sh` to update the global Codex skill copy.
-5. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
+5. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`.
 6. Review `git diff --check`.
 7. Commit and push only after the local and global copies are verified.
 

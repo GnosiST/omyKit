@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added dirty-working-tree warnings and documentation for clean global install manifests during release or handoff.
 - Removed community PM/taste/catalog/meta-UX skill references and low-signal platform sample repos from default tool routing and upstream tracking to keep omyKit conservative, reliable, and non-fusionary.
 - Tightened source admission rules so stars are supporting evidence, not sufficient proof for default routing.
 - Added source marks and verified sources to every tool-registry row, covering installed local skills, platform tools, OpenAI bundled tools, and repo-local mechanisms.
@@ -13,6 +14,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 - Refreshed the `openai/codex` upstream baseline after reviewing a remote-exec sandboxing change; no omyKit workflow rule was promoted.
 - Refreshed the `getsentry/sentry` upstream baseline after reviewing an internal migration-helper change; no omyKit workflow rule was promoted.
 - Refreshed the `FFmpeg/FFmpeg` upstream baseline after reviewing a D3D11VA pixel-format support change; no omyKit workflow rule was promoted.
+- Refreshed the `remotion-dev/remotion` upstream baseline after reviewing an Examples-to-Elements documentation rename; no omyKit workflow rule was promoted.
 - Added workflow usability controls to the overview so routing, custom answers, language matching, same-lane skill selection, and external reference boundaries are visible in one place.
 - Linked admitted upstream sources for Superpowers, Spec-Kit, OpenSpec, CodeGraph, Context7, Figma Context MCP, frontend-design, and GSAP skills, and added a no-forks/no-mirrors source-integrity rule.
 - Linked `frontend-design` and `gsap-*` to their official skill sources, added them to upstream tracking, and clarified tool-registry source labeling rules.

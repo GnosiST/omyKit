@@ -118,7 +118,7 @@ $omykit 交付检查
 - Chrome Extension 或 Playwright 用于浏览器检查。
 - Computer Use 用于本地 GUI 工作流。
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion 用于非代码交付物。
-- GitHub/Linear/Sentry/CodeRabbit/Sonar/Chromatic 用于交付和质量工作流。
+- GitHub/Linear/Sentry/Sonar 或项目已配置的质量工具用于交付和质量工作流。
 
 ## 版本管理准备度
 

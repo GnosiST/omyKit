@@ -137,3 +137,6 @@ fi
 echo "Installed omyKit $version into $codex_home"
 echo "Manifest: $codex_home/omykit/install-manifest"
 echo "Backup: $backup_dir"
+if [ "$git_dirty" = "true" ]; then
+  echo "Warning: installed from a dirty working tree; rerun after committing if this install is for release or handoff." >&2
+fi
