@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+## 0.1.0 - 2026-06-22
+
+- Added upstream reference monitoring for third-party skill/source repositories, with local checks, monthly GitHub Actions, and evidence-based promotion rules.
 - Replaced hard-coded historical install examples with generic git refs so rollback docs do not depend on tags that may not exist yet.
 - Clarified repo-local skill vendoring paths so Codex examples use `.codex/skills/` instead of an unmapped neutral directory.
 - Added `codex-workflow-evolution` for evidence-based omyKit improvement, with project isolation and abstraction rules.
@@ -23,8 +26,5 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 - Added target-project version readiness guidance for release tags, changelog updates, history lookup, rollback, and project-local customization.
 - Added `codex-version-readiness` to assess target-project branch, release, rollback, history lookup, and customization readiness.
 - Hardened global installation with validation, versioned backups, and install manifests.
-- Added scripts to install a historical git ref and restore a previous global backup.
-
-## 0.1.0
-
 - Initial omyKit skill set for project routing, context budgeting, project init, retrofit, change workflow, runtime readiness, and delivery gates.
+- Added scripts to install a historical git ref and restore a previous global backup.

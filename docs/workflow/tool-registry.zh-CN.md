@@ -48,6 +48,7 @@
 | GitHub/Linear | 工作追踪 | Issues、PRs、review threads、handoff。 | 仓库本地已有的代码事实。 |
 | Sentry/observability | 运行时失败 | 部署系统中的 logs、errors、traces。 | 本地 build 或 unit test failures。 |
 | CodeRabbit/Sonar/Chromatic | 外部质量门禁 | PR review、static quality/security、visual regression。 | 替代本地验证。 |
+| Upstream Watch | 外部参考漂移检查 | 每月、release 前，或 PM/设计/生态路由依赖当前第三方 skill 行为时。 | 每个任务都运行，或把它当成自动复制上游内容的许可。 |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM 方法参考来源 | 产品发现、策略框架、PRD、发布规划、pre-mortem、验收或测试场景结构。 | 复制模板，或把小实现任务套进重型 PM 流程。 |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | 设计品味参考来源 | 更严格的视觉判断、反通用 UI 评审或 frontend 设计质量校准。 | 复制 skill 文本，或把营销页审美强行套到运营 dashboard。 |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui 生态参考来源 | 当前 shadcn 资源、组件示例、库选项或生态发现。 | 把快速变化的目录复制进 omyKit，或把资源列表当成稳定 doctrine。 |
@@ -61,6 +62,7 @@
 - Product/PM 方法工作：在当前 brief/change workflow 中加入 discovery、PRD、launch、pre-mortem、acceptance 或 test-scenario 结构。
 - 视觉前端工作：加入层级、品牌适配、布局韧性、响应式、基础可访问性和视觉 QA 检查。
 - shadcn/ui 生态工作：只有任务需要当前示例、组件选项或生态研究时，才查询当前项目依赖或当前来源。
+- 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`。
 
 只有 specialist skill 已安装且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
 

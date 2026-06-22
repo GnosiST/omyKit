@@ -48,6 +48,7 @@ This registry describes how Codex should combine tools without loading or using 
 | GitHub/Linear | Work tracking | Issues, PRs, review threads, handoff. | Local code facts available in repository. |
 | Sentry/observability | Runtime failures | Logs, errors, traces from deployed systems. | Local build or unit test failures. |
 | CodeRabbit/Sonar/Chromatic | External quality gates | PR review, static quality/security, visual regression. | Replacing local verification. |
+| Upstream Watch | External reference drift check | Monthly, before releases, or when PM/design/ecosystem routing depends on current third-party skill behavior. | Every task or as automatic permission to copy upstream content. |
 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) | PM method reference source | Product discovery, strategy framing, PRD, launch planning, pre-mortem, acceptance, or test-scenario structure. | Copying templates or adding heavy PM ceremony to small implementation tasks. |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | Design taste reference source | Stricter visual judgment, anti-generic UI critique, or frontend design quality calibration. | Copying skill text or forcing marketing-page taste onto operational dashboards. |
 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | shadcn/ui ecosystem reference source | Current shadcn resources, component examples, library options, or ecosystem discovery. | Copying fast-changing catalogs into omyKit or treating a resource list as stable doctrine. |
@@ -61,6 +62,7 @@ Apply them only when the active omyKit route sees the matching signal:
 - Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active brief/change workflow.
 - Visual frontend work: add checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA.
 - shadcn/ui ecosystem work: consult current project dependencies or current sources only when examples, component options, or ecosystem research are needed.
+- Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson.
 
 Use an installed specialist skill directly inside the current route only when it is available and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
 

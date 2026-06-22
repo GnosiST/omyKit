@@ -24,6 +24,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
 - **Reference-aware selection:** use PM, design, and ecosystem-discovery signals only when they improve the active workflow, without copying third-party content.
 - **Evidence-based evolution:** promote only reusable workflow lessons into omyKit, while keeping target-project facts isolated.
+- **Upstream reference watch:** periodically check referenced external skill repositories for changes, then review useful workflow lessons before adopting anything.
 
 ## Workflow At A Glance
 
@@ -76,6 +77,7 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
+| `upstream-sources.json` | Tracked external reference baselines for PM, shadcn/ui, and design-taste sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
 ## Skill Layer
@@ -121,6 +123,7 @@ Operational rules:
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [Tool registry](docs/workflow/tool-registry.md)
+- [Upstream reference watch](docs/workflow/upstream-watch.md)
 - [Workflow evolution](docs/workflow/evolution.md)
 - [Delivery gates](docs/workflow/delivery-gates.md)
 
@@ -141,6 +144,7 @@ Recommended pre-handoff checks:
 ```bash
 ./scripts/validate-skills.sh
 node ./scripts/validate-docs.mjs
+node ./scripts/check-upstream-refs.mjs
 git diff --check
 ```
 
@@ -165,10 +169,11 @@ After changing skill files:
 
 1. Run `./scripts/validate-skills.sh`.
 2. Run `node ./scripts/validate-docs.mjs`.
-3. Run `./scripts/install-global.sh` to update the global Codex skill copy.
-4. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
-5. Review `git diff --check`.
-6. Commit and push only after the local and global copies are verified.
+3. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
+4. Run `./scripts/install-global.sh` to update the global Codex skill copy.
+5. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
+6. Review `git diff --check`.
+7. Commit and push only after the local and global copies are verified.
 
 ## Copyright And Third-Party References
 

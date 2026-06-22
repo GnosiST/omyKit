@@ -17,6 +17,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Versioning readiness](workflow/versioning.md) | How to assess branch, release, rollback, history, and customization readiness. |
 | [Delivery gates](workflow/delivery-gates.md) | Artifact-specific checks before handoff or release. |
 | [Tool registry](workflow/tool-registry.md) | How Codex selects tools and optional PM, UI design, design-taste, and ecosystem patterns without using all tools by default. |
+| [Upstream reference watch](workflow/upstream-watch.md) | How omyKit checks referenced external skill repositories for changes before adopting workflow lessons. |
 | [Workflow evolution](workflow/evolution.md) | How omyKit promotes repeated workflow lessons without importing target-project facts. |
 
 ## Documentation Policy

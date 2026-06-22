@@ -1,0 +1,30 @@
+{
+  "review_policy": {
+    "cadence": "monthly and before omyKit releases",
+    "owner": "codex-workflow-evolution",
+    "promotion_rule": "Review changed upstream references for reusable workflow lessons; do not copy third-party bodies, templates, resource lists, images, badges, or branding."
+  },
+  "sources": [
+    {
+      "id": "pm-skills",
+      "repo": "phuryn/pm-skills",
+      "url": "https://github.com/phuryn/pm-skills.git",
+      "baseline": "d384f0c9eb81fe74656a4f6da168587836939edb",
+      "role": "PM method reference for discovery, PRD, launch, pre-mortem, acceptance, and test-scenario structure"
+    },
+    {
+      "id": "awesome-shadcn-ui",
+      "repo": "birobirobiro/awesome-shadcn-ui",
+      "url": "https://github.com/birobirobiro/awesome-shadcn-ui.git",
+      "baseline": "f5665e2c7fe77e92661dcff8993147d4b75ead20",
+      "role": "shadcn/ui ecosystem reference for examples, component options, and library discovery"
+    },
+    {
+      "id": "taste-skill",
+      "repo": "Leonxlnx/taste-skill",
+      "url": "https://github.com/Leonxlnx/taste-skill.git",
+      "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
+      "role": "Design taste reference for stricter visual judgment and anti-generic frontend quality calibration"
+    }
+  ]
+}

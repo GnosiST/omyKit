@@ -22,6 +22,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 - validation failure 或 recurring broken links
 - delivery gate 遗漏
 - 反复手动执行、应该脚本化的命令
+- 上游参考发生变化，并可能包含可复用 workflow 经验
 
 ## 分类
 
@@ -32,6 +33,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 | 跨项目 workflow rule | omyKit skill 或 docs |
 | 可重复机械检查 | `scripts/` 和 CI |
 | 快速变化生态细节 | 当前来源链接或 registry reference |
+| 上游参考变化 | 用 `upstream-watch` 审查；只提升可复用 workflow 经验 |
 
 ## 抽象测试
 
@@ -52,6 +54,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 | 条件细节 | 单层 `references/` 文件 |
 | 可重复检查 | `scripts/` 和 CI |
 | 用户可见 kit 变更 | `CHANGELOG.md` |
+| 外部参考漂移 | `upstream-sources.json`、[upstream-watch.zh-CN.md](upstream-watch.zh-CN.md) 和最小受影响 owner surface |
 
 ## 项目隔离
 
@@ -64,6 +67,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 ```bash
 ./scripts/validate-skills.sh
 node ./scripts/validate-docs.mjs
+node ./scripts/check-upstream-refs.mjs
 git diff --check
 ./scripts/install-global.sh
 ```

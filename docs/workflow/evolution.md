@@ -22,6 +22,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 - validation failure or recurring broken links
 - delivery gate miss
 - repeated manual command that should become a script
+- upstream reference changed and may contain reusable workflow lessons
 
 ## Classification
 
@@ -32,6 +33,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 | Cross-project workflow rule | omyKit skill or docs |
 | Repeatable mechanical check | `scripts/` and CI |
 | Fast-changing ecosystem detail | Current source link or registry reference |
+| Changed upstream reference | Review with `upstream-watch`; promote only reusable workflow lessons |
 
 ## Abstraction Test
 
@@ -52,6 +54,7 @@ Before changing omyKit, confirm:
 | Conditional detail | one-level `references/` file |
 | Repeatable check | `scripts/` plus CI |
 | User-visible kit change | `CHANGELOG.md` |
+| External reference drift | `upstream-sources.json`, [upstream-watch.md](upstream-watch.md), and the smallest affected owner surface |
 
 ## Project Isolation
 
@@ -64,6 +67,7 @@ After changing skills or workflow docs:
 ```bash
 ./scripts/validate-skills.sh
 node ./scripts/validate-docs.mjs
+node ./scripts/check-upstream-refs.mjs
 git diff --check
 ./scripts/install-global.sh
 ```

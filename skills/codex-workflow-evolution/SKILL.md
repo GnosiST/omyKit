@@ -1,6 +1,6 @@
 ---
 name: codex-workflow-evolution
-description: Evolve omyKit workflow rules from evidence without copying project-specific habits into the generic kit. Use when repeated user feedback, missed routing, stale docs, tool-selection ambiguity, verification gaps, or delivery retrospectives suggest omyKit skills, docs, validators, or tool registry rules should improve.
+description: Evolve omyKit workflow rules from evidence without copying project-specific habits into the generic kit. Use when repeated user feedback, missed routing, stale docs, tool-selection ambiguity, upstream reference changes, verification gaps, or delivery retrospectives suggest omyKit skills, docs, validators, or tool registry rules should improve.
 ---
 
 # Codex Workflow Evolution
@@ -13,12 +13,12 @@ Match user-facing language to the latest user prompt. Use that language for visi
 
 ## Control
 
-Use this at learning boundaries: after delivery, retrospectives, repeated friction, explicit user feedback, stale workflow docs, or validation gaps. Do not run it for every task or use it to import target-project facts into omyKit.
+Use this at learning boundaries: after delivery, retrospectives, repeated friction, explicit user feedback, stale workflow docs, upstream reference changes, or validation gaps. Do not run it for every task or use it to import target-project facts into omyKit.
 
 ## Workflow
 
 1. Apply `codex-context-budget`; start in `scan`.
-2. Gather evidence: user feedback, repeated failure, missed gate, stale docs, validation output, or a concrete workflow gap.
+2. Gather evidence: user feedback, repeated failure, missed gate, stale docs, upstream watch output, validation output, or a concrete workflow gap.
 3. Classify the lesson:
    - project-local -> target project `AGENTS.md`, docs, or repo-local skills
    - generic omyKit -> omyKit skills, docs, validators, or tool registry
@@ -33,6 +33,8 @@ Use this at learning boundaries: after delivery, retrospectives, repeated fricti
    - `CHANGELOG.md` for user-visible kit changes
 6. Verify with `validate-skills`, docs link checks, diff hygiene, and targeted forward tests when the rule is substantial.
 7. Install global omyKit after skill or prompt changes.
+
+For referenced external skill repositories, read [upstream-watch.md](../../docs/workflow/upstream-watch.md) and use `node ./scripts/check-upstream-refs.mjs`. Treat upstream changes as review signals, not automatic doctrine.
 
 ## Guardrails
 
