@@ -1,49 +1,36 @@
 # omyKit
 
-omyKit is a lightweight workflow kit for Codex. It provides a small set of global skills and a prompt alias for routing project work by task type, risk, context needs, runtime requirements, and delivery evidence.
+[![Version](https://img.shields.io/badge/version-0.1.0-111827)](VERSION)
+[![License: MIT](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
+[![Codex Skills](https://img.shields.io/badge/Codex-skills-2563eb)](skills)
+[![Docs](https://img.shields.io/badge/docs-English%20%7C%20Chinese-7c3aed)](docs/README.md)
 
-The kit is intentionally procedural rather than framework-heavy. It helps Codex decide when to initialize project rules, retrofit an existing repository, execute a scoped change, prepare local runtime dependencies, or run a delivery gate. Once a task is routed, normal execution continues without re-running the workflow for every file read, edit, command, or intermediate check.
+**A lightweight Codex workflow kit for context-aware project routing, low-waste execution, verification gates, runtime readiness, and rollback-aware delivery.**
 
-## What It Includes
+omyKit packages a small, procedural operating layer for Codex. It helps agents decide when to initialize project rules, retrofit an existing repository, execute a scoped change, prepare local runtime dependencies, check version readiness, and run delivery gates before handoff.
 
-| Path | Purpose |
-| --- | --- |
-| `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
-| `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
-| `docs/workflow/` | Human-readable workflow notes for setup, routing, context budgeting, runtime readiness, versioning, external collaboration, and delivery gates. |
-| `scripts/` | Local validation, installation, install-from-ref, and rollback helpers. |
-| `AGENTS.md` | Maintenance rules for agents working in this repository. |
+The kit is designed to stay out of the way after routing. Once a task is classified, normal execution continues without re-running the workflow for every file read, edit, command, or intermediate check.
 
-## Skills
+Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 
-| Skill | Role |
-| --- | --- |
-| `omykit` | Entry point for initialization, retrofit, change work, and delivery checks. |
-| `codex-project-router` | Classifies entry type, project type, workflow mode, and tool path. |
-| `codex-context-budget` | Keeps context loading progressive: `scan -> focus -> deep`. |
-| `codex-project-init` | Creates the minimum Codex workflow layer for a new project. |
-| `codex-project-retrofit` | Adds workflow structure to an existing project without disrupting it. |
-| `codex-change-workflow` | Runs scoped feature, fix, refactor, or artifact work through focused verification. |
-| `codex-runtime-readiness` | Prepares local services such as databases, caches, object storage, queues, browsers, or emulators when verification needs them. |
-| `codex-version-readiness` | Checks target-project branch, release, rollback, history lookup, and customization readiness. |
-| `codex-delivery-gate` | Checks artifact-specific evidence before handoff, export, commit, PR, or release. |
+## Why omyKit
 
-## Install
+- **Clear routing:** classify work by entry type, project type, risk, and artifact.
+- **Low context waste:** load context progressively with `scan -> focus -> deep`.
+- **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
+- **Runtime readiness:** prepare middleware only when tests or app checks need it.
+- **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
+- **Original workflow docs:** collaborate with external skills without copying third-party content.
+
+## Quick Start
+
+Install the global Codex skills and prompt:
 
 ```bash
 ./scripts/install-global.sh
 ```
 
-The installer validates all skills before replacing the global copies. It then installs:
-
-- `skills/*` into `${CODEX_HOME:-$HOME/.codex}/skills/`
-- `prompts/omykit.md` into `${CODEX_HOME:-$HOME/.codex}/prompts/`
-
-Open a fresh Codex thread after installation so the skill list refreshes.
-
-## Usage
-
-Recommended direct skill prompts:
+Open a fresh Codex thread so the skill list refreshes, then use one of:
 
 ```text
 $omykit 初始化项目
@@ -59,6 +46,30 @@ If your Codex client supports prompt files:
 ```
 
 Do not assume `/omykit` is available unless your local Codex client explicitly maps custom prompt files to that command form.
+
+## What It Includes
+
+| Path | Purpose |
+| --- | --- |
+| `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
+| `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
+| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, external collaboration, and delivery gates. |
+| `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
+| `AGENTS.md` | Maintenance rules for agents working in this repository. |
+
+## Skill Layer
+
+| Skill | Role |
+| --- | --- |
+| `omykit` | Entry point for initialization, retrofit, change work, and delivery checks. |
+| `codex-project-router` | Classifies entry type, project type, workflow mode, and tool path. |
+| `codex-context-budget` | Keeps context loading progressive: `scan -> focus -> deep`. |
+| `codex-project-init` | Creates the minimum Codex workflow layer for a new project. |
+| `codex-project-retrofit` | Adds workflow structure to an existing project without disrupting it. |
+| `codex-change-workflow` | Runs scoped feature, fix, refactor, or artifact work through focused verification. |
+| `codex-runtime-readiness` | Prepares local services such as databases, caches, object storage, queues, browsers, or emulators when verification needs them. |
+| `codex-version-readiness` | Checks target-project branch, release, rollback, history lookup, and customization readiness. |
+| `codex-delivery-gate` | Checks artifact-specific evidence before handoff, export, commit, PR, or release. |
 
 ## Workflow Model
 
@@ -76,7 +87,17 @@ Operational rules:
 - Treat generated project rules as local project assets, not global defaults.
 - Ask for user input only when a safe assumption is not possible; when asking, allow custom answers instead of limiting the user to fixed options.
 
-## Validate
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [中文文档索引](docs/README.zh-CN.md)
+- [Setup guide](docs/workflow/setup.md)
+- [Workflow overview](docs/workflow/codex-workflow-kit.md)
+- [Versioning readiness](docs/workflow/versioning.md)
+- [External skill collaboration](docs/workflow/external-collaboration.md)
+- [Delivery gates](docs/workflow/delivery-gates.md)
+
+## Validation
 
 ```bash
 ./scripts/validate-skills.sh
@@ -100,6 +121,14 @@ git diff --check
 omyKit includes `codex-version-readiness` for target projects. Use it when initializing or retrofitting a repository, preparing a release, handling migrations, changing dependencies, or making any change where rollback or historical lookup matters.
 
 It checks whether the target project has an appropriate version source, changelog or release notes, git branch state, tags/releases, rollback plan, and customization path. It reports gaps instead of forcing heavyweight release machinery onto small or temporary work.
+
+For this repository itself:
+
+```bash
+./scripts/install-global.sh
+./scripts/install-ref.sh v0.1.0
+./scripts/rollback-global.sh latest
+```
 
 ## Maintenance
 

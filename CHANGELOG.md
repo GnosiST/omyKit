@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Polished GitHub-facing README content and added Chinese documentation entry points.
 - Added workflow throttling rules so omyKit routes work at task boundaries and phase changes instead of every action.
 - Clarified that routing questions may offer suggestions while still accepting custom answers.
 - Added external collaboration guidance for PM, design, and ecosystem-reference skills without copying third-party content.
