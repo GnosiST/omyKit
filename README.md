@@ -24,13 +24,15 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 
 ## Quick Start
 
-Install the global Codex skills and prompt:
+Install from GitHub:
 
 ```bash
+git clone https://github.com/GnosiST/omyKit.git
+cd omyKit
 ./scripts/install-global.sh
 ```
 
-Open a fresh Codex thread so the skill list refreshes, then use one of:
+Open a fresh Codex thread so the skill list refreshes, then type one of these in Codex chat:
 
 ```text
 $omykit 初始化项目
@@ -39,7 +41,9 @@ $omykit 开始一个需求
 $omykit 交付检查
 ```
 
-If your Codex client supports prompt files:
+The leading `$` is part of the skill trigger, not a shell prompt.
+
+If your Codex client supports prompt files, this is also a Codex chat input:
 
 ```text
 /prompts:omykit 初始化项目

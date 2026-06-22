@@ -14,6 +14,8 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 
 ## Recommended Prompts
 
+These are Codex chat prompts, not shell commands.
+
 ```text
 $omykit 初始化项目
 $omykit 初始化旧项目

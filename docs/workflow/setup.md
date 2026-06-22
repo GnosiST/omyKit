@@ -4,17 +4,27 @@ Use this guide to install the kit into any project.
 
 ## Global Install
 
-From this repository:
+From GitHub:
+
+```bash
+git clone https://github.com/GnosiST/omyKit.git
+cd omyKit
+./scripts/install-global.sh
+```
+
+From an existing local checkout:
 
 ```bash
 ./scripts/install-global.sh
 ```
 
-Then open a fresh Codex thread and use:
+Then open a fresh Codex thread and type this in Codex chat:
 
 ```text
 $omykit 初始化项目
 ```
+
+The leading `$` is part of the skill trigger, not a shell prompt.
 
 The global install is the normal path. It keeps the reusable workflow outside individual projects and avoids copying generic skill files into every repository.
 
@@ -49,8 +59,8 @@ Use this only when a project needs to vendor the workflow for a team or CI envir
 
 ```bash
 mkdir -p .agents/skills docs
-cp -R /path/to/omykit/skills/* .agents/skills/
-cp -R /path/to/omykit/docs/workflow docs/workflow
+cp -R /path/to/omyKit/skills/* .agents/skills/
+cp -R /path/to/omyKit/docs/workflow docs/workflow
 ```
 
 Then ask Codex:
