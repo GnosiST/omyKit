@@ -1,6 +1,6 @@
 ---
 name: omykit
-description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 收尾, 整理文档, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 交接包, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, clean up knowledge, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
+description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 收尾, 整理文档, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 升级旧工作流, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, clean up knowledge, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
 ---
 
 # omyKit
@@ -33,14 +33,12 @@ For controller and board requests, use the first available script:
 Map user intent to commands:
 
 - create or execute tracked workflow -> `init --template <template-id> --lang <user-language>` when no workflow exists; default to `change.standard`, use `bugfix.standard` for bug-fix loops, and `frontend-ui.strict` for design-sensitive UI work
-- continue execution -> `resume`, then start the next ready node and do the node's real work in the current Codex turn
+- continue execution -> `resume`, then `orchestrate --json --lang <user-language>`; follow the orchestration plan internally instead of asking the user to choose subagent, thread, context-pack, or assignment commands
 - skeleton-only workflow -> run only `init` when the user explicitly says `只创建`, `只初始化`, `skeleton only`, or `do not execute`
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
 - progress/status -> `status`
-- next work -> `next`
-- subagent/thread dispatch planning -> `dispatch-plan --surface auto --lang <user-language>`; use `--json` when you need a machine-readable plan for spawning agents or threads
-- generate a bounded handoff/context packet -> `context-pack <node-id> --lang <user-language>`
-- record a worker/thread assignment -> `assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status running --context-pack <path> --handoff <path>`
+- next work -> `orchestrate --lang <user-language>` or `next`; both should show the automatic orchestration decision, not only raw ready nodes
+- upgrade historical workflow artifacts -> `upgrade --all --lang <user-language>` when old `.omykit/workflows/*` should use the latest controller metadata, command surface, node cards, and board projection rules
 - list or switch tracked workflows -> `workflows` or `workflows use <workflow-id>`
 - record long-running command metadata -> `record-run <node-id> --id <run-id> --command <cmd> --status <status> --log <path> --resume <cmd>`
 - continue after interruption -> `resume`
@@ -54,14 +52,15 @@ If there are multiple workflows and no active workflow is selected, run `workflo
 
 For long tasks, do not stop after creating the workflow. Creation only establishes state. Unless the user asked for a skeleton only, continue the loop:
 
-1. `resume` or `next` to identify running, failed, blocked, and ready nodes.
-2. `start <node-id>`.
+1. `resume` and `orchestrate --json` to identify running, failed, blocked, ready, parallelizable, and externally claimed nodes.
+2. Let the orchestration plan decide whether the next node runs in the main thread, same-turn subagent, background thread, or worktree. Do not ask the user to pick this unless no safe automatic route exists.
 3. Execute that node's real work.
-4. For delegated or resumed work, generate `context-pack <node-id>` and pass only that bounded packet plus exact files that the node needs.
-5. Record long-running shell/server/test watcher metadata with `record-run` when interruption recovery depends on logs, pid, or resume commands.
-6. Write a structured handoff with actual work items, evidence, `downstream_context`, skills/model/usage when available, and `evolution_candidates` for delivery nodes.
-7. `complete`, `reject`, or `block` the node.
-8. Repeat until delivery passes, a real blocker requires the user, or the user explicitly asks to stop.
+4. For delegated or resumed work, internally generate `context-pack <node-id>` and pass only that bounded packet plus exact files that the node needs.
+5. Internally record worker/thread assignment with `assign` only after a worker or thread actually exists.
+6. Record long-running shell/server/test watcher metadata with `record-run` when interruption recovery depends on logs, pid, or resume commands.
+7. Write a structured handoff with actual work items, evidence, `downstream_context`, skills/model/usage when available, and `evolution_candidates` for delivery nodes.
+8. `complete`, `reject`, or `block` the node.
+9. Repeat until delivery passes, a real blocker requires the user, or the user explicitly asks to stop.
 
 When reporting a newly created workflow, always tell the user whether Codex will keep executing now, which node is next, and the exact continue command for manual fallback.
 
@@ -74,16 +73,15 @@ Include these concise groups:
 - start: `$omykit 初始化项目`, `$omykit 改造旧项目`, `$omykit 开始一个需求`
 - execute long work: `$omykit 开始执行：<任务>`, `$omykit 创建并执行工作流：<任务>`, `$omykit 继续工作流`, `$omykit 推进下一步`
 - skeleton only: `$omykit 只创建工作流：<任务>`, `$omykit 只初始化 workflow：<任务>`
-- tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`
-- coordination: `$omykit 派发计划`, `$omykit 记录分工`, `$omykit 交接包`, `$omykit 查看工作流列表`, `$omykit 切换工作流：<id>`
-- subagents: `$omykit 子智能体执行计划`, `$omykit 并行执行计划`
+- tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`, `$omykit 查看工作流列表`, `$omykit 切换工作流：<id>`
 - task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
-- maintenance: `$omykit 更新自己`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
+- maintenance: `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
+- diagnostics, only when asked: `$omykit 查看编排计划`, `$omykit 导出交接包`, `$omykit 查看 Agent 通讯录`
 
-Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `context-pack <node-id>`, `templates list`, `status`, or `board --open`.
+Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `orchestrate`, `upgrade --all`, `templates list`, `status`, or `board --open`. Do not present `dispatch-plan`, `context-pack`, or `assign` as normal user choices; they are internal primitives unless the user is debugging the controller.
 
 ## Start
 
@@ -115,7 +113,7 @@ If the entry is unclear, infer when safe and state the assumption. Ask only when
 For controller entries, distinguish user intent:
 
 - `execute`: phrases like `开始执行`, `创建并执行`, `继续`, `推进`, `跑完整个工作流`, or a task brief without `只创建` mean Codex should advance nodes after controller setup.
-- `inspect`: phrases like `状态`, `进度`, `下一步`, `看板`, `scorecard`, `校验`, or `模板` mean run the matching direct operation and report.
+- `inspect`: phrases like `状态`, `进度`, `下一步`, `看板`, `scorecard`, `校验`, or `模板` mean run the matching direct operation and report; for `下一步`, prefer `orchestrate` so the user sees the automatic decision.
 - `skeleton_only`: phrases like `只创建`, `只初始化`, `先建骨架`, or `不要执行` mean create state only and return the next command.
 
 ## Project Type
@@ -157,9 +155,9 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 
 ## Agent And Cost Signals
 
-Use subagents only when work can be split into independent, bounded scopes. For tracked long work, keep the main Codex thread as an orchestrator-observer: it reads workflow state, creates or reads a dispatch plan, generates context packs, starts/blocks/completes nodes, integrates handoffs, audits scorecards, and escalates only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main context. Spawn subagents with bounded node context instead.
+Use subagents only when work can be split into independent, bounded scopes. For tracked long work, keep the main Codex thread as an orchestrator-observer: it reads workflow state, runs `orchestrate` to decide execution shape, internally uses dispatch/context-pack/assignment primitives when needed, starts/blocks/completes nodes, integrates handoffs, audits scorecards, and escalates only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main context. Spawn subagents with bounded node context instead.
 
-When the Codex app exposes thread-management tools and the user explicitly asks for separate/background threads, prefer thread or worktree execution for long-running, write-heavy, independently reviewable work. Keep same-turn subagents for short exploration, review, test analysis, and other read-heavy tasks. Independent threads must still receive the node `context-pack`, have a disjoint or clearly bounded write scope, and write a structured handoff back to the active workflow. Record the runtime assignment with `assign` so `assignments.jsonl`, the board Agent Roster, and scorecard checks can audit the thread/worktree facts. Do not imply the controller itself created a Codex thread unless the current runtime tool actually did it.
+When the orchestration plan recommends separate/background threads and the Codex app exposes thread-management tools, prefer thread or worktree execution for long-running, write-heavy, independently reviewable work. Keep same-turn subagents for short exploration, review, test analysis, and other read-heavy tasks. Independent threads must still receive the node `context-pack`, have a disjoint or clearly bounded write scope, and write a structured handoff back to the active workflow. Record the runtime assignment with `assign` so `assignments.jsonl`, the board Agent Roster, and scorecard checks can audit the thread/worktree facts. Do not imply the controller itself created a Codex thread unless the current runtime tool actually did it.
 
 Subagents must hand off through the controller, not through informal chat alone. Before delegation or recovery, generate a context pack for the node. The worker receives that pack, exact files only when needed, and a handoff contract. The completed handoff must include `downstream_context` when later nodes need a compact, accurate carry-forward summary.
 

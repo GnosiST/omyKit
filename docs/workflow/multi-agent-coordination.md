@@ -60,10 +60,10 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | Requirement | Current implementation | Assessment |
 | --- | --- | --- |
 | Do not run workflow on every step | `omykit` routes only at intake, scope/risk change, or delivery. | Mostly satisfied. |
-| Long tasks continue after workflow creation | Skills and docs require the `start -> work -> handoff -> complete/reject/block -> resume` loop. | Rules exist; real execution still depends on the active Codex turn. |
+| Long tasks continue after workflow creation | Skills, docs, and controller status output require the `resume/orchestrate -> start or dispatch -> work -> handoff -> complete/reject/block` loop. | Rules and orchestration artifact exist; real execution still depends on the active Codex turn. |
 | Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, with topology, agent, model, runtime, safety, and scorecard layers. | Direction is right; template set is still small. |
 | Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
-| Subagent parallelism | `dispatch-plan` emits ready nodes, worker profile, model recommendation, and context pack. | Planning and recording exist; automatic dispatch is not owned by the controller. |
+| Subagent parallelism | `orchestrate` emits the automatic execution mode, ready actions, worker profile, model recommendation, and context pack policy. | Controller decides the plan; Codex runtime performs any actual worker spawn. |
 | Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, handoff coverage scorecard, and write-scope scorecard exist. | Recording and audit exist; the controller still does not create threads/worktrees by itself. |
 | Low-context continuation | `active-workflow`, `context-pack`, `downstream_context`, and `commands/commands.jsonl`. | Solid base; missing thread-aware resume packets. |
 | Board | Shows tasks, evidence, skills, models, token/context, timing, commands, handoff packets, and improvement actions. | Upgraded into a task tracker, but not a realtime scheduler. |
@@ -125,11 +125,11 @@ Runtime `assignments.jsonl` record shape:
 
 ## Implemented First Slice
 
-1. `dispatch-plan --surface auto|subagent|thread|worktree|main` emits a recommended execution surface for ready nodes.
-2. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, and handoff path.
+1. `orchestrate` emits the recommended execution mode and writes `orchestration-plan.json`; `dispatch-plan --surface auto|subagent|thread|worktree|main` remains an internal primitive.
+2. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, and handoff path after a real worker exists.
 3. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
 4. Scorecards check assignment handoff coverage and active write-scope conflicts.
-5. Compact recovery now includes `assignments.jsonl` before context packs, so the orchestrator can recover the roster first.
+5. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
 
 ## Remaining Optimization Roadmap
 
@@ -141,7 +141,7 @@ Runtime `assignments.jsonl` record shape:
 
 ## What Not To Do
 
-- Do not let the controller create unlimited background threads automatically; thread creation must be explicit user intent or an explicit `$omykit` command.
+- Do not let the controller create unlimited background threads automatically; `orchestrate` may recommend a worker surface, but thread creation remains a Codex runtime action with bounded scope.
 - Do not let multiple threads share unconstrained write scope.
 - Do not put runtime thread ids or worktree paths into generic templates.
 - Do not make Headroom-style compression proxies default dependencies; keep recoverable compression optional.

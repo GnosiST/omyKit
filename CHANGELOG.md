@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added intent-first tracked workflow orchestration: `orchestrate` now produces `orchestration-plan.json`, `next/resume/init` point to automatic orchestration, user-facing help no longer promotes manual subagent/context-pack/assignment selection, and `upgrade` can update historical workflow artifacts without fabricating missing evidence.
 - Added same-lane skill selection tracking: handoffs can record `skill_decisions` with rationale, alternatives, fallback policy, user feedback, and outcome; boards and scorecards now surface missing selection records and skill-based rework needs.
 - Added a global-install no-symlink invariant after reviewing Spec-Kit's Codex dev skill file-install update; omyKit install now rejects symlinked installed outputs.
 - Refreshed the Spec-Kit upstream baseline after reviewing Codex dev skill file-install behavior.

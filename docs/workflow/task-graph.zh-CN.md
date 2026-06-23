@@ -79,14 +79,14 @@ pending -> ready -> running -> passed
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
 - handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据、skill 使用记录，以及可用时的 token 消耗、上下文用量和时间戳。
-- `dispatch-plan` 是两者之间的桥：它读取就绪节点和模型策略，返回有边界的 subagent/thread/worktree 派发计划；显式 `--surface auto` 时会为就绪节点给出执行面建议。
+- `orchestrate` 是面向用户的桥：它读取就绪节点和模型策略，写入 `orchestration-plan.json`，并返回 Codex 应在主线程、同 turn 子智能体、后台线程还是 worktree 中执行。`dispatch-plan` 保留为诊断和 controller 内部使用的低层原子命令。
 - `downstream_context` 是节点交给下游的压缩事实包：保留目标、输入、证据、风险和上下文预算，避免下游重新加载整段对话。
-- `context-pack` 是 controller 生成给单个节点或子智能体的最小可执行上下文，来源于 state、graph、节点卡、依赖 handoff、`downstream_context`、最近事件和后台命令记录。
+- `context-pack` 是 controller 生成给单个节点或 worker 的最小可执行上下文，来源于 state、graph、节点卡、依赖 handoff、`downstream_context`、最近事件和后台命令记录。通常由 Codex 在 `orchestrate` 建议派发或需要 compact-safe 续接时内部生成。
 - `commands/commands.jsonl` 只记录长命令运行事实，例如 dev server、测试 watcher、长构建和截图服务；它不代表节点通过，也不替代 handoff。
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
 
-用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。如果 Codex 子智能体工具暴露 `model` 参数，主控可以把派发计划里的 override 传给子智能体；否则子智能体继承主模型，并在实际模型元数据被隐藏时记录 `model_unavailable_reason`。
+用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。如果 Codex worker 工具暴露 `model` 参数，主控可以把编排计划里的 override 传给 worker；否则 worker 继承主模型，并在实际模型元数据被隐藏时记录 `model_unavailable_reason`。
 
 ## 重试限制
 

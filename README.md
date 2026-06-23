@@ -24,7 +24,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node and show the actual recorded model when the runtime exposes it.
-- **Subagent dispatch planning:** keep the main Codex thread as an orchestrator-observer, dispatch bounded workers from ready nodes, and use model overrides only when the subagent runtime exposes them.
+- **Automatic orchestration:** keep the main Codex thread as an orchestrator-observer while the controller recommends whether ready work should run in the main thread, a subagent, a background thread, or a worktree.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -83,10 +83,10 @@ $omykit 开始一个需求
 $omykit 开始执行：<long task>
 $omykit 只创建工作流：<task>
 $omykit 继续工作流
-$omykit 派发计划
 $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 查看工作流状态
+$omykit 升级旧工作流
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -109,24 +109,22 @@ For tracked controller workflows, prefer the Codex chat form:
 $omykit 开始执行：测试 MVP1 角色权限
 $omykit 继续执行
 $omykit 查看工作流列表
-$omykit 交接包：03-implement
-$omykit 记录分工
+$omykit 下一步
 $omykit 生成看板并打开
 ```
 
-`开始执行` means Codex should create or resume the workflow, start the ready node, do the node work, write a handoff, and continue until delivery passes or a real blocker needs the user. Use `只创建工作流` only when you want the workflow skeleton and manual continuation command. Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
+`开始执行` means Codex should create or resume the workflow, run the automatic orchestration plan, start or dispatch ready work internally, write handoffs, and continue until delivery passes or a real blocker needs the user. Use `只创建工作流` only when you want the workflow skeleton and manual continuation command. Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
 
 ```bash
 node scripts/omykit-workflow.mjs workflows
 node scripts/omykit-workflow.mjs workflows use <workflow-id>
-node scripts/omykit-workflow.mjs context-pack 03-implement
-node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json
-node scripts/omykit-workflow.mjs assign 03-implement --agent coder-thread-01 --surface worktree --status running --scope "src/**,tests/**" --context-pack context-packs/03-implement.json --handoff handoffs/03-implement.json
-node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
+node scripts/omykit-workflow.mjs resume
+node scripts/omykit-workflow.mjs orchestrate --json
+node scripts/omykit-workflow.mjs upgrade --all
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
+The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -180,8 +178,9 @@ Operational rules:
 - At intake, state the goal, route, execution shape or controller template, and material assumptions before implementation.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
-- Creating a tracked workflow is not task completion; for long work, continue `start -> work -> handoff -> complete/reject/block/unblock -> next/resume` until delivery passes or a real blocker is recorded.
-- For multi-agent work, use `dispatch-plan` first; keep the main thread on its current model as orchestrator-observer, and pass a model override only to subagents when the runtime supports it.
+- Creating a tracked workflow is not task completion; for long work, continue `resume/orchestrate -> internal start or dispatch -> work -> handoff -> complete/reject/block/unblock` until delivery passes or a real blocker is recorded.
+- For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, and pass a model override only to workers when the runtime supports it.
+- Use `upgrade --all` when historical `.omykit/workflows/*` artifacts need current controller metadata, command-surface policy, node cards, and regenerated board projections; never fabricate missing handoff, token, skill, model, or verification evidence during upgrade.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
 - When multiple same-lane specialist skills could apply, record `skill_decisions`: why one was selected, which alternatives were skipped, which skill to use for dissatisfied-user rework, and the actual feedback outcome.

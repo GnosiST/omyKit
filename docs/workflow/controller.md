@@ -43,15 +43,13 @@ $omykit 开始执行：重构登录模块
 $omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
-$omykit 派发计划
-$omykit 记录分工
-$omykit 交接包
+$omykit 下一步
 $omykit 查看工作流列表
 $omykit 切换工作流：<workflow-id>
 $omykit 解除阻塞
-$omykit 下一步
 $omykit 生成看板并打开
 $omykit 校验工作流
+$omykit 升级旧工作流
 ```
 
 Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
@@ -64,31 +62,40 @@ Creating a workflow is not completion. `init` only creates durable state. For lo
 
 Execution loop:
 
-1. `resume` or `next` identifies running, failed, blocked, and ready nodes; when a node is running, converge it with handoff/block/reject before expanding parallel work.
-2. `start <node-id>` marks the node active.
-3. If the node will be delegated or resumed after compaction, generate `context-pack <node-id>` first.
-4. Codex performs that node's real work in the current project.
-5. For dev servers, test watchers, long builds, or screenshot services, record command metadata with `record-run` when recovery depends on logs, pid, or resume commands.
-6. Codex writes a structured handoff with work items, evidence, `downstream_context`, skills/model/usage when available, delivery `evolution_candidates`, and delivery `knowledge_sync`.
-7. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
-8. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
+1. `resume` and `orchestrate` identify running, failed, blocked, ready, parallelizable, and externally claimed nodes.
+2. The orchestration plan chooses main-thread, same-turn subagent, background-thread, or worktree execution; the user should not have to choose this primitive manually.
+3. If the node will be delegated or resumed after compaction, Codex internally generates `context-pack <node-id>` first.
+4. Codex performs that node's real work in the current project or sends the bounded context pack to a worker.
+5. For real worker/thread/worktree execution, Codex records the assignment with `assign` after the worker exists.
+6. For dev servers, test watchers, long builds, or screenshot services, record command metadata with `record-run` when recovery depends on logs, pid, or resume commands.
+7. Codex writes a structured handoff with work items, evidence, `downstream_context`, skills/model/usage when available, delivery `evolution_candidates`, and delivery `knowledge_sync`.
+8. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
+9. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
 
 Use `$omykit 开始执行：<任务>` or `$omykit 创建并执行工作流：<任务>` when you want Codex to create/resume and keep advancing. Use `$omykit 只创建工作流：<任务>` only when you want the skeleton and manual continuation commands.
 
-## Subagent Dispatch
+## Automatic Orchestration
 
-For tracked long work, the main Codex thread should behave as an orchestrator-observer: keep the durable workflow state, create or read the dispatch plan, spawn bounded subagents when the task is independently scoped, integrate handoffs, run scorecards, and escalate only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main coordination context.
+For tracked long work, the main Codex thread should behave as an orchestrator-observer: keep the durable workflow state, run `orchestrate`, spawn bounded workers only when the task is independently scoped, integrate handoffs, run scorecards, and escalate only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main coordination context.
 
-Use:
+User-facing next-step requests should use:
 
 ```bash
-node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id>
-node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
+node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id>
+node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id> --json
+```
+
+The orchestration plan lists the execution mode, whether Codex should continue automatically, whether human intervention is required, ready actions, suggested worker profile, recommended model tier, recommended concrete model, Codex model override name when known, execution surface, context pack, and handoff contract. It writes `orchestration-plan.json` beside the workflow for recovery.
+
+Lower-level primitives remain available for Codex internals, CI, and troubleshooting:
+
+```bash
 node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --surface auto --json
+node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, execution surface, context pack, and handoff contract. Plain `dispatch-plan` keeps the legacy subagent view; pass `--surface auto|subagent|thread|worktree|main` to emit `execution_surface`. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
+The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active worker runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
 
 `assign` appends the real runtime assignment to `assignments.jsonl`: node, agent id, role, execution surface, thread id, worktree, model tier, write scope, context pack, handoff path, and status. It is a runtime roster, not a template field. The board projects the Agent Roster, and scorecards warn when assignments lack readable handoffs or active agents have overlapping write scopes.
 
@@ -167,11 +174,11 @@ node scripts/omykit-workflow.mjs templates show frontend-ui.strict --lang zh-CN
 node scripts/omykit-workflow.mjs templates validate
 node scripts/omykit-workflow.mjs status
 node scripts/omykit-workflow.mjs next
+node scripts/omykit-workflow.mjs orchestrate
+node scripts/omykit-workflow.mjs orchestrate --json
+node scripts/omykit-workflow.mjs upgrade --all
 node scripts/omykit-workflow.mjs validate
 node scripts/omykit-workflow.mjs scorecard
-node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json
-node scripts/omykit-workflow.mjs context-pack 03-implement
-node scripts/omykit-workflow.mjs assign 03-implement --agent coder-thread-01 --surface worktree --status running --scope "src/**,tests/**" --context-pack context-packs/03-implement.json --handoff handoffs/03-implement.json
 node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs start 03-implement
 node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-implement-to-04-verify.json
@@ -235,6 +242,17 @@ The board also renders the selected workflow template and scorecard audit. Score
 
 The board is intentionally static. It does not automatically start agents, enforce claims, choose a provider model, infer skill usage, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates. It can record and display multiple agents, worker lanes, logical parallel groups, skill usage, model-tier recommendations, recommended models, actual model records, timing, usage, and handoff evidence when Codex or another worker writes those records.
 
+## Upgrading Old Workflow Artifacts
+
+Workflows created by older controller versions can be upgraded in place:
+
+```bash
+node scripts/omykit-workflow.mjs upgrade --all
+node scripts/omykit-workflow.mjs upgrade --workflow <workflow-id>
+```
+
+`upgrade` adds the current artifact version, command-surface policy, automatic orchestration policy, missing runtime directories, missing node cards, and `workflow-upgrade.json`. It never fabricates missing handoffs, token usage, skill usage, actual model records, or verification evidence. Regenerate `board.json` and `board.html` after upgrade to project old workflow state through the latest board logic.
+
 ## Files
 
 ```text
@@ -252,6 +270,8 @@ The board is intentionally static. It does not automatically start agents, enfor
       context-packs/
       commands/
       evidence/
+      orchestration-plan.json
+      workflow-upgrade.json
       board.json
       board.html
 ```

@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCHEMA_VERSION = "1";
+const WORKFLOW_ARTIFACT_VERSION = "2026-06-24.intent-orchestration";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DEFAULT_TEMPLATE_ID = "change.standard";
@@ -1133,6 +1134,8 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs orchestrate [--workflow workflow-id] [--lang en|zh-CN] [--json]
+  node scripts/omykit-workflow.mjs upgrade [--workflow workflow-id|--all] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
@@ -1151,21 +1154,22 @@ Codex chat intents:
   $omykit 开始执行：<任务>       create or resume a tracked workflow and keep advancing nodes
   $omykit 创建工作流：<任务>     create a workflow, then continue unless you say "只创建"
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
-  $omykit 继续工作流             resume, start the next ready node, and write handoffs as work completes
-  $omykit 派发计划               show which ready nodes can be delegated and which model to recommend
-  $omykit 记录分工               record a subagent/thread/worktree assignment in the workflow ledger
-  $omykit 交接包                 generate the smallest context pack for the next node or worker
+  $omykit 继续工作流             resume, auto-orchestrate, start ready work, and write handoffs as work completes
   $omykit 查看工作流列表         list workflows and switch the active workflow when needed
   $omykit 解除阻塞               unblock a blocked node after the blocker is resolved
-  $omykit 下一步                 show the next ready node
-  $omykit 查看进度               show status, blockers, failed nodes, and the next command
+  $omykit 下一步                 show the orchestration decision, not only a raw ready node
+  $omykit 查看进度               show status, blockers, failed nodes, and the automatic next action
   $omykit 生成看板并打开         generate/open board.html
+  $omykit 升级旧工作流           upgrade old workflow artifacts to the current controller surface
   $omykit scorecard 验票         audit recorded workflow evidence
   $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
   $omykit 查看模板               list reusable workflow templates
 
 Long task loop:
-  init/resume -> start ready node -> do the real work -> write handoff JSON -> complete/reject/block/unblock -> repeat next/resume until delivery passes or a real blocker is recorded.`;
+  init/resume -> orchestrate -> start or dispatch ready work internally -> do real work -> write handoff JSON -> complete/reject/block/unblock -> repeat until delivery passes or a real blocker is recorded.
+
+Internal commands:
+  dispatch-plan, context-pack, assign, record-run, start, complete, reject, block, and unblock are controller primitives Codex should run as needed. Users normally ask for intent, not these primitives.`;
 }
 
 function listWorkflowDirs(root = workflowsRoot()) {
@@ -2246,25 +2250,25 @@ function statusAction(graph, state, language = "en") {
   if (failed.length > 0) {
     return {
       summary: isZh ? `处理或打回 ${failed[0].id}` : `resolve or reject from ${failed[0].id}`,
-      command: `node scripts/omykit-workflow.mjs reject ${failed[0].id} --to <node-id> --handoff <path>`,
+      command: `node scripts/omykit-workflow.mjs orchestrate --workflow ${graph.workflow_id}`,
     };
   }
   if (blocked.length > 0 && ready.length === 0) {
     return {
       summary: isZh ? `解决 ${blocked[0].id} 的阻塞后解除阻塞` : `resolve blocker for ${blocked[0].id}, then unblock it`,
-      command: `node scripts/omykit-workflow.mjs unblock ${blocked[0].id} --reason <resolved reason>`,
+      command: `node scripts/omykit-workflow.mjs orchestrate --workflow ${graph.workflow_id}`,
     };
   }
   if (running.length > 0) {
     return {
       summary: isZh ? `为 ${running[0].id} 提交 handoff` : `complete ${running[0].id} with a handoff`,
-      command: `node scripts/omykit-workflow.mjs complete ${running[0].id} --handoff <path>`,
+      command: `node scripts/omykit-workflow.mjs orchestrate --workflow ${graph.workflow_id}`,
     };
   }
   if (ready.length > 0) {
     return {
       summary: isZh ? `启动 ${ready[0].id}` : `start ${ready[0].id}`,
-      command: `node scripts/omykit-workflow.mjs start ${ready[0].id}`,
+      command: `node scripts/omykit-workflow.mjs orchestrate --workflow ${graph.workflow_id}`,
     };
   }
   return {
@@ -2294,7 +2298,8 @@ function printStatus(graph, state) {
     console.log(`跳过节点: ${skipped.length}`);
     console.log(`建议下一步: ${action.summary}`);
     console.log(`继续执行: ${action.command}`);
-    console.log("长任务循环: start 就绪节点 -> 执行真实工作 -> 写 handoff JSON -> complete/reject/block/unblock -> 重复 next/resume。");
+    console.log("长任务循环: orchestrate -> 内部 start/dispatch/context-pack -> 执行真实工作 -> 写 handoff JSON -> complete/reject/block/unblock -> 重复。");
+    console.log("用户只表达意图；派发、交接包、记录分工和节点推进由 Codex 主控按编排计划内部执行。");
     console.log("不要把创建工作流当成任务完成；持续推进到 delivery 通过、记录真实阻塞，或用户明确只要创建骨架。");
     return;
   }
@@ -2309,7 +2314,8 @@ function printStatus(graph, state) {
   console.log(`Next recommended action: ${action.summary}`);
   console.log(`Continue command: ${action.command}`);
   if (ready.length > 0) console.log(`Continue now: ${action.command}`);
-  console.log("Long task loop: start a ready node -> do the real work -> write handoff JSON -> complete/reject/block/unblock -> repeat next/resume.");
+  console.log("Long task loop: orchestrate -> internal start/dispatch/context-pack -> do the real work -> write handoff JSON -> complete/reject/block/unblock -> repeat.");
+  console.log("Users state intent; Codex orchestration runs dispatch, context-pack, assignment, and node progression primitives internally.");
   console.log("Creating the workflow is not task completion; continue until delivery passes, a real blocker is recorded, or you intentionally stop.");
   console.log("Required evidence: structured handoff JSON for each completed, failed, blocked, or skipped node.");
 }
@@ -4826,9 +4832,11 @@ function buildDispatchPlan(board, options = {}) {
       status: node.status,
       executor,
       execution_surface: executionSurface,
+      dispatch_eligible: eligibility.eligible,
       agent_type: canStartNow ? dispatchAgentType(node) : null,
       worker_profile: node.worker_profile || null,
       agent: node.agent || null,
+      claimed_by: node.claimed_by || null,
       parallel_group: node.parallel_group || null,
       assignment: assignment ? {
         agent_id: assignment.agent_id,
@@ -4920,6 +4928,207 @@ function printDispatchPlan(plan) {
   }
   if (plan.blocked_nodes.length > 0) {
     console.log(`${isZh ? "阻塞节点" : "Blocked nodes"}: ${plan.blocked_nodes.map((node) => node.node_id).join(", ")}`);
+  }
+}
+
+function dispatchReadyNow(item) {
+  return item.executor !== "wait_for_parallel_slot" && item.execution_surface !== "wait_for_parallel_slot";
+}
+
+function requiresDispatchReview(item) {
+  if (item.claimed_by && !/^codex|main|orchestrator$/i.test(item.claimed_by)) return true;
+  return item.dispatch_eligible === false && SUBAGENT_READY_NODE_TYPES.has(item.type);
+}
+
+function workerDispatch(item) {
+  return dispatchReadyNow(item) && !requiresDispatchReview(item) && item.execution_surface !== "main-thread" && item.execution_surface !== "main";
+}
+
+function buildOrchestrationPlan(board, dispatchPlan = null) {
+  const language = board.language || "en";
+  const isZh = language === "zh-CN";
+  const plan = dispatchPlan || buildDispatchPlan(board, { surface: "auto" });
+  const failed = plan.failed_nodes || [];
+  const blocked = plan.blocked_nodes || [];
+  const running = plan.running_nodes || [];
+  const ready = plan.ready_dispatches || [];
+  const readyNow = ready.filter((item) => dispatchReadyNow(item) && !requiresDispatchReview(item));
+  const workerReady = readyNow.filter(workerDispatch);
+  const reviewReady = ready.filter((item) => dispatchReadyNow(item) && requiresDispatchReview(item));
+  let executionMode = "delivery_or_idle";
+  if (failed.length > 0) executionMode = "recover_or_reject";
+  else if (running.length > 0) executionMode = "converge_running";
+  else if (workerReady.length > 1) executionMode = "parallel_workers";
+  else if (workerReady.length === 1) executionMode = "single_worker";
+  else if (readyNow.length > 0) executionMode = "main_thread_node";
+  else if (reviewReady.length > 0) executionMode = "confirm_takeover_or_external_assignment";
+  else if (blocked.length > 0) executionMode = "blocked_requires_human_or_external_resolution";
+
+  const actions = [];
+  for (const item of failed) {
+    actions.push({
+      action: "recover_or_reject",
+      node_id: item.node_id,
+      title: item.title,
+      reason: item.reason || null,
+      codex_behavior: isZh
+        ? "读取失败 handoff 和证据，能修就打回上游或重试，无法安全判断时才询问用户。"
+        : "Read the failed handoff and evidence, reject upstream or retry when safe, and ask the user only when the decision is unsafe.",
+      internal_commands: [
+        `node scripts/omykit-workflow.mjs context-pack ${item.node_id} --workflow ${board.workflow_id}`,
+        `node scripts/omykit-workflow.mjs reject ${item.node_id} --to <node-id> --handoff <path>`,
+      ],
+    });
+  }
+  for (const item of running) {
+    actions.push({
+      action: "converge_running",
+      node_id: item.node_id,
+      title: item.title,
+      claimed_by: item.claimed_by || null,
+      codex_behavior: isZh
+        ? "收敛进行中节点：检查真实工作、证据和 handoff；完成、打回或记录阻塞。"
+        : "Converge the running node: inspect real work, evidence, and handoff; complete, reject, or block it.",
+      internal_commands: [
+        `node scripts/omykit-workflow.mjs context-pack ${item.node_id} --workflow ${board.workflow_id}`,
+        `node scripts/omykit-workflow.mjs complete ${item.node_id} --handoff <path>`,
+      ],
+    });
+  }
+  for (const item of ready) {
+    if (!dispatchReadyNow(item)) {
+      actions.push({
+        action: "wait_for_parallel_slot",
+        node_id: item.node_id,
+        title: item.title,
+        reason: item.dispatch_reason,
+      });
+      continue;
+    }
+    if (requiresDispatchReview(item)) {
+      actions.push({
+        action: "confirm_takeover_or_wait",
+        node_id: item.node_id,
+        title: item.title,
+        type: item.type,
+        claimed_by: item.claimed_by || null,
+        reason: item.dispatch_reason,
+        codex_behavior: isZh
+          ? "节点已有外部认领或不适合自动接管；若没有其他可自动推进节点，再询问用户是否接管、等待或切换 worker。"
+          : "The node is externally claimed or not safe to take over automatically; ask whether to take over, wait, or switch worker only when no other automatic node can move.",
+      });
+      continue;
+    }
+    const useWorker = workerDispatch(item);
+    actions.push({
+      action: useWorker ? "dispatch_worker" : "start_in_main_thread",
+      node_id: item.node_id,
+      title: item.title,
+      type: item.type,
+      execution_surface: item.execution_surface,
+      agent_type: item.agent_type,
+      worker_profile: item.worker_profile,
+      model_tier: item.model_tier,
+      recommended_model: item.recommended_model,
+      model_override: item.model_override,
+      reason: item.dispatch_reason,
+      codex_behavior: useWorker
+        ? (isZh ? "由 Codex 主控按 bounded context pack 派发 worker，并记录 assignment；不要让用户手动选择并行方式。" : "Codex orchestrator dispatches a worker with a bounded context pack and records the assignment; do not ask the user to choose the parallelism primitive.")
+        : (isZh ? "由主对话直接执行该节点，完成后写 handoff 并推进 workflow。" : "Main thread executes the node directly, writes a handoff, and advances the workflow."),
+      internal_commands: useWorker
+        ? [
+          `node scripts/omykit-workflow.mjs context-pack ${item.node_id} --workflow ${board.workflow_id}`,
+          `node scripts/omykit-workflow.mjs assign ${item.node_id} --agent <agent-id> --surface ${item.execution_surface} --status running --context-pack context-packs/${item.node_id}.json --handoff handoffs/${item.node_id}.json`,
+        ]
+        : [
+          `node scripts/omykit-workflow.mjs start ${item.node_id} --workflow ${board.workflow_id}`,
+        ],
+    });
+  }
+  if (blocked.length > 0 && readyNow.length === 0 && failed.length === 0 && running.length === 0) {
+    for (const item of blocked) {
+      actions.push({
+        action: "resolve_blocker",
+        node_id: item.node_id,
+        title: item.title,
+        reason: item.reason || null,
+        codex_behavior: isZh
+          ? "只有当阻塞依赖用户、凭证、外部系统或不可安全假设的信息时，才暂停并询问用户。"
+          : "Pause and ask the user only when the blocker depends on the user, credentials, external systems, or information that cannot be safely assumed.",
+        internal_commands: [
+          `node scripts/omykit-workflow.mjs unblock ${item.node_id} --workflow ${board.workflow_id} --reason <resolved reason>`,
+        ],
+      });
+    }
+  }
+
+  const humanRequired = ["blocked_requires_human_or_external_resolution", "confirm_takeover_or_external_assignment"].includes(executionMode);
+  return {
+    schema_version: SCHEMA_VERSION,
+    artifact_version: WORKFLOW_ARTIFACT_VERSION,
+    workflow_id: board.workflow_id,
+    language,
+    generated_at: now(),
+    execution_mode: executionMode,
+    continue_automatically: !humanRequired && executionMode !== "delivery_or_idle",
+    human_intervention_required: humanRequired,
+    user_surface_policy: isZh
+      ? "用户只表达意图；并行、子智能体、context pack、assignment 和节点推进由 Codex 主控按本计划内部执行。"
+      : "The user states intent; Codex orchestration internally handles parallelism, subagents, context packs, assignments, and node progression from this plan.",
+    manual_command_policy: {
+      user_primary_intents: ["start_execute", "continue", "status", "board", "delivery", "upgrade"],
+      internal_primitives: ["dispatch-plan", "context-pack", "assign", "record-run", "start", "complete", "reject", "block", "unblock"],
+      manual_dispatch_required: false,
+    },
+    summary: {
+      ready: board.summary.ready,
+      running: board.summary.running,
+      blocked: board.summary.blocked,
+      failed: board.summary.failed,
+      passed: board.summary.passed,
+      next_recommended_action: board.summary.next_recommended_action,
+    },
+    safety: plan.safety,
+    orchestrator: plan.orchestrator,
+    runtime_capability: plan.runtime_capability,
+    actions,
+    ready_dispatches: plan.ready_dispatches,
+    running_nodes: plan.running_nodes,
+    failed_nodes: plan.failed_nodes,
+    blocked_nodes: plan.blocked_nodes,
+  };
+}
+
+function orchestrationPlanFile(workflowDir) {
+  return path.join(workflowDir, "orchestration-plan.json");
+}
+
+function writeOrchestrationPlan(workflowDir, plan) {
+  const file = orchestrationPlanFile(workflowDir);
+  writeJson(file, plan);
+  return file;
+}
+
+function printOrchestrationPlan(plan, file = null) {
+  const isZh = plan.language === "zh-CN";
+  console.log(`${isZh ? "自动编排计划" : "Orchestration plan"}: ${plan.workflow_id}`);
+  console.log(`${isZh ? "执行模式" : "Execution mode"}: ${plan.execution_mode}`);
+  console.log(`${isZh ? "自动继续" : "Continue automatically"}: ${plan.continue_automatically ? "yes" : "no"}`);
+  console.log(`${isZh ? "需要人工介入" : "Human intervention required"}: ${plan.human_intervention_required ? "yes" : "no"}`);
+  console.log(`${isZh ? "用户界面策略" : "User surface policy"}: ${plan.user_surface_policy}`);
+  if (file) console.log(`${isZh ? "计划文件" : "Plan file"}: ${path.relative(process.cwd(), file)}`);
+  console.log(isZh ? "下一批动作:" : "Next actions:");
+  if (plan.actions.length === 0) {
+    console.log(isZh ? "- 无；交付可能已完成或没有就绪节点。" : "- none; delivery may be complete or no node is ready.");
+    return;
+  }
+  for (const item of plan.actions) {
+    console.log(`- ${item.action} ${item.node_id || "workflow"} ${item.title || ""}`.trim());
+    if (item.execution_surface) {
+      console.log(`  surface=${item.execution_surface} worker=${item.worker_profile || "none"} tier=${item.model_tier || "none"} recommended=${item.recommended_model || "none"} override=${item.model_override || "inherit"}`);
+    }
+    if (item.reason) console.log(`  ${isZh ? "原因" : "Reason"}: ${item.reason}`);
+    if (item.codex_behavior) console.log(`  ${isZh ? "Codex 行为" : "Codex behavior"}: ${item.codex_behavior}`);
   }
 }
 
@@ -5960,6 +6169,142 @@ function resetDependents(graph, state, nodeId, excluded = new Set()) {
   }
 }
 
+const WORKFLOW_RUNTIME_DIRS = [
+  "nodes",
+  "handoffs",
+  "context-packs",
+  "commands",
+  "evidence",
+  path.join("evidence", "screenshots"),
+];
+
+function workflowUpgradeFile(workflowDir) {
+  return path.join(workflowDir, "workflow-upgrade.json");
+}
+
+function ensureWorkflowRuntimeDir(workflowDir, relativeDir, actions) {
+  const dir = path.join(workflowDir, relativeDir);
+  if (fs.existsSync(dir)) return;
+  ensureDir(dir);
+  actions.push(`created directory ${relativeDir}`);
+}
+
+function ensureWorkflowTextFile(workflowDir, relativeFile, title, workflowId, actions) {
+  const file = path.join(workflowDir, relativeFile);
+  if (fs.existsSync(file)) return;
+  fs.writeFileSync(file, `# ${title}\n\nWorkflow: ${workflowId}\n\n`);
+  actions.push(`created ${relativeFile}`);
+}
+
+function upgradeWorkflowArtifacts(workflowDir, options = {}) {
+  const graphPath = path.join(workflowDir, "graph.json");
+  const statePath = path.join(workflowDir, "state.json");
+  if (!fs.existsSync(graphPath)) throw new Error(`Missing graph.json in ${workflowDir}`);
+  if (!fs.existsSync(statePath)) throw new Error(`Missing state.json in ${workflowDir}`);
+
+  const graph = readJson(graphPath);
+  const state = readJson(statePath);
+  const workflowId = graph.workflow_id || path.basename(workflowDir);
+  const previousArtifactVersion = graph.metadata?.workflow_artifact_version || null;
+  const actions = [];
+  const warnings = [];
+  let graphChanged = false;
+
+  if (graph.schema_version !== SCHEMA_VERSION) {
+    graph.schema_version = SCHEMA_VERSION;
+    graphChanged = true;
+    actions.push(`set graph.schema_version=${SCHEMA_VERSION}`);
+  }
+  if (!graph.metadata || typeof graph.metadata !== "object") {
+    graph.metadata = {};
+    graphChanged = true;
+    actions.push("created graph.metadata");
+  }
+
+  const metadataDefaults = {
+    controller: "omykit-workflow",
+    controller_role: "orchestrator-observer",
+    workflow_artifact_version: WORKFLOW_ARTIFACT_VERSION,
+  };
+  for (const [key, value] of Object.entries(metadataDefaults)) {
+    if (graph.metadata[key] !== value) {
+      graph.metadata[key] = value;
+      graphChanged = true;
+      actions.push(`set graph.metadata.${key}`);
+    }
+  }
+
+  const commandSurface = {
+    user_primary_intents: ["start_execute", "continue", "status", "board", "delivery", "upgrade"],
+    internal_primitives: ["orchestrate", "dispatch-plan", "context-pack", "assign", "record-run", "start", "complete", "reject", "block", "unblock"],
+    manual_dispatch_required: false,
+  };
+  if (JSON.stringify(graph.metadata.command_surface || null) !== JSON.stringify(commandSurface)) {
+    graph.metadata.command_surface = commandSurface;
+    graphChanged = true;
+    actions.push("set graph.metadata.command_surface");
+  }
+
+  const orchestrationPolicy = {
+    automatic_dispatch_decision: true,
+    human_intervention_only_for_blockers: true,
+    evidence_migration_policy: "do_not_fabricate_missing_handoffs_or_usage",
+  };
+  if (JSON.stringify(graph.metadata.orchestration_policy || null) !== JSON.stringify(orchestrationPolicy)) {
+    graph.metadata.orchestration_policy = orchestrationPolicy;
+    graphChanged = true;
+    actions.push("set graph.metadata.orchestration_policy");
+  }
+
+  for (const relativeDir of WORKFLOW_RUNTIME_DIRS) ensureWorkflowRuntimeDir(workflowDir, relativeDir, actions);
+  ensureWorkflowTextFile(workflowDir, "decisions.md", "Decisions", workflowId, actions);
+  ensureWorkflowTextFile(workflowDir, "blockers.md", "Blockers", workflowId, actions);
+  if (!fs.existsSync(assignmentsFile(workflowDir))) {
+    fs.writeFileSync(assignmentsFile(workflowDir), "");
+    actions.push("created assignments.jsonl");
+  }
+  for (const node of graph.nodes || []) {
+    const cardFile = path.join(workflowDir, "nodes", `${node.id}.json`);
+    if (!fs.existsSync(cardFile)) {
+      writeJson(cardFile, nodeCard(graph, node));
+      actions.push(`created nodes/${node.id}.json`);
+    }
+    const nodeState = state.nodes?.[node.id];
+    if (nodeState && TERMINAL_STATUSES.has(nodeState.status)) {
+      const handoffPath = nodeState.last_handoff ? path.join(workflowDir, nodeState.last_handoff) : null;
+      if (!handoffPath || !fs.existsSync(handoffPath)) {
+        warnings.push(`node ${node.id} is ${nodeState.status} but has no readable handoff; upgrade will not invent evidence`);
+      }
+    }
+  }
+
+  if (graphChanged) writeJson(graphPath, graph);
+  const report = {
+    schema_version: SCHEMA_VERSION,
+    artifact_version: WORKFLOW_ARTIFACT_VERSION,
+    workflow_id: workflowId,
+    upgraded_at: now(),
+    previous_artifact_version: previousArtifactVersion,
+    graph_changed: graphChanged,
+    actions,
+    warnings,
+    evidence_policy: "Upgrade adds compatibility metadata, runtime directories, missing node cards, and reports gaps. It never fabricates handoffs, token usage, skill usage, actual models, or verification evidence.",
+  };
+  const reportFile = workflowUpgradeFile(workflowDir);
+  writeJson(reportFile, report);
+  if (actions.length > 0 || warnings.length > 0 || options.recordLedger) {
+    appendLedger(workflowDir, {
+      event: "workflow.upgrade",
+      workflow_id: workflowId,
+      artifact_version: WORKFLOW_ARTIFACT_VERSION,
+      actions: actions.length,
+      warnings: warnings.length,
+      report: relativeToWorkflow(workflowDir, reportFile),
+    });
+  }
+  return { report, reportFile };
+}
+
 function cmdInit(positional, options) {
   const title = positional.join(" ").trim();
   if (!title) throw new Error("init requires a workflow title");
@@ -6003,6 +6348,10 @@ function cmdInit(positional, options) {
   console.log(`Workflow created: ${workflowId}`);
   console.log(`Path: ${path.relative(process.cwd(), workflowDir)}`);
   printStatus(savedGraph, state);
+  const board = buildBoardProjection(workflowDir, savedGraph, state, language);
+  const plan = buildOrchestrationPlan(board, buildDispatchPlan(board, { surface: "auto" }));
+  const planFile = writeOrchestrationPlan(workflowDir, plan);
+  printOrchestrationPlan(plan, planFile);
 }
 
 function cmdStatus(options) {
@@ -6011,13 +6360,7 @@ function cmdStatus(options) {
 }
 
 function cmdNext(options) {
-  const { graph, state } = loadWorkflow(resolveWorkflowDir(options));
-  const ready = readyNodes(graph, state);
-  if (ready.length === 0) {
-    console.log("No ready nodes.");
-    return;
-  }
-  for (const node of ready) console.log(formatNode(node));
+  cmdOrchestrate(options);
 }
 
 function cmdValidate(options) {
@@ -6147,6 +6490,46 @@ function cmdDispatchPlan(options) {
   printDispatchPlan(plan);
 }
 
+function cmdOrchestrate(options) {
+  const workflowDir = resolveWorkflowDir(options);
+  const errors = validateWorkflow(workflowDir);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const { graph, state } = loadWorkflow(workflowDir);
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
+  const board = buildBoardProjection(workflowDir, graph, state, language);
+  const dispatchPlan = buildDispatchPlan(board, { surface: "auto" });
+  const plan = buildOrchestrationPlan(board, dispatchPlan);
+  const planFile = writeOrchestrationPlan(workflowDir, plan);
+  if (options.json) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+  printOrchestrationPlan(plan, planFile);
+}
+
+function cmdUpgrade(options) {
+  const root = workflowsRoot();
+  const workflowDirs = options.all ? listWorkflowDirs(root) : [resolveWorkflowDir(options)];
+  if (workflowDirs.length === 0) throw new Error("No omyKit workflows found.");
+  const results = workflowDirs.map((workflowDir) => upgradeWorkflowArtifacts(workflowDir));
+  if (options.json) {
+    console.log(JSON.stringify(results.map(({ report, reportFile }) => ({
+      ...report,
+      report_file: path.relative(process.cwd(), reportFile),
+    })), null, 2));
+    return;
+  }
+  const language = normalizeBoardLanguage(options.lang);
+  const isZh = language === "zh-CN";
+  console.log(`${isZh ? "工作流升级完成" : "Workflow upgrade complete"}: ${results.length}`);
+  for (const { report, reportFile } of results) {
+    console.log(`- ${report.workflow_id} artifact=${report.artifact_version} actions=${report.actions.length} warnings=${report.warnings.length} report=${path.relative(process.cwd(), reportFile)}`);
+  }
+  console.log(isZh
+    ? "说明: 升级只补 controller 兼容元数据、目录、节点卡和报告；不会伪造 handoff、token、skill、模型或验证证据。旧 board 可以重新运行 board 命令生成新版投影。"
+    : "Note: upgrade only adds controller compatibility metadata, directories, node cards, and reports. It never fabricates handoffs, token usage, skill usage, models, or verification evidence. Regenerate old boards with the board command.");
+}
+
 function cmdAssign(positional, options) {
   const nodeId = positional[0];
   if (!nodeId) throw new Error("assign requires a node id");
@@ -6236,12 +6619,10 @@ function cmdResume(options) {
   console.log("Resume context:");
   console.log(`Active workflow: ${graph.workflow_id}`);
   printStatus(graph, state);
-  const packTarget = running[0]?.id || ready[0]?.id || null;
-  if (packTarget) {
-    console.log(`Context pack command: node scripts/omykit-workflow.mjs context-pack ${packTarget} --workflow ${graph.workflow_id}`);
-  } else {
-    console.log("Context pack command: none");
-  }
+  const dispatchPlan = buildDispatchPlan(board, { surface: "auto" });
+  const plan = buildOrchestrationPlan(board, dispatchPlan);
+  const planFile = writeOrchestrationPlan(workflowDir, plan);
+  printOrchestrationPlan(plan, planFile);
   console.log("Command runs:");
   if (board.commands.records.length === 0) {
     console.log("none");
@@ -6497,6 +6878,12 @@ function main() {
       return;
     case "next":
       cmdNext(options);
+      return;
+    case "orchestrate":
+      cmdOrchestrate(options);
+      return;
+    case "upgrade":
+      cmdUpgrade(options);
       return;
     case "dispatch-plan":
       cmdDispatchPlan(options);
