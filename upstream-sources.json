@@ -196,7 +196,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "49614a0391d83eec442ffeca1d4aa0fdeb119818",
+      "baseline": "414782450952a196bbb64b1605a458c2531c47b6",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -226,7 +226,7 @@
       "id": "motion",
       "repo": "motiondivision/motion",
       "url": "https://github.com/motiondivision/motion.git",
-      "baseline": "830c73766c418f6c2624ccb2cdfa8f8cf859f3cd",
+      "baseline": "18c3e3e88b310afe9c6edc960d1b1327a98928ff",
       "role": "Motion official library reference for animation implementation and Motion AI Kit adjacency",
       "verification": {
         "owner": "motiondivision",
@@ -361,7 +361,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "e759845007dca72b87a3cfa835a6848bd53bfe56",
+      "baseline": "a7331a0f5a3af5f75981865a5cc41cb90ee7ae8d",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

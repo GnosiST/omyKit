@@ -200,6 +200,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 - [Workflow 模板](docs/workflow/workflow-templates.zh-CN.md)
 - [Task graph](docs/workflow/task-graph.zh-CN.md)
 - [Handoff protocol](docs/workflow/handoff-protocol.zh-CN.md)
+- [多 Agent 协作](docs/workflow/multi-agent-coordination.zh-CN.md)
 - [语言策略](docs/workflow/language-policy.zh-CN.md)
 - [版本与回滚准备度](docs/workflow/versioning.zh-CN.md)
 - [工具注册表](docs/workflow/tool-registry.zh-CN.md)

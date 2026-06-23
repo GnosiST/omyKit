@@ -14,6 +14,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Workflow templates](workflow/workflow-templates.md) | Layered YAML workflow templates, profiles, and scorecards for reusable controller runs. |
 | [Task graph](workflow/task-graph.md) | Node types, states, dependencies, fan-out, joins, rejects, blockers, and retry limits. |
 | [Handoff protocol](workflow/handoff-protocol.md) | Structured node outputs for passed, failed, blocked, and skipped states. |
+| [Multi-agent coordination](workflow/multi-agent-coordination.md) | Workflow intent, references, implementation assessment, and Codex thread-native multi-agent roadmap. |
 | [Language policy](workflow/language-policy.md) | How visible reasoning summaries, questions, status, and handoff match the user's language. |
 | [Setup](workflow/setup.md) | Codex-first install, first-use prompts, optional repo-local copy, and validation notes. |
 | [Context budget](workflow/context-budget.md) | How to keep Codex context loading small, progressive, and compression-aware. |

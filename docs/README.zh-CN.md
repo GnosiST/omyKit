@@ -14,6 +14,7 @@
 | [Workflow 模板](workflow/workflow-templates.zh-CN.md) | 用于可复用 controller 运行的分层 YAML workflow 模板、profiles 和 scorecards。 |
 | [Task graph](workflow/task-graph.zh-CN.md) | 节点类型、状态、依赖、扇出、汇聚、打回、阻塞和重试限制。 |
 | [Handoff protocol](workflow/handoff-protocol.zh-CN.md) | passed、failed、blocked 和 skipped 状态的结构化节点输出。 |
+| [多 Agent 协作](workflow/multi-agent-coordination.zh-CN.md) | 工作流意图、参考对象、实现评估和 Codex thread-native 多 agent 路线。 |
 | [语言策略](workflow/language-policy.zh-CN.md) | 可见推理摘要、问题、状态和 handoff 如何跟随用户语言。 |
 | [安装与使用](workflow/setup.zh-CN.md) | Codex-first 安装、首次使用 prompt、可选 repo-local 副本和校验说明。 |
 | [上下文预算](workflow/context-budget.zh-CN.md) | 如何让 Codex 以小而渐进、并具备压缩感知的方式加载上下文。 |

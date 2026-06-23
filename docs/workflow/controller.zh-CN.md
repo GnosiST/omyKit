@@ -87,6 +87,18 @@ node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
 
 派发计划会列出就绪节点、建议 worker profile、子智能体角色、推荐模型档位、推荐具体模型、已知的 Codex model override 名称、上下文包和 handoff 合同。controller 仍然不会自己启动 agent 或调用模型。只有当前 Codex 子智能体运行时暴露 `model` 参数时，Codex 才能把推荐模型作为 override 传入；否则 worker 继承主模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason`，不要编造模型名。
 
+## Thread-native 多 Agent 协作
+
+Codex app 还可以在独立 thread 或 worktree 中运行后台任务。omyKit 当前 controller 记录协作计划和 handoff，但还没有内建创建 thread、管理 worktree 或维护 thread 通讯录的命令。下一阶段建议把它作为 `dispatch-plan` 的第二执行后端，而不是替代现有子智能体机制：
+
+| 执行面 | 适合 | 约束 |
+| --- | --- | --- |
+| `subagent` | 同一 turn 内的并行探索、审查、测试分析和短任务。 | 消耗更多 token；不适合长时间后台写代码。 |
+| `background_thread` | 长任务、独立研究、后续可单独查看或继续的工作。 | 需要记录 thread id、handoff 和摘要回流。 |
+| `thread_worktree` | 写操作较重、需要隔离分支或避免污染本地 checkout 的任务。 | 默认禁止多个 worker 改同一文件集；需要 worktree handoff 策略。 |
+
+可行性和设计细节见 [multi-agent-coordination.zh-CN.md](multi-agent-coordination.zh-CN.md)。在正式实现前，使用独立 thread 时要人工保持三个约束：每个 thread 有明确职责和写入范围、只接收当前节点 `context-pack`、完成后把结构化 handoff 写回当前 workflow。
+
 ## 交接包与低上下文续接
 
 `context-pack` 会为单个节点生成最小可执行上下文：

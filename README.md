@@ -200,6 +200,7 @@ Operational rules:
 - [Workflow templates](docs/workflow/workflow-templates.md)
 - [Task graph](docs/workflow/task-graph.md)
 - [Handoff protocol](docs/workflow/handoff-protocol.md)
+- [Multi-agent coordination](docs/workflow/multi-agent-coordination.md)
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [Tool registry](docs/workflow/tool-registry.md)

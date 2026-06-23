@@ -87,6 +87,18 @@ node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
 
 The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, context pack, and handoff contract. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
 
+## Thread-Native Multi-Agent Coordination
+
+The Codex app can also run background work in separate threads or worktrees. The current omyKit controller records coordination plans and handoffs, but it does not yet create threads, manage worktrees, or maintain a runtime thread roster. The next stage should treat this as a second `dispatch-plan` execution backend, not as a replacement for existing subagents:
+
+| Surface | Good for | Constraint |
+| --- | --- | --- |
+| `subagent` | Same-turn parallel exploration, review, test analysis, and short tasks. | Uses more tokens; not ideal for long-running background code edits. |
+| `background_thread` | Long tasks, independent research, or work the user may inspect or continue later. | Record thread id, handoff, and returned summary in the workflow. |
+| `thread_worktree` | Heavier write tasks that need branch isolation or should not disturb the local checkout. | Do not let multiple workers edit the same file set by default; define worktree handoff strategy. |
+
+See [multi-agent-coordination.md](multi-agent-coordination.md) for feasibility and design details. Until this is implemented formally, independent threads must still follow three constraints: each thread has a clear role and write scope, receives only the node `context-pack`, and writes a structured handoff back to the active workflow.
+
 ## Context Packs
 
 `context-pack` generates the smallest executable context for one node:

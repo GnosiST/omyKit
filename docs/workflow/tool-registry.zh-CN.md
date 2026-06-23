@@ -11,6 +11,7 @@
 | Tool | 来源标记 | 已验证来源 | 角色 | 使用场景 | 避免场景 |
 | --- | --- | --- | --- | --- | --- |
 | Codex | 核心控制面 | [openai/codex](https://github.com/openai/codex) (92,647★) | 控制面 | 始终使用。它负责路由、规划、编辑、验证和总结。 | 不要用不协调的独立工具绕过它。 |
+| Codex app threads/worktrees | OpenAI 平台能力 | [Codex app features](https://developers.openai.com/codex/app/features)、[Worktrees](https://developers.openai.com/codex/app/worktrees)、[Prompting threads](https://developers.openai.com/codex/prompting) | 后台协作 | 长任务、写操作较重、需要独立审查或适合放到独立 thread/worktree 的工作。 | 小任务、未约束共享写范围，或替代 omyKit 结构化 handoff。 |
 | AGENTS.md | 仓库本地规则 | 本仓库 | 持久仓库规则 | 稳定约定、命令、边界和 definition of done。 | 一次性 notes、历史或长机制更适合 docs。 |
 | Workflow Controller | 仓库本地机制 | [scripts/omykit-workflow.mjs](../../scripts/omykit-workflow.mjs) 和 [schemas](../../schemas/workflow-graph.schema.json) | 持久任务图状态 | 多节点、可续跑、容易 compact、被打回、需要并行或 Strict workflow 工作。 | Lite 工作、一次性任务，或替代 Codex 执行。 |
 | [Superpowers](https://github.com/obra/Superpowers) | 已跟踪上游参考 | [obra/Superpowers](https://github.com/obra/Superpowers) (235,582★) | 执行纪律 | Brainstorming、planning、debugging、TDD、verification、review。 | 不作为 spec source 或项目事实来源。 |
