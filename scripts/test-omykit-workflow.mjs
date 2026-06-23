@@ -53,6 +53,9 @@ const helpOutput = run(["help"]);
 assert.match(helpOutput, /Usage:/);
 assert.match(helpOutput, /templates/);
 assert.match(helpOutput, /board/);
+assert.match(helpOutput, /Codex chat intents:/);
+assert.match(helpOutput, /Long task loop:/);
+assert.match(helpOutput, /只创建工作流/);
 
 const templatesList = run(["templates", "list", "--lang", "zh-CN"]);
 assert.match(templatesList, /change\.standard/);
@@ -66,6 +69,9 @@ assert.match(templateShow, /"title": "视觉验收"/);
 
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
 assert.match(initOutput, /Workflow created: feature-x/);
+assert.match(initOutput, /Continue now:/);
+assert.match(initOutput, /start 01-intake/);
+assert.match(initOutput, /Creating the workflow is not task completion/);
 
 const dir = workflowDir();
 const graphPath = path.join(dir, "graph.json");
@@ -431,6 +437,16 @@ state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["01-intake"].status, "passed");
 assert.equal(state.nodes["02-design"].status, "blocked");
 
+const tmpBlocked = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-blocked-"));
+run(["init", "中文阻塞恢复测试", "--id", "blocked-flow"], tmpBlocked);
+const blockedOnlyOutput = run(["block", "01-intake", "--reason", "等待用户确认"], tmpBlocked);
+assert.match(blockedOnlyOutput, /阻塞节点: 01-intake intake - 需求接收/);
+assert.match(blockedOnlyOutput, /继续执行: node scripts\/omykit-workflow\.mjs unblock 01-intake --reason <resolved reason>/);
+const unblockOutput = run(["unblock", "01-intake", "--reason", "用户已确认"], tmpBlocked);
+assert.match(unblockOutput, /就绪节点: 01-intake intake - 需求接收/);
+const unblockedState = readJson(path.join(workflowDirFor(tmpBlocked), "state.json"));
+assert.equal(unblockedState.nodes["01-intake"].status, "ready");
+
 const badDeliveryHandoff = path.join(dir, "handoffs", "06-delivery-missing-evolution.json");
 fs.writeFileSync(path.join(dir, "evidence", "06-delivery-summary.txt"), "delivery review evidence\n");
 writeJson(badDeliveryHandoff, {
@@ -545,6 +561,7 @@ assert.match(validateOutput, /Workflow valid: feature-x/);
 
 const resumeOutput = run(["resume"]);
 assert.match(resumeOutput, /Resume context:/);
+assert.match(resumeOutput, /Continue command:/);
 assert.match(resumeOutput, /Recent ledger events:/);
 
 const boardOutput = run(["board", "--lang", "zh-CN"]);
@@ -706,6 +723,8 @@ const tmpZh = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-zh-"));
 fs.writeFileSync(path.join(tmpZh, "README.md"), "# 中文 UI 项目\n\nTemporary project context.\n");
 const zhInit = run(["init", "中文 UI 看板", "--id", "ui-board", "--template", "frontend-ui.strict"], tmpZh);
 assert.match(zhInit, /Workflow created: ui-board/);
+assert.match(zhInit, /继续执行/);
+assert.match(zhInit, /不要把创建工作流当成任务完成/);
 const zhDir = workflowDirFor(tmpZh);
 run(["board"], tmpZh);
 const inferredZhBoard = readJson(path.join(zhDir, "board.json"));

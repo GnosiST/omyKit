@@ -28,8 +28,11 @@ omyKit workflow controller 是一个本地 C-lite 状态机，用于长任务、
 
 ```text
 $omykit 创建工作流：重构登录模块
+$omykit 开始执行：重构登录模块
+$omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
+$omykit 解除阻塞
 $omykit 下一步
 $omykit 生成看板并打开
 $omykit 校验工作流
@@ -38,6 +41,21 @@ $omykit 校验工作流
 Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、推荐模型和实际模型记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
 
 只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
+
+## 长任务执行方式
+
+创建 workflow 不等于任务完成。`init` 只是在项目里创建可持久化状态。对于长任务，除非用户明确说 `只创建`、`只初始化`、`先建骨架` 或 `不要执行`，Codex 应该在创建后继续推进。
+
+执行循环：
+
+1. `resume` 或 `next` 找到就绪节点。
+2. `start <node-id>` 把节点标记为进行中。
+3. Codex 在当前项目里执行该节点的真实工作。
+4. Codex 写结构化 handoff，记录工作项、证据、可用的 skill/model/用量记录，以及 delivery 节点的 `evolution_candidates`。
+5. Codex 运行 `complete`、`reject`、`block`，或在已记录的阻塞解决后运行 `unblock`。
+6. 重复循环，直到 delivery 通过、真实阻塞需要用户处理，或用户明确要求停止。
+
+想让 Codex 创建/续跑并继续推进，用 `$omykit 开始执行：<任务>` 或 `$omykit 创建并执行工作流：<任务>`。只有想先拿到骨架和手动续跑命令时，才用 `$omykit 只创建工作流：<任务>`。
 
 ## 运行位置
 

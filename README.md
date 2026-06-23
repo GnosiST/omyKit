@@ -79,6 +79,10 @@ $omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
+$omykit 开始执行：<long task>
+$omykit 只创建工作流：<task>
+$omykit 继续工作流
+$omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 交付检查
@@ -100,10 +104,11 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 For tracked controller workflows, prefer the Codex chat form:
 
 ```text
+$omykit 开始执行：测试 MVP1 角色权限
 $omykit 生成看板并打开
 ```
 
-Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
+`开始执行` means Codex should create or resume the workflow, start the ready node, do the node work, write a handoff, and continue until delivery passes or a real blocker needs the user. Use `只创建工作流` only when you want the workflow skeleton and manual continuation command. Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
 
 ```bash
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
@@ -163,6 +168,7 @@ Operational rules:
 - At intake, state the goal, route, execution shape or controller template, and material assumptions before implementation.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
+- Creating a tracked workflow is not task completion; for long work, continue `start -> work -> handoff -> complete/reject/block/unblock -> next/resume` until delivery passes or a real blocker is recorded.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
 - For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.

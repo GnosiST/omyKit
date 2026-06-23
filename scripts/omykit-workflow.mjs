@@ -1028,8 +1028,24 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs complete <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs reject <node-id> --to <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs block <node-id> --reason <text> [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs unblock <node-id> [--reason <text>] [--workflow workflow-id]
   node scripts/omykit-workflow.mjs board [--workflow workflow-id] [--open] [--lang en|zh-CN]
-  node scripts/omykit-workflow.mjs resume [--workflow workflow-id]`;
+  node scripts/omykit-workflow.mjs resume [--workflow workflow-id]
+
+Codex chat intents:
+  $omykit 开始执行：<任务>       create or resume a tracked workflow and keep advancing nodes
+  $omykit 创建工作流：<任务>     create a workflow, then continue unless you say "只创建"
+  $omykit 只创建工作流：<任务>   create the workflow skeleton only
+  $omykit 继续工作流             resume, start the next ready node, and write handoffs as work completes
+  $omykit 解除阻塞               unblock a blocked node after the blocker is resolved
+  $omykit 下一步                 show the next ready node
+  $omykit 查看进度               show status, blockers, failed nodes, and the next command
+  $omykit 生成看板并打开         generate/open board.html
+  $omykit scorecard 验票         audit recorded workflow evidence
+  $omykit 查看模板               list reusable workflow templates
+
+Long task loop:
+  init/resume -> start ready node -> do the real work -> write handoff JSON -> complete/reject/block/unblock -> repeat next/resume until delivery passes or a real blocker is recorded.`;
 }
 
 function listWorkflowDirs(root = workflowsRoot()) {
@@ -1939,23 +1955,71 @@ function formatNodeList(nodes) {
   return nodes.length > 0 ? nodes.map(formatNode).join(", ") : "none";
 }
 
+function workflowCliLanguage(graph) {
+  return normalizeBoardLanguage(graph.metadata?.language || graph.language || "en");
+}
+
+function statusAction(graph, state, language = "en") {
+  const ready = readyNodes(graph, state);
+  const running = nodesWithStatus(graph, state, "running");
+  const blocked = nodesWithStatus(graph, state, "blocked");
+  const failed = nodesWithStatus(graph, state, "failed");
+  const isZh = language === "zh-CN";
+  if (failed.length > 0) {
+    return {
+      summary: isZh ? `处理或打回 ${failed[0].id}` : `resolve or reject from ${failed[0].id}`,
+      command: `node scripts/omykit-workflow.mjs reject ${failed[0].id} --to <node-id> --handoff <path>`,
+    };
+  }
+  if (blocked.length > 0 && ready.length === 0) {
+    return {
+      summary: isZh ? `解决 ${blocked[0].id} 的阻塞后解除阻塞` : `resolve blocker for ${blocked[0].id}, then unblock it`,
+      command: `node scripts/omykit-workflow.mjs unblock ${blocked[0].id} --reason <resolved reason>`,
+    };
+  }
+  if (ready.length > 0) {
+    return {
+      summary: isZh ? `启动 ${ready[0].id}` : `start ${ready[0].id}`,
+      command: `node scripts/omykit-workflow.mjs start ${ready[0].id}`,
+    };
+  }
+  if (running.length > 0) {
+    return {
+      summary: isZh ? `为 ${running[0].id} 提交 handoff` : `complete ${running[0].id} with a handoff`,
+      command: `node scripts/omykit-workflow.mjs complete ${running[0].id} --handoff <path>`,
+    };
+  }
+  return {
+    summary: isZh ? "交付已完成，或没有就绪节点" : "delivery complete or no ready nodes",
+    command: "node scripts/omykit-workflow.mjs board",
+  };
+}
+
 function printStatus(graph, state) {
+  const language = workflowCliLanguage(graph);
+  const isZh = language === "zh-CN";
   const ready = readyNodes(graph, state);
   const running = nodesWithStatus(graph, state, "running");
   const blocked = nodesWithStatus(graph, state, "blocked");
   const failed = nodesWithStatus(graph, state, "failed");
   const passed = nodesWithStatus(graph, state, "passed");
   const skipped = nodesWithStatus(graph, state, "skipped");
-  const action =
-    failed.length > 0
-      ? `resolve or reject from ${failed[0].id}`
-      : blocked.length > 0 && ready.length === 0
-        ? `unblock ${blocked[0].id}`
-        : ready.length > 0
-          ? `start ${ready[0].id}`
-          : running.length > 0
-            ? `complete ${running[0].id} with a handoff`
-            : "delivery complete or no ready nodes";
+  const action = statusAction(graph, state, language);
+
+  if (isZh) {
+    console.log(`工作流: ${graph.workflow_id} (${graph.mode})`);
+    console.log(`就绪节点: ${formatNodeList(ready)}`);
+    console.log(`进行中节点: ${formatNodeList(running)}`);
+    console.log(`阻塞节点: ${formatNodeList(blocked)}`);
+    console.log(`失败节点: ${formatNodeList(failed)}`);
+    console.log(`通过节点: ${passed.length}`);
+    console.log(`跳过节点: ${skipped.length}`);
+    console.log(`建议下一步: ${action.summary}`);
+    console.log(`继续执行: ${action.command}`);
+    console.log("长任务循环: start 就绪节点 -> 执行真实工作 -> 写 handoff JSON -> complete/reject/block/unblock -> 重复 next/resume。");
+    console.log("不要把创建工作流当成任务完成；持续推进到 delivery 通过、记录真实阻塞，或用户明确只要创建骨架。");
+    return;
+  }
 
   console.log(`Workflow: ${graph.workflow_id} (${graph.mode})`);
   console.log(`Ready nodes: ${formatNodeList(ready)}`);
@@ -1964,7 +2028,11 @@ function printStatus(graph, state) {
   console.log(`Failed nodes: ${formatNodeList(failed)}`);
   console.log(`Passed nodes: ${passed.length}`);
   console.log(`Skipped nodes: ${skipped.length}`);
-  console.log(`Next recommended action: ${action}`);
+  console.log(`Next recommended action: ${action.summary}`);
+  console.log(`Continue command: ${action.command}`);
+  if (ready.length > 0) console.log(`Continue now: ${action.command}`);
+  console.log("Long task loop: start a ready node -> do the real work -> write handoff JSON -> complete/reject/block/unblock -> repeat next/resume.");
+  console.log("Creating the workflow is not task completion; continue until delivery passes, a real blocker is recorded, or you intentionally stop.");
   console.log("Required evidence: structured handoff JSON for each completed, failed, blocked, or skipped node.");
 }
 
@@ -4928,6 +4996,23 @@ function cmdBlock(positional, options) {
   printStatus(graph, state);
 }
 
+function cmdUnblock(positional, options) {
+  const nodeId = positional[0];
+  const reason = options.reason || "Blocker resolved";
+  if (!nodeId) throw new Error("unblock requires a node id");
+  const workflowDir = resolveWorkflowDir(options);
+  const { graph, state } = loadWorkflow(workflowDir);
+  const node = requireNode(graph, nodeId);
+  const entry = state.nodes[nodeId];
+  if (entry.status !== "blocked") throw new Error(`Node ${nodeId} is ${entry.status}, not blocked`);
+  const completedAt = now();
+  const nextStatus = dependenciesSatisfied(node, state) ? "ready" : "pending";
+  state.nodes[nodeId] = stateEntry(nextStatus, String(reason), entry.last_handoff || null);
+  saveState(workflowDir, state);
+  appendLedger(workflowDir, { at: completedAt, event: "node.unblock", node_id: nodeId, reason: String(reason) });
+  printStatus(graph, state);
+}
+
 function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === "help" || command === "--help" || command === "-h") {
@@ -4972,6 +5057,9 @@ function main() {
       return;
     case "block":
       cmdBlock(positional, options);
+      return;
+    case "unblock":
+      cmdUnblock(positional, options);
       return;
     default:
       throw new Error(`Unknown command: ${command}\n${commandHelp()}`);

@@ -31,7 +31,7 @@
       "id": "spec-kit",
       "repo": "github/spec-kit",
       "url": "https://github.com/github/spec-kit.git",
-      "baseline": "ac4f646144d1ba3472fbf523f2f592020c39968e",
+      "baseline": "0a126256e0a35c9c0edcb2acf53065f1a7a2aa6e",
       "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow",
       "verification": {
         "owner": "github",
@@ -271,7 +271,7 @@
       "id": "docker-compose",
       "repo": "docker/compose",
       "url": "https://github.com/docker/compose.git",
-      "baseline": "46b806eafb1fbefa8eb471a9da90a2a732e84f4a",
+      "baseline": "43922d55b069b159b0324efad869657c3f3c22e3",
       "role": "Official Docker Compose reference for local multi-service runtime readiness",
       "verification": {
         "owner": "docker",
@@ -316,7 +316,7 @@
       "id": "playwright",
       "repo": "microsoft/playwright",
       "url": "https://github.com/microsoft/playwright.git",
-      "baseline": "fca6a5d12081c3febb23b0b29bc8882b82e0841b",
+      "baseline": "b5a45d98118a682e7d1127396e8034c88ec7a315",
       "role": "Official Playwright reference for repeatable browser automation",
       "verification": {
         "owner": "microsoft",

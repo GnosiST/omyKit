@@ -32,7 +32,9 @@ For controller and board requests, use the first available script:
 
 Map user intent to commands:
 
-- create tracked workflow -> `init --template <template-id> --lang <user-language>`; default to `change.standard`, use `bugfix.standard` for bug-fix loops, and `frontend-ui.strict` for design-sensitive UI work
+- create or execute tracked workflow -> `init --template <template-id> --lang <user-language>` when no workflow exists; default to `change.standard`, use `bugfix.standard` for bug-fix loops, and `frontend-ui.strict` for design-sensitive UI work
+- continue execution -> `resume`, then start the next ready node and do the node's real work in the current Codex turn
+- skeleton-only workflow -> run only `init` when the user explicitly says `只创建`, `只初始化`, `skeleton only`, or `do not execute`
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
 - progress/status -> `status`
 - next work -> `next`
@@ -45,6 +47,17 @@ In Codex Desktop, after generating a board, return the local `board.html` link a
 
 If there are multiple workflows and no active/latest workflow is safe to infer, ask which workflow to use. If the controller script is missing, tell the user omyKit must be installed or reinstalled first.
 
+For long tasks, do not stop after creating the workflow. Creation only establishes state. Unless the user asked for a skeleton only, continue the loop:
+
+1. `resume` or `next` to identify the ready node.
+2. `start <node-id>`.
+3. Execute that node's real work.
+4. Write a structured handoff with actual work items, evidence, skills/model/usage when available, and `evolution_candidates` for delivery nodes.
+5. `complete`, `reject`, or `block` the node.
+6. Repeat until delivery passes, a real blocker requires the user, or the user explicitly asks to stop.
+
+When reporting a newly created workflow, always tell the user whether Codex will keep executing now, which node is next, and the exact continue command for manual fallback.
+
 ## Help
 
 When the user asks for `help`, `帮助`, `怎么用`, available commands, or how to use omyKit, answer directly in the user's language. Do not start a workflow, inspect the repository broadly, or generate a board unless the user also asks for that action.
@@ -52,7 +65,11 @@ When the user asks for `help`, `帮助`, `怎么用`, available commands, or how
 Include these concise groups:
 
 - start: `$omykit 初始化项目`, `$omykit 改造旧项目`, `$omykit 开始一个需求`
-- tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 继续工作流`
+- execute long work: `$omykit 开始执行：<任务>`, `$omykit 创建并执行工作流：<任务>`, `$omykit 继续工作流`, `$omykit 推进下一步`
+- skeleton only: `$omykit 只创建工作流：<任务>`, `$omykit 只初始化 workflow：<任务>`
+- tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`
+- task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
+- recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
 - maintenance: `$omykit 更新自己`, `$omykit 交付检查`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
@@ -85,6 +102,12 @@ Classify the user request:
 6. `delivery`: verify, export, hand off, commit, or prepare release.
 
 If the entry is unclear, infer when safe and state the assumption. Ask only when a wrong route would waste work or change risk.
+
+For controller entries, distinguish user intent:
+
+- `execute`: phrases like `开始执行`, `创建并执行`, `继续`, `推进`, `跑完整个工作流`, or a task brief without `只创建` mean Codex should advance nodes after controller setup.
+- `inspect`: phrases like `状态`, `进度`, `下一步`, `看板`, `scorecard`, `校验`, or `模板` mean run the matching direct operation and report.
+- `skeleton_only`: phrases like `只创建`, `只初始化`, `先建骨架`, or `不要执行` mean create state only and return the next command.
 
 ## Project Type
 

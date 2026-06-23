@@ -28,8 +28,11 @@ Prefer operating the controller through Codex chat:
 
 ```text
 $omykit 创建工作流：重构登录模块
+$omykit 开始执行：重构登录模块
+$omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
+$omykit 解除阻塞
 $omykit 下一步
 $omykit 生成看板并打开
 $omykit 校验工作流
@@ -38,6 +41,21 @@ $omykit 校验工作流
 Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
+
+## Long Task Execution
+
+Creating a workflow is not completion. `init` only creates durable state. For long work, Codex should continue after creation unless the user explicitly says `only create`, `skeleton only`, or `do not execute`.
+
+Execution loop:
+
+1. `resume` or `next` identifies the ready node.
+2. `start <node-id>` marks the node active.
+3. Codex performs that node's real work in the current project.
+4. Codex writes a structured handoff with work items, evidence, skills/model/usage when available, and delivery `evolution_candidates`.
+5. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
+6. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
+
+Use `$omykit 开始执行：<任务>` or `$omykit 创建并执行工作流：<任务>` when you want Codex to create/resume and keep advancing. Use `$omykit 只创建工作流：<任务>` only when you want the skeleton and manual continuation commands.
 
 ## Runtime Location
 

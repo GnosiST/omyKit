@@ -1,6 +1,6 @@
 ---
-description: Start, explain, or operate omyKit workflow
-argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始一个需求 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
+description: Start, execute, explain, or operate omyKit workflow
+argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始执行 | 只创建工作流 | 继续工作流 | 解除阻塞 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
 ---
 
 Use $omykit with these user arguments:
@@ -14,5 +14,7 @@ For non-help tasks, run the omyKit intake decision gate before implementation or
 If the arguments are clear, infer safe defaults, state assumptions, and proceed without extra confirmation. When asking, offer suggested choices if useful and allow a custom answer.
 
 If the arguments ask for help, usage, commands, or "怎么用", answer directly with concise omyKit usage groups. Do not start a workflow or run controller commands unless the user also asks for a concrete action.
+
+If the arguments ask to create and execute, start, continue, advance, or run a long task, do not stop after workflow creation. Create or resume the tracked workflow, start the next ready node, do the node work, write a structured handoff, then complete/reject/block and continue until delivery passes, a real blocker needs the user, or the user explicitly asks to stop. If the user says only create/init/skeleton/no execution, create workflow state only and return the next command.
 
 Use the workflow at task boundaries and meaningful phase changes, not for every individual action.
