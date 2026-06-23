@@ -19,7 +19,8 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
-- **Durable task graph:** use a local C-lite controller and static board for long, resumable, multi-node work.
+- **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
+- **Scorecard audit:** check real handoffs, verification evidence, language consistency, usage records, and model-tier policy before trusting completion claims.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -102,7 +103,7 @@ Codex will run the controller internally and return the generated paths. Manual 
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. Use `--lang zh-CN` for Simplified Chinese labels. It is a local static view, not a realtime service.
+This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -113,6 +114,7 @@ This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html
 | `docs/workflow/` | Workflow notes for setup, routing, controller, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `schemas/` | JSON schemas for controller graphs, node cards, state, and handoffs. |
 | `scripts/` | Validation, workflow controller, global installation, install-from-ref, and rollback helpers. |
+| `workflow-templates/` | Layered YAML workflow templates, agent/model/runtime/safety profiles, and scorecards used by the controller. |
 | `upstream-sources.json` | Tracked external reference baselines plus source-integrity snapshots for official workflow, spec, local-skill, platform-tool, design, motion, ecosystem, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
@@ -139,7 +141,9 @@ For long or Strict work, omyKit can persist a task graph under `.omykit/workflow
 
 The controller is local and deterministic. It does not call models, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows a clickable task tracker with actual node work items, changed-file summaries, verification results, evidence availability, agent activity, model-tier policy, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token and context totals are only shown when they are recorded with a source; missing nodes stay visible instead of being treated as zero.
+The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
+
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, a clickable task tracker with actual node work items, changed-file summaries, verification results, evidence availability, agent activity, model-tier policy, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token and context totals are only shown when they are recorded with a source; missing nodes stay visible instead of being treated as zero.
 
 ## Workflow Model
 
@@ -152,6 +156,7 @@ Operational rules:
 - Route once at task intake, when scope or risk changes, or before delivery.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
+- For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
 - For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.
@@ -167,6 +172,7 @@ Operational rules:
 - [Workflow overview](docs/workflow/codex-workflow-kit.md)
 - [Skill coordination](docs/workflow/skill-coordination.md)
 - [Workflow controller](docs/workflow/controller.md)
+- [Workflow templates](docs/workflow/workflow-templates.md)
 - [Task graph](docs/workflow/task-graph.md)
 - [Handoff protocol](docs/workflow/handoff-protocol.md)
 - [Language policy](docs/workflow/language-policy.md)
@@ -192,6 +198,7 @@ Recommended pre-handoff checks:
 
 ```bash
 ./scripts/validate-skills.sh
+node scripts/omykit-workflow.mjs templates validate
 node scripts/test-omykit-workflow.mjs
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs

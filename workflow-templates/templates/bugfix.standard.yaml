@@ -1,0 +1,234 @@
+schema_version: "1"
+template_id: bugfix.standard
+template_version: "1.0"
+name:
+  en: Standard Bugfix
+  zh-CN: 标准缺陷修复
+description:
+  en: Reproduce, diagnose, fix, and verify with an explicit reject loop back to implementation.
+  zh-CN: 明确复现、诊断、修复和验证，并允许验证节点打回实现节点。
+default_mode: Standard
+layers:
+  agents: standard-agents
+  model_profile: cost-aware
+  runtime_profile: project-default
+  safety_limits: standard
+  scorecards:
+    - bugfix
+nodes:
+  - id: 01-intake
+    type: intake
+    title:
+      en: Bug Intake
+      zh-CN: 缺陷接收
+    objective:
+      en: Capture expected behavior, actual behavior, environment, constraints, and success criteria.
+      zh-CN: 固化预期行为、实际行为、环境、约束和成功标准。
+    depends_on: []
+    required: true
+    retry_limit: 1
+    context_level: scan
+    owner: codex
+    worker_profile: planner
+    agent: planner
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 02-reproduce
+    task_complexity: simple
+    model_tier: fast
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 10
+    acceptance:
+      en:
+        - Expected behavior, actual behavior, environment, and success criteria are explicit.
+      zh-CN:
+        - 预期行为、实际行为、环境和成功标准已经明确。
+  - id: 02-reproduce
+    type: verify
+    title:
+      en: Reproduce
+      zh-CN: 复现
+    objective:
+      en: Reproduce or bound the bug before changing implementation.
+      zh-CN: 在修改实现前复现或界定缺陷。
+    depends_on:
+      - 01-intake
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: tester
+    agent: tester
+    parallel_group: diagnosis
+    join_policy: all_required
+    handoff_target: 03-diagnose
+    task_complexity: standard
+    model_tier: standard
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 25
+    acceptance:
+      en:
+        - Reproduction steps, observed failure, or bounded non-reproduction evidence are recorded.
+      zh-CN:
+        - 已记录复现步骤、观察到的失败，或无法复现时的边界证据。
+  - id: 03-diagnose
+    type: research
+    title:
+      en: Diagnose
+      zh-CN: 诊断
+    objective:
+      en: Identify likely root cause, affected surface, and minimal fix strategy.
+      zh-CN: 识别可能根因、影响范围和最小修复策略。
+    depends_on:
+      - 02-reproduce
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: planner
+    agent: planner
+    parallel_group: diagnosis
+    join_policy: all_required
+    handoff_target: 04-implement
+    task_complexity: complex
+    model_tier: standard
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - Root-cause hypothesis, affected files, and fix strategy are recorded.
+      zh-CN:
+        - 已记录根因假设、受影响文件和修复策略。
+  - id: 04-implement
+    type: implement
+    title:
+      en: Fix
+      zh-CN: 修复
+    objective:
+      en: Apply the smallest fix that addresses the diagnosed cause.
+      zh-CN: 采用能解决诊断根因的最小修复。
+    depends_on:
+      - 03-diagnose
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: coder
+    agent: coder
+    parallel_group: implementation
+    join_policy: all_required
+    handoff_target: 05-verify
+    task_complexity: complex
+    model_tier: standard
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 45
+    acceptance:
+      en:
+        - Fix is scoped to the diagnosed cause and avoids unrelated refactors.
+      zh-CN:
+        - 修复范围限定在诊断根因内，避免无关重构。
+  - id: 05-verify
+    type: verify
+    title:
+      en: Regression Verify
+      zh-CN: 回归验证
+    objective:
+      en: Verify the fix and reject to implementation when evidence fails.
+      zh-CN: 验证修复；证据失败时打回实现节点。
+    depends_on:
+      - 04-implement
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: tester
+    agent: tester
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 06-review
+    task_complexity: standard
+    model_tier: standard
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - Regression evidence passes, or failure is rejected to 04-implement with a required fix.
+      zh-CN:
+        - 回归证据通过；如果失败，带 required_fix 打回 04-implement。
+  - id: 06-review
+    type: review
+    title:
+      en: Review
+      zh-CN: 评审
+    objective:
+      en: Review fix scope, regression risk, and evidence completeness.
+      zh-CN: 评审修复范围、回归风险和证据完整性。
+    depends_on:
+      - 05-verify
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: reviewer
+    agent: reviewer
+    parallel_group: review
+    join_policy: manual_review
+    handoff_target: 07-delivery
+    task_complexity: complex
+    model_tier: frontier
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 25
+    acceptance:
+      en:
+        - Review confirms the fix is bounded, verified, and ready to deliver.
+      zh-CN:
+        - 评审确认修复有边界、已验证、可交付。
+  - id: 07-delivery
+    type: delivery
+    title:
+      en: Delivery
+      zh-CN: 交付
+    objective:
+      en: Package final evidence, residual risk, and user-facing bugfix summary.
+      zh-CN: 汇总最终证据、剩余风险和面向用户的缺陷修复摘要。
+    depends_on:
+      - 06-review
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: delivery
+    agent: delivery
+    parallel_group: delivery
+    join_policy: manual_review
+    handoff_target: null
+    task_complexity: simple
+    model_tier: fast
+    model_profile: cost-aware
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: bugfix
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Final delivery includes bug cause, fix summary, verification, skipped checks, and residual risk.
+      zh-CN:
+        - 最终交付包含缺陷原因、修复摘要、验证、跳过检查和剩余风险。

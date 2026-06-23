@@ -32,12 +32,14 @@ For controller and board requests, use the first available script:
 
 Map user intent to commands:
 
-- create tracked workflow -> `init`
+- create tracked workflow -> `init --template <template-id> --lang <user-language>`; default to `change.standard`, use `bugfix.standard` for bug-fix loops, and `frontend-ui.strict` for design-sensitive UI work
+- inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
 - progress/status -> `status`
 - next work -> `next`
 - continue after interruption -> `resume`
 - validate workflow files -> `validate`
-- generate or open board -> `board --open --lang <user-language>`; use `zh-CN` for Simplified Chinese prompts and `en` otherwise
+- scorecard audit -> `scorecard --lang <user-language>`
+- generate or open board -> `board --open`; pass `--lang <user-language>` only when overriding workflow language; use `zh-CN` for Simplified Chinese prompts and `en` otherwise
 
 In Codex Desktop, after generating a board, return the local `board.html` link and open it in the built-in browser when that surface is available. Treat CLI `--open` as a system-browser fallback, not as the only UX.
 
@@ -98,3 +100,15 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 ## Agent And Cost Signals
 
 Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
+
+## Workflow Templates And Scorecards
+
+For tracked controller work, select the nearest reusable template instead of inventing a graph ad hoc:
+
+- `change.standard`: scoped feature, refactor, docs, or maintenance work
+- `bugfix.standard`: reproduce, diagnose, fix, verify, review, and delivery loops
+- `frontend-ui.strict`: design-sensitive UI work with visual QA and review
+
+Do not force strict UI or bugfix templates onto unrelated work. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
+
+Scorecards audit recorded evidence. Treat failed required scorecard checks as delivery blockers unless the user explicitly accepts the residual risk. Treat recommended scorecard warnings as improvement suggestions, not automatic blockers.

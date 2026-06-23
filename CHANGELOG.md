@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Refreshed Context7, OpenAI Codex, and Sentry upstream baselines after reviewing enterprise API docs, MCP sandbox-state handling, and Sentry migration-flag changes; no additional omyKit workflow rule was promoted.
+- Added layered workflow templates and scorecards: `change.standard`, `bugfix.standard`, and `frontend-ui.strict` now compile into controller graphs with agent/model/runtime/safety profiles, template inspection commands, scorecard audits, language-aware board inference, schemas, tests, and English/Chinese docs.
 - Added board interaction and operations telemetry: clickable status filters, node-detail anchors, project change summaries, generated improvement actions, context-size coverage, node timing/ETA, and supplier-independent model-tier policy for agent work.
 - Tightened workflow handoffs and schemas for language, context usage, timing, agent scope, model tier, and stable agent IDs so multi-agent records are auditable without forcing the controller to call models.
 - Refreshed `openai/codex` and `getsentry/sentry` upstream baselines after reviewing Codex Apps cache/auth setup cleanup and Sentry inbound-filter audit-log metadata; no omyKit workflow rule was promoted.

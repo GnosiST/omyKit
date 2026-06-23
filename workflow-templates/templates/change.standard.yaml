@@ -1,0 +1,203 @@
+schema_version: "1"
+template_id: change.standard
+template_version: "1.0"
+name:
+  en: Standard Change
+  zh-CN: 标准变更
+description:
+  en: Default reusable workflow for scoped feature, refactor, documentation, or maintenance work.
+  zh-CN: 适用于有边界的功能、重构、文档或维护任务的默认可复用流程。
+default_mode: Standard
+layers:
+  agents: standard-agents
+  model_profile: balanced
+  runtime_profile: project-default
+  safety_limits: standard
+  scorecards:
+    - code-change
+nodes:
+  - id: 01-intake
+    type: intake
+    title:
+      en: Intake
+      zh-CN: 需求接收
+    objective:
+      en: Capture the user goal, constraints, deliverable, language, and success criteria.
+      zh-CN: 固化用户目标、约束、交付物、语言和成功标准。
+    depends_on: []
+    required: true
+    retry_limit: 1
+    context_level: scan
+    owner: codex
+    worker_profile: planner
+    agent: planner
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 02-design
+    task_complexity: simple
+    model_tier: fast
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 10
+    acceptance:
+      en:
+        - Goal, constraints, deliverable, language, and success criteria are explicit.
+      zh-CN:
+        - 目标、约束、交付物、语言和成功标准已经明确。
+  - id: 02-design
+    type: design
+    title:
+      en: Design
+      zh-CN: 方案设计
+    objective:
+      en: Choose the approach, boundaries, risks, and verification strategy.
+      zh-CN: 确定方案、边界、风险和验证策略。
+    depends_on:
+      - 01-intake
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: planner
+    agent: planner
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 03-plan
+    task_complexity: complex
+    model_tier: frontier
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - Approach, boundaries, risks, and verification strategy are clear.
+      zh-CN:
+        - 方案、边界、风险和验证策略已经清楚。
+  - id: 03-plan
+    type: plan
+    title:
+      en: Plan
+      zh-CN: 执行计划
+    objective:
+      en: Break the accepted design into small implementation and verification steps.
+      zh-CN: 把已接受方案拆成小的实现和验证步骤。
+    depends_on:
+      - 02-design
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: planner
+    agent: planner
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 04-implement
+    task_complexity: standard
+    model_tier: standard
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 20
+    acceptance:
+      en:
+        - Execution steps are ordered, scoped, and individually verifiable.
+      zh-CN:
+        - 执行步骤有顺序、有边界，并且每一步都可验证。
+  - id: 04-implement
+    type: implement
+    title:
+      en: Implement
+      zh-CN: 实现
+    objective:
+      en: Apply scoped changes and collect focused evidence.
+      zh-CN: 应用限定范围内的变更并收集聚焦证据。
+    depends_on:
+      - 03-plan
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: coder
+    agent: coder
+    parallel_group: implementation
+    join_policy: all_required
+    handoff_target: 05-verify
+    task_complexity: complex
+    model_tier: standard
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 45
+    acceptance:
+      en:
+        - Requested artifact changes are implemented and scoped to the task.
+      zh-CN:
+        - 请求的交付物变更已实现，并且范围受控。
+  - id: 05-verify
+    type: verify
+    title:
+      en: Verify
+      zh-CN: 验证
+    objective:
+      en: Run relevant checks and report pass, fail, skip, or residual risk.
+      zh-CN: 运行相关检查并记录通过、失败、跳过或剩余风险。
+    depends_on:
+      - 04-implement
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: tester
+    agent: tester
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 06-delivery
+    task_complexity: standard
+    model_tier: standard
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 25
+    acceptance:
+      en:
+        - Relevant checks have passed or residual risk is explicitly captured.
+      zh-CN:
+        - 相关检查已通过，或剩余风险已明确记录。
+  - id: 06-delivery
+    type: delivery
+    title:
+      en: Delivery
+      zh-CN: 交付
+    objective:
+      en: Package final evidence and make completion status explicit.
+      zh-CN: 汇总最终证据并明确完成状态。
+    depends_on:
+      - 05-verify
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: delivery
+    agent: delivery
+    parallel_group: delivery
+    join_policy: manual_review
+    handoff_target: null
+    task_complexity: simple
+    model_tier: fast
+    model_profile: balanced
+    runtime_profile: project-default
+    safety_profile: standard
+    scorecard: code-change
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Final handoff includes evidence, skipped checks, risks, and next steps.
+      zh-CN:
+        - 最终交付包含证据、跳过的检查、风险和后续步骤。

@@ -52,7 +52,7 @@ $omykit 初始化项目
 
 全局安装是正常路径。它让可复用 workflow 留在单个项目之外，避免把通用 skill 文件复制进每个仓库。
 
-全局安装也会把可选 workflow controller 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`，并把 controller schemas 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`。
+全局安装也会把可选 workflow controller 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`，controller schemas 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`，并把可复用 workflow 模板复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/`。
 
 ## 新项目
 
@@ -172,6 +172,7 @@ $omykit 初始化项目，并检查版本管理、回滚、历史版本和定制
 - 在 project profile 专门化之前，docs 保持通用
 - 持久项目记录了 versioning 和 rollback expectations
 - `./scripts/validate-skills.sh` 通过
+- workflow 模板变化时，`node scripts/omykit-workflow.mjs templates validate` 通过
 - controller 脚本或 schemas 变化时，`node scripts/test-omykit-workflow.mjs` 通过
 - `node ./scripts/validate-docs.mjs` 通过
 - `git diff --check` 通过

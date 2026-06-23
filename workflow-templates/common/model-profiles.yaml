@@ -1,0 +1,23 @@
+schema_version: "1"
+model_profiles:
+  - id: balanced
+    name:
+      en: Balanced
+      zh-CN: 均衡档
+    policy:
+      en: Use fast tier for bounded intake and delivery, standard tier for implementation and verification, frontier tier for design or high-risk review.
+      zh-CN: 有边界的接收和交付用 fast，普通实现和验证用 standard，方案设计或高风险评审用 frontier。
+  - id: cost-aware
+    name:
+      en: Cost Aware
+      zh-CN: 成本敏感档
+    policy:
+      en: Start with the lowest sufficient tier, escalate only after ambiguity, failed checks, or architecture risk is recorded.
+      zh-CN: 从最低足够档位开始，只有记录到歧义、检查失败或架构风险后才升级模型。
+  - id: quality-critical
+    name:
+      en: Quality Critical
+      zh-CN: 高质量优先档
+    policy:
+      en: Use stronger models for design, review, security, migration, and client-facing delivery gates.
+      zh-CN: 对方案、评审、安全、迁移和面向客户的交付门禁使用更强模型。

@@ -9,7 +9,9 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `安装 omyKit`, `帮我安装 omyKit`, `install omyKit` | `maintenance` |
 | `更新 omyKit`, `重新安装 omyKit`, `检查 omyKit 版本`, `update omyKit` | `maintenance` |
 | `创建工作流`, `初始化 workflow`, `开始追踪任务`, `create workflow` | `controller` |
+| `使用 bugfix 模板`, `使用 UI 模板`, `查看 workflow 模板`, `templates list` | `controller` |
 | `查看进度`, `工作流状态`, `下一步`, `继续工作流`, `resume workflow` | `controller` |
+| `scorecard`, `验票`, `审计工作流证据`, `检查证据` | `controller` |
 | `生成看板`, `打开看板`, `workflow board`, `visual board` | `controller` |
 | `初始化项目`, `新项目`, `从零开始`, `start new project` | `init` |
 | `初始化旧项目`, `改造旧项目`, `接入现有项目`, `retrofit` | `retrofit` |

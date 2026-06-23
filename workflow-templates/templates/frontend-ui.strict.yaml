@@ -1,0 +1,234 @@
+schema_version: "1"
+template_id: frontend-ui.strict
+template_version: "1.0"
+name:
+  en: Strict Frontend UI
+  zh-CN: 严格前端 UI
+description:
+  en: Design-sensitive workflow for UI changes that need visual judgment, implementation, browser QA, and review.
+  zh-CN: 面向需要视觉判断、实现、浏览器验收和评审的 UI 改动流程。
+default_mode: Strict
+layers:
+  agents: ui-agents
+  model_profile: quality-critical
+  runtime_profile: browser-qa
+  safety_limits: strict-delivery
+  scorecards:
+    - frontend-ui
+nodes:
+  - id: 01-intake
+    type: intake
+    title:
+      en: UI Intake
+      zh-CN: UI 需求接收
+    objective:
+      en: Capture target users, screens, states, constraints, language, and visual success criteria.
+      zh-CN: 固化目标用户、页面、状态、约束、语言和视觉成功标准。
+    depends_on: []
+    required: true
+    retry_limit: 1
+    context_level: scan
+    owner: codex
+    worker_profile: ux-designer
+    agent: ux-designer
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 02-design
+    task_complexity: standard
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Target screens, user intent, states, constraints, and visual acceptance are explicit.
+      zh-CN:
+        - 目标页面、用户意图、状态、约束和视觉验收标准已经明确。
+  - id: 02-design
+    type: design
+    title:
+      en: Design Direction
+      zh-CN: 设计方向
+    objective:
+      en: Define information hierarchy, interaction model, visual system fit, and QA strategy.
+      zh-CN: 定义信息层级、交互模型、视觉系统适配和验收策略。
+    depends_on:
+      - 01-intake
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: ux-designer
+    agent: ux-designer
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 03-plan
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 35
+    acceptance:
+      en:
+        - Design direction covers layout, interaction states, responsive behavior, and verification evidence.
+      zh-CN:
+        - 设计方向覆盖布局、交互状态、响应式行为和验证证据。
+  - id: 03-plan
+    type: plan
+    title:
+      en: UI Plan
+      zh-CN: UI 执行计划
+    objective:
+      en: Split UI work into bounded implementation, asset, state, and verification tasks.
+      zh-CN: 把 UI 工作拆成有边界的实现、资产、状态和验证任务。
+    depends_on:
+      - 02-design
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: ux-designer
+    agent: ux-designer
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 04-implement
+    task_complexity: complex
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 20
+    acceptance:
+      en:
+        - Plan lists implementation steps, visual states, screenshots, and checks to run.
+      zh-CN:
+        - 计划列出实现步骤、视觉状态、截图和需要运行的检查。
+  - id: 04-implement
+    type: implement
+    title:
+      en: UI Implementation
+      zh-CN: UI 实现
+    objective:
+      en: Implement the UI in the existing stack with scoped files and design-system consistency.
+      zh-CN: 在现有技术栈内实现 UI，并保持文件范围和设计系统一致性。
+    depends_on:
+      - 03-plan
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: frontend-coder
+    agent: frontend-coder
+    parallel_group: implementation
+    join_policy: all_required
+    handoff_target: 05-visual-qa
+    task_complexity: complex
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 60
+    acceptance:
+      en:
+        - UI changes are implemented, scoped, responsive, and aligned with existing conventions.
+      zh-CN:
+        - UI 改动已实现、范围受控、响应式可用，并符合现有约定。
+  - id: 05-visual-qa
+    type: verify
+    title:
+      en: Visual QA
+      zh-CN: 视觉验收
+    objective:
+      en: Verify rendered UI with browser checks, screenshots, responsive states, and accessibility basics when supported.
+      zh-CN: 在项目支持时，用浏览器检查、截图、响应式状态和基础可访问性验证渲染 UI。
+    depends_on:
+      - 04-implement
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: visual-qa
+    agent: visual-qa
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 06-review
+    task_complexity: complex
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 35
+    acceptance:
+      en:
+        - Visual evidence confirms the UI renders correctly, or failures are rejected to implementation.
+      zh-CN:
+        - 视觉证据确认 UI 正确渲染；若失败，打回实现节点。
+  - id: 06-review
+    type: review
+    title:
+      en: UI Review
+      zh-CN: UI 评审
+    objective:
+      en: Review usability, visual quality, accessibility basics, performance risk, and evidence completeness.
+      zh-CN: 评审可用性、视觉质量、基础可访问性、性能风险和证据完整性。
+    depends_on:
+      - 05-visual-qa
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: reviewer
+    agent: reviewer
+    parallel_group: review
+    join_policy: manual_review
+    handoff_target: 07-delivery
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - Review confirms the UI is usable, visually coherent, verified, and ready for delivery.
+      zh-CN:
+        - 评审确认 UI 可用、视觉一致、已验证并可交付。
+  - id: 07-delivery
+    type: delivery
+    title:
+      en: UI Delivery
+      zh-CN: UI 交付
+    objective:
+      en: Package final screenshots, checks, changed files, residual risk, and user-facing summary.
+      zh-CN: 汇总最终截图、检查、变更文件、剩余风险和面向用户的摘要。
+    depends_on:
+      - 06-review
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: delivery
+    agent: delivery
+    parallel_group: delivery
+    join_policy: manual_review
+    handoff_target: null
+    task_complexity: simple
+    model_tier: fast
+    model_profile: quality-critical
+    runtime_profile: browser-qa
+    safety_profile: strict-delivery
+    scorecard: frontend-ui
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Final handoff includes screenshots or skip reason, verification, changed-file summaries, and residual risk.
+      zh-CN:
+        - 最终交接包含截图或跳过原因、验证、变更文件说明和剩余风险。

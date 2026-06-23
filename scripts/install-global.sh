@@ -32,7 +32,13 @@ if [ ! -d "$source_root/schemas" ]; then
   exit 1
 fi
 
+if [ ! -d "$source_root/workflow-templates" ]; then
+  echo "Cannot find workflow templates directory: $source_root/workflow-templates" >&2
+  exit 1
+fi
+
 "$repo_root/scripts/validate-skills.sh" "$source_root"
+node "$source_root/scripts/omykit-workflow.mjs" templates validate >/dev/null
 
 installed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 install_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -62,7 +68,7 @@ backup_any="false"
 
 mkdir -p "$codex_home/skills" "$codex_home/prompts" "$codex_home/omykit/backups"
 mkdir -p "$codex_home/omykit/scripts" "$codex_home/omykit/schemas"
-mkdir -p "$backup_candidate/skills" "$backup_candidate/prompts" "$backup_candidate/scripts" "$backup_candidate/schemas"
+mkdir -p "$backup_candidate/skills" "$backup_candidate/prompts" "$backup_candidate/scripts" "$backup_candidate/schemas" "$backup_candidate/workflow-templates"
 
 for skill_dir in "$source_root"/skills/*; do
   [ -d "$skill_dir" ] || continue
@@ -88,6 +94,11 @@ fi
 
 if find "$codex_home/omykit/schemas" -maxdepth 1 -name '*.schema.json' -type f | grep -q .; then
   cp "$codex_home/omykit/schemas"/*.schema.json "$backup_candidate/schemas/"
+  backup_any="true"
+fi
+
+if [ -d "$codex_home/omykit/workflow-templates" ]; then
+  cp -R "$codex_home/omykit/workflow-templates" "$backup_candidate/workflow-templates/current"
   backup_any="true"
 fi
 
@@ -180,6 +191,22 @@ else
   exit 1
 fi
 
+tmp_template_dir="$codex_home/omykit/.workflow-templates.tmp.$$"
+backup_template_dir="$codex_home/omykit/.workflow-templates.backup.$$"
+rm -rf "$tmp_template_dir" "$backup_template_dir"
+cp -R "$source_root/workflow-templates" "$tmp_template_dir"
+if [ -d "$codex_home/omykit/workflow-templates" ]; then
+  mv "$codex_home/omykit/workflow-templates" "$backup_template_dir"
+fi
+if mv "$tmp_template_dir" "$codex_home/omykit/workflow-templates"; then
+  rm -rf "$backup_template_dir"
+else
+  if [ -d "$backup_template_dir" ]; then
+    mv "$backup_template_dir" "$codex_home/omykit/workflow-templates"
+  fi
+  exit 1
+fi
+
 {
   echo "version=$version"
   echo "installed_at=$installed_at"
@@ -188,6 +215,7 @@ fi
   echo "git_commit=$git_commit"
   echo "git_dirty=$git_dirty"
   echo "backup_dir=$backup_dir"
+  echo "workflow_templates=$codex_home/omykit/workflow-templates"
 } > "$codex_home/omykit/install-manifest"
 
 echo "Installed omyKit $version into $codex_home"

@@ -1,0 +1,72 @@
+schema_version: "1"
+scorecard_id: code-change
+name:
+  en: Code Change Delivery
+  zh-CN: 代码变更交付
+description:
+  en: Evidence checks for ordinary implementation work.
+  zh-CN: 面向常规实现工作的证据检查。
+checks:
+  - id: terminal-handoff-summary
+    title:
+      en: Terminal nodes have handoff summaries
+      zh-CN: 终态节点有交接摘要
+    severity: required
+    evidence:
+      type: terminal_handoff_summary
+  - id: terminal-work-items
+    title:
+      en: Terminal nodes record actual work items
+      zh-CN: 终态节点记录实际工作项
+    severity: recommended
+    evidence:
+      type: terminal_work_items
+  - id: changed-files-summary
+    title:
+      en: Changed files explain their main changes
+      zh-CN: 变更文件说明主要改动
+    severity: recommended
+    evidence:
+      type: changed_files_summary
+  - id: verification-recorded
+    title:
+      en: Passed nodes record verification
+      zh-CN: 通过节点记录验证
+    severity: required
+    evidence:
+      type: verification_recorded
+  - id: token-usage-source
+    title:
+      en: Terminal nodes record token source when available
+      zh-CN: 终态节点记录 token 来源
+    severity: recommended
+    evidence:
+      type: token_usage_source
+  - id: context-usage-source
+    title:
+      en: Terminal nodes record context source when available
+      zh-CN: 终态节点记录上下文来源
+    severity: recommended
+    evidence:
+      type: context_usage_source
+  - id: required-not-failed
+    title:
+      en: Required nodes are not failed or blocked
+      zh-CN: 必需节点未失败或阻塞
+    severity: required
+    evidence:
+      type: required_nodes_not_failed_or_blocked
+  - id: model-tier-policy
+    title:
+      en: Model tier follows complexity policy
+      zh-CN: 模型档位符合复杂度策略
+    severity: required
+    evidence:
+      type: model_tier_policy
+  - id: board-language
+    title:
+      en: Board language follows workflow language
+      zh-CN: 看板语言跟随工作流语言
+    severity: required
+    evidence:
+      type: board_language

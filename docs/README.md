@@ -11,6 +11,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Workflow kit](workflow/codex-workflow-kit.md) | End-to-end model, skill map, mode selection, and tool philosophy. |
 | [Skill coordination](workflow/skill-coordination.md) | Integrated skill responsibilities, handoffs, and conflict-prevention rules. |
 | [Workflow controller](workflow/controller.md) | Local C-lite controller for durable task graphs, status, and continuation. |
+| [Workflow templates](workflow/workflow-templates.md) | Layered YAML workflow templates, profiles, and scorecards for reusable controller runs. |
 | [Task graph](workflow/task-graph.md) | Node types, states, dependencies, fan-out, joins, rejects, blockers, and retry limits. |
 | [Handoff protocol](workflow/handoff-protocol.md) | Structured node outputs for passed, failed, blocked, and skipped states. |
 | [Language policy](workflow/language-policy.md) | How visible reasoning summaries, questions, status, and handoff match the user's language. |

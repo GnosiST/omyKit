@@ -1,0 +1,58 @@
+schema_version: "1"
+scorecard_id: bugfix
+name:
+  en: Bugfix Evidence
+  zh-CN: 缺陷修复证据
+description:
+  en: Evidence checks for reproduce, diagnose, fix, and verify loops.
+  zh-CN: 面向复现、诊断、修复和验证闭环的证据检查。
+checks:
+  - id: terminal-handoff-summary
+    title:
+      en: Terminal nodes have handoff summaries
+      zh-CN: 终态节点有交接摘要
+    severity: required
+    evidence:
+      type: terminal_handoff_summary
+  - id: terminal-work-items
+    title:
+      en: Terminal nodes record actual work items
+      zh-CN: 终态节点记录实际工作项
+    severity: recommended
+    evidence:
+      type: terminal_work_items
+  - id: verification-recorded
+    title:
+      en: Fix verification is recorded
+      zh-CN: 修复验证已记录
+    severity: required
+    evidence:
+      type: verification_recorded
+  - id: verification-evidence-exists
+    title:
+      en: Verification evidence paths exist
+      zh-CN: 验证证据路径存在
+    severity: required
+    evidence:
+      type: verification_evidence_exists
+  - id: required-not-failed
+    title:
+      en: Required nodes are not failed or blocked
+      zh-CN: 必需节点未失败或阻塞
+    severity: required
+    evidence:
+      type: required_nodes_not_failed_or_blocked
+  - id: model-tier-policy
+    title:
+      en: Model tier follows complexity policy
+      zh-CN: 模型档位符合复杂度策略
+    severity: required
+    evidence:
+      type: model_tier_policy
+  - id: board-language
+    title:
+      en: Board language follows workflow language
+      zh-CN: 看板语言跟随工作流语言
+    severity: required
+    evidence:
+      type: board_language

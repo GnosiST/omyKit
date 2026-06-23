@@ -52,7 +52,7 @@ $omykit 初始化项目
 
 The global install is the normal path. It keeps the reusable workflow outside individual projects and avoids copying generic skill files into every repository.
 
-Global install also copies the optional workflow controller into `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/` and controller schemas into `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+Global install also copies the optional workflow controller into `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`, controller schemas into `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`, and reusable workflow templates into `${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/`.
 
 ## New Project
 
@@ -172,6 +172,7 @@ Check:
 - docs are generic until a project profile specializes them
 - versioning and rollback expectations are documented for durable projects
 - `./scripts/validate-skills.sh` passes
+- `node scripts/omykit-workflow.mjs templates validate` passes when workflow templates changed
 - `node scripts/test-omykit-workflow.mjs` passes when controller scripts or schemas changed
 - `node ./scripts/validate-docs.mjs` passes
 - `git diff --check` passes

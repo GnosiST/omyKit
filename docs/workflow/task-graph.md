@@ -4,6 +4,8 @@ Language: [English](task-graph.md) | [简体中文](task-graph.zh-CN.md)
 
 The controller uses a directed acyclic graph. Each node has one responsibility, explicit dependencies, acceptance criteria, and a handoff requirement.
 
+Graphs are normally compiled from workflow templates such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`. You can still inspect and edit the generated `graph.json`, but durable changes should usually be made in template/profile YAML so the workflow remains reusable.
+
 ## Node Types
 
 | Type | Responsibility |
@@ -63,6 +65,11 @@ Nodes may include optional collaboration fields. They are routing and display me
 | `model_tier` | Recommended model tier: `fast`, `standard`, or `frontier`; the controller records the policy but does not call a model. |
 | `model_selection_reason` | Short explanation for why that tier is appropriate. |
 | `estimated_minutes` | Planning estimate used for board ETA and remaining-time calculations. |
+| `agent` | Template-level role id expected to execute or own the node. |
+| `model_profile` | Template-level model policy reference. |
+| `runtime_profile` | Template-level runtime or verification environment reference. |
+| `safety_profile` | Template-level safety limit reference. |
+| `scorecard` | Scorecard id used to audit the node's evidence. |
 
 These fields prevent similar capabilities from fighting by keeping responsibility explicit: the graph owns dependency order, node cards own local acceptance, handoffs own evidence, and the board only visualizes the resulting state.
 
@@ -93,4 +100,4 @@ Each graph node has `retry_limit`. When the same reject edge exceeds the target 
 - node cards exist
 - handoff files have required fields
 
-See [controller.md](controller.md) for commands and [handoff-protocol.md](handoff-protocol.md) for node outputs.
+See [controller.md](controller.md), [workflow-templates.md](workflow-templates.md), and [handoff-protocol.md](handoff-protocol.md).

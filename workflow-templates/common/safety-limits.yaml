@@ -1,0 +1,25 @@
+schema_version: "1"
+safety_limits:
+  - id: standard
+    name:
+      en: Standard Limits
+      zh-CN: 标准限位
+    max_retries_per_edge: 2
+    max_parallel_running_nodes: 3
+    require_handoff_for_terminal_nodes: true
+    stop_conditions:
+      - repeated_failed_gate
+      - missing_required_user_decision
+      - destructive_or_sensitive_action
+  - id: strict-delivery
+    name:
+      en: Strict Delivery Limits
+      zh-CN: 严格交付限位
+    max_retries_per_edge: 1
+    max_parallel_running_nodes: 2
+    require_handoff_for_terminal_nodes: true
+    stop_conditions:
+      - repeated_failed_gate
+      - missing_required_user_decision
+      - destructive_or_sensitive_action
+      - unverified_client_facing_change

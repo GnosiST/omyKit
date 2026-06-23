@@ -5,7 +5,7 @@
     "promotion_rule": "Review changed upstream references for reusable workflow lessons; do not copy third-party bodies, templates, resource lists, images, badges, or branding."
   },
   "source_integrity": {
-    "last_verified_on": "2026-06-22",
+    "last_verified_on": "2026-06-23",
     "verification_source": "GitHub repository API",
     "officiality_meaning": "Exact upstream or home repository tracked for the capability; not repository-owner endorsement of omyKit.",
     "stars_are_snapshot": true,
@@ -76,7 +76,7 @@
       "id": "context7",
       "repo": "upstash/context7",
       "url": "https://github.com/upstash/context7.git",
-      "baseline": "18e6d4727bbcfb4001a8a17337b0f0f717f1b4fd",
+      "baseline": "8a6c029f659a5caa0702a1fd76016828a3c22398",
       "role": "Official Context7 reference for current library documentation lookup",
       "verification": {
         "owner": "upstash",
@@ -136,7 +136,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "266dcbfe5b1972c027a4c04728e45949ccc1e820",
+      "baseline": "d2484697b1f9ce33d1d818ccad859ca3a4d721c6",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -331,7 +331,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "e4ce314cba443be3b9fdb9be516ab81603118fc7",
+      "baseline": "e740cdd120aaf523cdc5ace7cb47e6b841eee8a8",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

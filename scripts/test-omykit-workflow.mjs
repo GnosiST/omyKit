@@ -31,11 +31,15 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-function workflowDir() {
-  const workflowsRoot = path.join(tmpRoot, ".omykit", "workflows");
+function workflowDirFor(root) {
+  const workflowsRoot = path.join(root, ".omykit", "workflows");
   const entries = fs.readdirSync(workflowsRoot);
   assert.equal(entries.length, 1);
   return path.join(workflowsRoot, entries[0]);
+}
+
+function workflowDir() {
+  return workflowDirFor(tmpRoot);
 }
 
 function writeJson(file, value) {
@@ -44,6 +48,16 @@ function writeJson(file, value) {
 }
 
 fs.writeFileSync(path.join(tmpRoot, "README.md"), "# Feature X Project\n\nTemporary project context.\n");
+
+const templatesList = run(["templates", "list", "--lang", "zh-CN"]);
+assert.match(templatesList, /change\.standard/);
+assert.match(templatesList, /标准变更/);
+assert.match(templatesList, /frontend-ui\.strict/);
+const templatesValidate = run(["templates", "validate"]);
+assert.match(templatesValidate, /Workflow templates valid: 3/);
+const templateShow = run(["templates", "show", "frontend-ui.strict", "--lang", "zh-CN"]);
+assert.match(templateShow, /"template_id": "frontend-ui.strict"/);
+assert.match(templateShow, /"title": "视觉验收"/);
 
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
 assert.match(initOutput, /Workflow created: feature-x/);
@@ -80,6 +94,7 @@ for (const field of ["worker_profile", "claimed_by", "parallel_group", "join_pol
   delete planNode[field];
 }
 planNode.task_complexity = "expert";
+planNode.model_tier = "frontier";
 writeJson(graphPath, graph);
 const statePath = path.join(dir, "state.json");
 let state = readJson(statePath);
@@ -117,6 +132,7 @@ for (const field of ["worker_profile", "claimed_by", "parallel_group", "join_pol
 planCard.title = "计划：实现任务拆解";
 planCard.objective = "把看板改进拆成可验证的实现和文档步骤。";
 planCard.acceptance = ["计划节点包含可验证步骤。"];
+planCard.model_tier = "frontier";
 writeJson(planCardPath, planCard);
 
 const originalPlanCard = { ...planCard };
@@ -310,6 +326,11 @@ assert.match(boardOutput, /board\.html/);
 const board = readJson(path.join(dir, "board.json"));
 assert.equal(board.language, "zh-CN");
 assert.equal(board.summary.total, 7);
+assert.equal(board.template.template_id, "change.standard");
+assert.equal(board.template.layers.model_profile, "balanced");
+assert.ok(Array.isArray(board.scorecard.checks));
+assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
+assert.ok(board.recommendations.some((item) => item.id === "scorecard-required-not-failed"));
 const projectedNodes = Object.values(board.columns).flat();
 const projectedPlan = projectedNodes.find((node) => node.id === "03-plan");
 assert.equal(projectedPlan.task_complexity, "expert");
@@ -372,6 +393,8 @@ assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /Token 消耗/);
 assert.match(boardHtml, /整改建议/);
 assert.match(boardHtml, /上下文用量/);
+assert.match(boardHtml, /工作流模板/);
+assert.match(boardHtml, /Scorecard 验票/);
 assert.match(boardHtml, /技术数据/);
 assert.match(boardHtml, /data-filter-status="blocked"/);
 assert.match(boardHtml, /aria-pressed="false"/);
@@ -400,6 +423,25 @@ assert.match(englishHtml, /Task Tracker/);
 assert.match(englishHtml, /Improvement Plan/);
 assert.match(englishHtml, /Technical Data/);
 assert.match(englishHtml, /Click a metric/);
+
+const tmpZh = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-zh-"));
+fs.writeFileSync(path.join(tmpZh, "README.md"), "# 中文 UI 项目\n\nTemporary project context.\n");
+const zhInit = run(["init", "中文 UI 看板", "--id", "ui-board", "--template", "frontend-ui.strict"], tmpZh);
+assert.match(zhInit, /Workflow created: ui-board/);
+const zhDir = workflowDirFor(tmpZh);
+run(["board"], tmpZh);
+const inferredZhBoard = readJson(path.join(zhDir, "board.json"));
+assert.equal(inferredZhBoard.language, "zh-CN");
+assert.equal(inferredZhBoard.template.template_id, "frontend-ui.strict");
+assert.equal(inferredZhBoard.summary.total, 7);
+assert.ok(inferredZhBoard.columns.ready.some((node) => node.id === "01-intake" && node.display_title === "UI 需求接收"));
+assert.ok(inferredZhBoard.scorecard.checks.some((check) => check.scorecard_id === "frontend-ui"));
+assert.ok(inferredZhBoard.scorecard.checks.some((check) => check.id === "board-language" && check.status === "passed"));
+const inferredZhHtml = fs.readFileSync(path.join(zhDir, "board.html"), "utf8");
+assert.match(inferredZhHtml, /<html lang="zh-CN">/);
+assert.match(inferredZhHtml, /严格前端 UI/);
+assert.match(inferredZhHtml, /目标页面、用户意图、状态、约束和视觉验收标准已经明确/);
+fs.rmSync(tmpZh, { recursive: true, force: true });
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log("omykit workflow tests passed");

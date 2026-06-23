@@ -2,12 +2,17 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const SCHEMA_VERSION = "1";
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = path.resolve(SCRIPT_DIR, "..");
+const DEFAULT_TEMPLATE_ID = "change.standard";
 const COLUMN_STATUSES = ["pending", "ready", "running", "blocked", "failed", "passed", "skipped"];
 const STATUSES = new Set(["pending", "ready", "running", "passed", "failed", "blocked", "skipped"]);
 const TERMINAL_STATUSES = new Set(["passed", "skipped"]);
 const HANDOFF_STATUSES = new Set(["passed", "failed", "blocked", "skipped"]);
+const SCORECARD_SEVERITIES = new Set(["required", "recommended"]);
 const NODE_TYPES = new Set([
   "intake",
   "research",
@@ -37,6 +42,16 @@ const COLLABORATION_FIELDS = [
   "model_selection_reason",
   "estimated_minutes",
   "language",
+  "agent",
+  "model_profile",
+  "runtime_profile",
+  "safety_profile",
+  "scorecard",
+  "objective",
+  "title_i18n",
+  "objective_i18n",
+  "acceptance_i18n",
+  "allowed_outputs",
 ];
 const DEFAULT_MODE = "Standard";
 const BOARD_LABELS = {
@@ -130,6 +145,24 @@ const BOARD_LABELS = {
     elapsed: "Elapsed",
     estimatedRemaining: "Estimated remaining",
     averageNodeTime: "Average node time",
+    template: "Template",
+    templateId: "Template id",
+    templateVersion: "Template version",
+    workflowTemplate: "Workflow Template",
+    scorecard: "Scorecard",
+    score: "Score",
+    scorecardPassed: "Passed checks",
+    scorecardFailed: "Failed checks",
+    scorecardWarnings: "Warnings",
+    scorecardPending: "Pending checks",
+    severity: "Severity",
+    profile: "Profile",
+    agent: "Agent",
+    modelProfile: "Model profile",
+    runtimeProfile: "Runtime profile",
+    safetyProfile: "Safety profile",
+    safetyLimits: "Safety limits",
+    scorecardHelp: "Scorecard checks recorded workflow evidence instead of trusting narrative claims.",
     startedAt: "Started",
     completedAt: "Completed",
     duration: "Duration",
@@ -272,6 +305,24 @@ const BOARD_LABELS = {
     elapsed: "已用时",
     estimatedRemaining: "预计剩余",
     averageNodeTime: "平均节点耗时",
+    template: "模板",
+    templateId: "模板 ID",
+    templateVersion: "模板版本",
+    workflowTemplate: "工作流模板",
+    scorecard: "Scorecard 验票",
+    score: "得分",
+    scorecardPassed: "通过检查",
+    scorecardFailed: "失败检查",
+    scorecardWarnings: "提醒",
+    scorecardPending: "待观察检查",
+    severity: "级别",
+    profile: "配置",
+    agent: "智能体",
+    modelProfile: "模型配置",
+    runtimeProfile: "运行配置",
+    safetyProfile: "安全限位",
+    safetyLimits: "安全限位",
+    scorecardHelp: "Scorecard 会检查真实 workflow 证据，而不是相信口头完成声明。",
     startedAt: "开始",
     completedAt: "完成",
     duration: "耗时",
@@ -402,6 +453,379 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function templatesRoot() {
+  return process.env.OMYKIT_TEMPLATES_DIR || path.join(PACKAGE_ROOT, "workflow-templates");
+}
+
+function stripYamlComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if ((char === '"' || char === "'") && line[i - 1] !== "\\") {
+      quote = quote === char ? null : quote || char;
+      continue;
+    }
+    if (char === "#" && !quote && (i === 0 || /\s/.test(line[i - 1]))) {
+      return line.slice(0, i).trimEnd();
+    }
+  }
+  return line.trimEnd();
+}
+
+function splitYamlKeyValue(content, file, line) {
+  const index = content.indexOf(":");
+  if (index === -1) throw new Error(`${file}:${line} expected key: value`);
+  const key = content.slice(0, index).trim();
+  if (!key) throw new Error(`${file}:${line} empty key`);
+  return [key, content.slice(index + 1).trim()];
+}
+
+function parseYamlScalar(raw) {
+  const value = raw.trim();
+  if (value === "") return "";
+  if (value === "[]") return [];
+  if (value === "{}") return {};
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (value === "null" || value === "~") return null;
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    const body = value.slice(1, -1);
+    return value.startsWith('"') ? body.replace(/\\"/g, '"').replace(/\\n/g, "\n") : body.replace(/''/g, "'");
+  }
+  if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value);
+  return value;
+}
+
+function parseYamlSubset(text, file = "yaml") {
+  const records = [];
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i];
+    if (/^\s*$/.test(raw)) continue;
+    if (/^\s*#/.test(raw)) continue;
+    const indent = raw.match(/^ */)[0].length;
+    const content = stripYamlComment(raw.slice(indent));
+    if (!content) continue;
+    records.push({ indent, content, line: i + 1 });
+  }
+
+  function parseBlock(index, indent) {
+    if (index >= records.length || records[index].indent < indent) return [{}, index];
+    if (records[index].indent > indent) {
+      throw new Error(`${file}:${records[index].line} unexpected indentation`);
+    }
+    return records[index].content.startsWith("- ")
+      ? parseArray(index, indent)
+      : parseObject(index, indent);
+  }
+
+  function parseObject(index, indent) {
+    const object = {};
+    let cursor = index;
+    while (cursor < records.length) {
+      const record = records[cursor];
+      if (record.indent < indent) break;
+      if (record.indent > indent) throw new Error(`${file}:${record.line} unexpected indentation`);
+      if (record.content.startsWith("- ")) break;
+      const [key, rest] = splitYamlKeyValue(record.content, file, record.line);
+      if (rest === "") {
+        const [value, next] = parseBlock(cursor + 1, indent + 2);
+        object[key] = value;
+        cursor = next;
+      } else {
+        object[key] = parseYamlScalar(rest);
+        cursor += 1;
+      }
+    }
+    return [object, cursor];
+  }
+
+  function parseArray(index, indent) {
+    const array = [];
+    let cursor = index;
+    while (cursor < records.length) {
+      const record = records[cursor];
+      if (record.indent < indent) break;
+      if (record.indent > indent) throw new Error(`${file}:${record.line} unexpected indentation`);
+      if (!record.content.startsWith("- ")) break;
+      const itemText = record.content.slice(2).trim();
+      if (itemText === "") {
+        const [value, next] = parseBlock(cursor + 1, indent + 2);
+        array.push(value);
+        cursor = next;
+        continue;
+      }
+      if (/^[A-Za-z0-9_.-]+:\s*/.test(itemText)) {
+        const [key, rest] = splitYamlKeyValue(itemText, file, record.line);
+        const item = {};
+        if (rest === "") {
+          const [value, next] = parseBlock(cursor + 1, indent + 2);
+          item[key] = value;
+          cursor = next;
+        } else {
+          item[key] = parseYamlScalar(rest);
+          cursor += 1;
+        }
+        if (cursor < records.length && records[cursor].indent > indent) {
+          const [tail, next] = parseBlock(cursor, indent + 2);
+          if (!tail || typeof tail !== "object" || Array.isArray(tail)) {
+            throw new Error(`${file}:${records[cursor].line} array item continuation must be an object`);
+          }
+          Object.assign(item, tail);
+          cursor = next;
+        }
+        array.push(item);
+      } else {
+        array.push(parseYamlScalar(itemText));
+        cursor += 1;
+      }
+    }
+    return [array, cursor];
+  }
+
+  if (records.length === 0) return {};
+  const [value, next] = parseBlock(0, records[0].indent);
+  if (next < records.length) throw new Error(`${file}:${records[next].line} could not parse remaining content`);
+  return value;
+}
+
+function readYaml(file) {
+  return parseYamlSubset(fs.readFileSync(file, "utf8"), file);
+}
+
+function isI18nObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+    && (Object.prototype.hasOwnProperty.call(value, "en") || Object.prototype.hasOwnProperty.call(value, "zh-CN"));
+}
+
+function localizedValue(value, language = "en", fallback = "en") {
+  if (isI18nObject(value)) {
+    if (value[language] !== undefined) return value[language];
+    if (value[fallback] !== undefined) return value[fallback];
+    const first = Object.values(value).find((item) => item !== undefined && item !== null);
+    return first ?? "";
+  }
+  return value;
+}
+
+function asStringArray(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item));
+  if (value === undefined || value === null || value === "") return [];
+  return [String(value)];
+}
+
+function inferLanguageFromText(value) {
+  return /[\u3400-\u9fff]/.test(String(value || "")) ? "zh-CN" : "en";
+}
+
+function templateFiles() {
+  const root = templatesRoot();
+  const dir = path.join(root, "templates");
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((entry) => entry.endsWith(".yaml") || entry.endsWith(".yml"))
+    .sort()
+    .map((entry) => path.join(dir, entry));
+}
+
+function loadWorkflowTemplate(templateId = DEFAULT_TEMPLATE_ID) {
+  const id = String(templateId || DEFAULT_TEMPLATE_ID);
+  const candidate = path.isAbsolute(id)
+    ? id
+    : path.join(templatesRoot(), "templates", `${id}.yaml`);
+  if (!fs.existsSync(candidate)) {
+    throw new Error(`Cannot find workflow template: ${id}`);
+  }
+  const template = readYaml(candidate);
+  return { ...template, __file: candidate };
+}
+
+function listWorkflowTemplates() {
+  return templateFiles().map((file) => ({
+    ...readYaml(file),
+    __file: file,
+  }));
+}
+
+function scorecardFile(scorecardId) {
+  return path.join(templatesRoot(), "common", "scorecards", `${scorecardId}.yaml`);
+}
+
+function loadScorecardDefinition(scorecardId) {
+  const file = scorecardFile(scorecardId);
+  if (!fs.existsSync(file)) throw new Error(`Cannot find scorecard: ${scorecardId}`);
+  const scorecard = readYaml(file);
+  return { ...scorecard, __file: file };
+}
+
+function loadScorecardsForGraph(graph) {
+  const ids = graph.metadata?.scorecards || graph.metadata?.layers?.scorecards || [];
+  return asStringArray(ids).map((id) => loadScorecardDefinition(id));
+}
+
+function validateCommonLayerReference(kind, id, errors, label) {
+  if (!id) return;
+  const fileByKind = {
+    agents: "agents.yaml",
+    model_profile: "model-profiles.yaml",
+    runtime_profile: "runtime-profiles.yaml",
+    safety_limits: "safety-limits.yaml",
+  };
+  const fileName = fileByKind[kind];
+  if (!fileName) return;
+  const file = path.join(templatesRoot(), "common", fileName);
+  if (!fs.existsSync(file)) {
+    errors.push(`${label}: missing common layer file ${fileName}`);
+    return;
+  }
+  const doc = readYaml(file);
+  const collections = {
+    agents: "agent_sets",
+    model_profile: "model_profiles",
+    runtime_profile: "runtime_profiles",
+    safety_limits: "safety_limits",
+  };
+  const entries = doc[collections[kind]];
+  if (!Array.isArray(entries) || !entries.some((entry) => entry.id === id)) {
+    errors.push(`${label}: missing ${kind} reference ${id}`);
+  }
+}
+
+function compileTemplateNode(rawNode, language) {
+  const titleI18n = isI18nObject(rawNode.title) ? rawNode.title : null;
+  const objectiveI18n = isI18nObject(rawNode.objective) ? rawNode.objective : null;
+  const acceptanceI18n = isI18nObject(rawNode.acceptance) ? rawNode.acceptance : null;
+  const title = String(localizedValue(rawNode.title, language) || rawNode.id || "Untitled");
+  const objective = String(localizedValue(rawNode.objective, language) || "");
+  const acceptance = asStringArray(localizedValue(rawNode.acceptance, language));
+  const node = {
+    id: String(rawNode.id || ""),
+    type: String(rawNode.type || ""),
+    title,
+    depends_on: Array.isArray(rawNode.depends_on) ? rawNode.depends_on.map(String) : [],
+    required: rawNode.required !== false,
+    retry_limit: Number.isInteger(rawNode.retry_limit) ? rawNode.retry_limit : 1,
+    context_level: rawNode.context_level || "focus",
+    owner: rawNode.owner || "codex",
+    worker_profile: rawNode.worker_profile || rawNode.agent || null,
+    claimed_by: rawNode.claimed_by ?? null,
+    parallel_group: rawNode.parallel_group || null,
+    join_policy: rawNode.join_policy || "all_required",
+    lease_expires_at: rawNode.lease_expires_at ?? null,
+    handoff_target: rawNode.handoff_target ?? null,
+    acceptance,
+  };
+  const optionalFields = [
+    "language",
+    "task_complexity",
+    "model_tier",
+    "model_selection_reason",
+    "estimated_minutes",
+    "agent",
+    "model_profile",
+    "runtime_profile",
+    "safety_profile",
+    "scorecard",
+  ];
+  for (const field of optionalFields) {
+    if (rawNode[field] !== undefined) node[field] = rawNode[field];
+  }
+  if (objective) node.objective = objective;
+  if (titleI18n) node.title_i18n = titleI18n;
+  if (objectiveI18n) node.objective_i18n = objectiveI18n;
+  if (acceptanceI18n) node.acceptance_i18n = acceptanceI18n;
+  if (Array.isArray(rawNode.allowed_outputs)) node.allowed_outputs = rawNode.allowed_outputs.map(String);
+  return node;
+}
+
+function compileTemplateToGraph(template, input) {
+  const language = input.language || "en";
+  const mode = input.mode || template.default_mode || DEFAULT_MODE;
+  const layers = template.layers && typeof template.layers === "object" ? template.layers : {};
+  const nodes = (template.nodes || []).map((node) => compileTemplateNode(node, language));
+  return {
+    schema_version: SCHEMA_VERSION,
+    workflow_id: input.workflowId,
+    title: input.title,
+    mode,
+    created_at: now(),
+    metadata: {
+      controller: "omykit-workflow",
+      language,
+      template_id: template.template_id || input.templateId || DEFAULT_TEMPLATE_ID,
+      template_version: template.template_version || null,
+      template_name: localizedValue(template.name, language) || template.template_id || input.templateId || DEFAULT_TEMPLATE_ID,
+      template_description: localizedValue(template.description, language) || null,
+      template_file: template.__file || null,
+      layers,
+      scorecards: asStringArray(layers.scorecards),
+    },
+    nodes,
+  };
+}
+
+function validateScorecardDefinition(scorecard) {
+  const errors = [];
+  if (scorecard.schema_version !== SCHEMA_VERSION) errors.push(`${scorecard.__file || "scorecard"}: schema_version must be 1`);
+  if (!scorecard.scorecard_id) errors.push(`${scorecard.__file || "scorecard"}: scorecard_id is required`);
+  if (!Array.isArray(scorecard.checks) || scorecard.checks.length === 0) {
+    errors.push(`${scorecard.__file || "scorecard"}: checks must be a non-empty array`);
+    return errors;
+  }
+  const seen = new Set();
+  for (const check of scorecard.checks) {
+    if (!check.id) errors.push(`${scorecard.scorecard_id}: check.id is required`);
+    if (check.id && seen.has(check.id)) errors.push(`${scorecard.scorecard_id}: duplicate check ${check.id}`);
+    if (check.id) seen.add(check.id);
+    if (!SCORECARD_SEVERITIES.has(check.severity || "recommended")) {
+      errors.push(`${scorecard.scorecard_id}.${check.id}: severity must be required or recommended`);
+    }
+    if (!check.evidence || !check.evidence.type) {
+      errors.push(`${scorecard.scorecard_id}.${check.id}: evidence.type is required`);
+    }
+  }
+  return errors;
+}
+
+function validateWorkflowTemplate(template) {
+  const errors = [];
+  const label = template.__file || template.template_id || "template";
+  if (template.schema_version !== SCHEMA_VERSION) errors.push(`${label}: schema_version must be 1`);
+  if (!template.template_id) errors.push(`${label}: template_id is required`);
+  if (!template.template_version) errors.push(`${label}: template_version is required`);
+  if (!template.name) errors.push(`${label}: name is required`);
+  if (!Array.isArray(template.nodes) || template.nodes.length === 0) {
+    errors.push(`${label}: nodes must be a non-empty array`);
+    return errors;
+  }
+  const layers = template.layers && typeof template.layers === "object" ? template.layers : {};
+  validateCommonLayerReference("agents", layers.agents, errors, label);
+  validateCommonLayerReference("model_profile", layers.model_profile, errors, label);
+  validateCommonLayerReference("runtime_profile", layers.runtime_profile, errors, label);
+  validateCommonLayerReference("safety_limits", layers.safety_limits, errors, label);
+  for (const id of asStringArray(layers.scorecards)) {
+    try {
+      errors.push(...validateScorecardDefinition(loadScorecardDefinition(id)));
+    } catch (error) {
+      errors.push(`${label}: ${error.message}`);
+    }
+  }
+  try {
+    const graph = compileTemplateToGraph(template, {
+      title: "Template validation",
+      workflowId: "template-validation",
+      mode: template.default_mode || DEFAULT_MODE,
+      language: "en",
+      templateId: template.template_id,
+    });
+    errors.push(...validateGraph(graph).map((error) => `${label}: ${error}`));
+  } catch (error) {
+    errors.push(`${label}: ${error.message}`);
+  }
+  return errors;
+}
+
 function appendText(file, text) {
   ensureDir(path.dirname(file));
   fs.appendFileSync(file, text);
@@ -434,10 +858,12 @@ function parseArgs(argv) {
 
 function commandHelp() {
   return `Usage:
-  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard]
+  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template change.standard] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
   node scripts/omykit-workflow.mjs validate [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs scorecard [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs start <node-id> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs complete <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs reject <node-id> --to <node-id> --handoff <path> [--workflow workflow-id]
@@ -672,11 +1098,11 @@ function nodeCard(graph, node) {
     node_id: node.id,
     type: node.type,
     title: node.title,
-    objective: nodeObjective(node),
+    objective: node.objective || nodeObjective(node),
     depends_on: node.depends_on,
     context_level: node.context_level || "focus",
     acceptance: node.acceptance,
-    allowed_outputs: [
+    allowed_outputs: Array.isArray(node.allowed_outputs) && node.allowed_outputs.length > 0 ? node.allowed_outputs : [
       `handoffs/${node.id}.json`,
       `evidence/${node.id}-summary.txt`,
     ],
@@ -708,6 +1134,24 @@ function initialState(graph) {
   };
 }
 
+function validateI18nValue(value, label, errors) {
+  if (value === undefined) return;
+  if (!isI18nObject(value)) {
+    errors.push(`${label} must be an object with en or zh-CN`);
+    return;
+  }
+  for (const [language, localized] of Object.entries(value)) {
+    if (!["en", "zh-CN"].includes(language)) errors.push(`${label}.${language} is not a supported language key`);
+    if (Array.isArray(localized)) {
+      for (const item of localized) {
+        if (typeof item !== "string" || !item) errors.push(`${label}.${language} array entries must be non-empty strings`);
+      }
+    } else if (typeof localized !== "string" || !localized) {
+      errors.push(`${label}.${language} must be a non-empty string or string array`);
+    }
+  }
+}
+
 function validateGraph(graph) {
   const errors = [];
   if (graph.schema_version !== SCHEMA_VERSION) errors.push("graph.schema_version must be 1");
@@ -725,6 +1169,12 @@ function validateGraph(graph) {
     seen.add(node.id);
     if (!NODE_TYPES.has(node.type)) errors.push(`invalid node type for ${node.id}: ${node.type}`);
     if (!node.title) errors.push(`node.title is required for ${node.id}`);
+    if (node.objective !== undefined && typeof node.objective !== "string") {
+      errors.push(`node.objective must be string for ${node.id}`);
+    }
+    validateI18nValue(node.title_i18n, `node.title_i18n for ${node.id}`, errors);
+    validateI18nValue(node.objective_i18n, `node.objective_i18n for ${node.id}`, errors);
+    validateI18nValue(node.acceptance_i18n, `node.acceptance_i18n for ${node.id}`, errors);
     if (!Array.isArray(node.depends_on)) errors.push(`node.depends_on must be an array for ${node.id}`);
     if (typeof node.required !== "boolean") errors.push(`node.required must be boolean for ${node.id}`);
     if (!Number.isInteger(node.retry_limit) || node.retry_limit < 0) {
@@ -766,6 +1216,14 @@ function validateGraph(graph) {
     }
     if (node.estimated_minutes !== undefined && (!Number.isFinite(node.estimated_minutes) || node.estimated_minutes < 0)) {
       errors.push(`node.estimated_minutes must be a non-negative number for ${node.id}`);
+    }
+    for (const field of ["agent", "model_profile", "runtime_profile", "safety_profile", "scorecard"]) {
+      if (node[field] !== undefined && node[field] !== null && typeof node[field] !== "string") {
+        errors.push(`node.${field} must be string or null for ${node.id}`);
+      }
+    }
+    if (node.allowed_outputs !== undefined && (!Array.isArray(node.allowed_outputs) || node.allowed_outputs.some((item) => typeof item !== "string" || !item))) {
+      errors.push(`node.allowed_outputs must be an array of non-empty strings for ${node.id}`);
     }
     for (const dependency of node.depends_on || []) {
       if (!map.has(dependency)) errors.push(`${node.id} depends on missing node ${dependency}`);
@@ -852,6 +1310,12 @@ function validateNodeCards(workflowDir, graph) {
     if (card.node_id !== node.id) errors.push(`node card ${node.id} node_id mismatch`);
     if (card.type !== node.type) errors.push(`node card ${node.id} type mismatch`);
     if (!card.objective) errors.push(`node card ${node.id} objective is required`);
+    if (card.objective !== undefined && typeof card.objective !== "string") {
+      errors.push(`node card ${node.id} objective must be string`);
+    }
+    validateI18nValue(card.title_i18n, `node card ${node.id} title_i18n`, errors);
+    validateI18nValue(card.objective_i18n, `node card ${node.id} objective_i18n`, errors);
+    validateI18nValue(card.acceptance_i18n, `node card ${node.id} acceptance_i18n`, errors);
     if (!Array.isArray(card.acceptance) || card.acceptance.length === 0) {
       errors.push(`node card ${node.id} acceptance must be non-empty`);
     }
@@ -875,6 +1339,11 @@ function validateNodeCards(workflowDir, graph) {
     }
     if (card.estimated_minutes !== undefined && (!Number.isFinite(card.estimated_minutes) || card.estimated_minutes < 0)) {
       errors.push(`node card ${node.id} estimated_minutes must be non-negative number`);
+    }
+    for (const field of ["agent", "model_profile", "runtime_profile", "safety_profile", "scorecard"]) {
+      if (card[field] !== undefined && card[field] !== null && typeof card[field] !== "string") {
+        errors.push(`node card ${node.id} ${field} must be string or null`);
+      }
     }
   }
   return errors;
@@ -1293,6 +1762,16 @@ function normalizeBoardLanguage(value) {
   return "en";
 }
 
+function resolveWorkflowLanguage(options, graph, handoffs = null) {
+  if (options?.lang) return normalizeBoardLanguage(options.lang);
+  if (graph?.metadata?.language) return normalizeBoardLanguage(graph.metadata.language);
+  if (graph?.language) return normalizeBoardLanguage(graph.language);
+  const records = handoffs?.records || [];
+  const latestLanguage = [...records].reverse().find((record) => record.language)?.language;
+  if (latestLanguage) return normalizeBoardLanguage(latestLanguage);
+  return inferLanguageFromText(graph?.title);
+}
+
 function boardText(language) {
   return BOARD_LABELS[language] || BOARD_LABELS.en;
 }
@@ -1388,10 +1867,15 @@ function evidenceStatus(entry, handoff, items = []) {
 
 function localizedNodeText(node, card, language) {
   const translated = DEFAULT_NODE_TRANSLATIONS[language]?.[node.type];
+  const title = localizedValue(card.title_i18n || node.title_i18n, language);
+  const objective = localizedValue(card.objective_i18n || node.objective_i18n, language);
+  const acceptance = localizedValue(card.acceptance_i18n || node.acceptance_i18n, language);
   return {
-    title: translated?.title || node.title,
-    objective: translated?.objective || card.objective || nodeObjective(node),
-    acceptance: translated?.acceptance || card.acceptance || node.acceptance || [],
+    title: title || translated?.title || node.title,
+    objective: objective || translated?.objective || card.objective || node.objective || nodeObjective(node),
+    acceptance: asStringArray(acceptance).length > 0
+      ? asStringArray(acceptance)
+      : translated?.acceptance || card.acceptance || node.acceptance || [],
   };
 }
 
@@ -1698,6 +2182,11 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     model_selection_reason: modelReason,
     estimated_minutes: estimatedMinutes,
     worker_profile: collaborationValue(node, card, "worker_profile", "unassigned"),
+    agent: collaborationValue(node, card, "agent", null),
+    model_profile: collaborationValue(node, card, "model_profile", null),
+    runtime_profile: collaborationValue(node, card, "runtime_profile", null),
+    safety_profile: collaborationValue(node, card, "safety_profile", null),
+    scorecard: collaborationValue(node, card, "scorecard", null),
     claimed_by: collaborationValue(node, card, "claimed_by", null),
     parallel_group: collaborationValue(node, card, "parallel_group", "none"),
     join_policy: collaborationValue(node, card, "join_policy", "all_required"),
@@ -1710,7 +2199,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     handoff_status: handoff?.status || null,
     handoff_summary: handoff?.summary || null,
     evidence_status: evidenceStatus(entry, handoff, evidence),
-    objective: card.objective || nodeObjective(node),
+    objective: card.objective || node.objective || nodeObjective(node),
     display_objective: display.objective,
     depends_on: node.depends_on || [],
     inputs: node.depends_on || [],
@@ -1723,7 +2212,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
       result: item.result,
       evidence: item.evidence || null,
     })),
-    outputs: card.allowed_outputs || [],
+    outputs: card.allowed_outputs || node.allowed_outputs || [],
     handoff_outputs: handoff?.outputs || [],
     evidence_paths: collectEvidencePaths(handoff),
     evidence_items: evidence,
@@ -2213,6 +2702,153 @@ function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
   };
 }
 
+function scorecardCheckTitle(check, language) {
+  return String(localizedValue(check.title, language) || check.id || "check");
+}
+
+function scorecardResult(check, status, language, failingNodes = [], detail = null) {
+  const isZh = language === "zh-CN";
+  return {
+    id: check.id,
+    title: scorecardCheckTitle(check, language),
+    severity: check.severity || "recommended",
+    status,
+    node_ids: failingNodes,
+    detail: detail || (status === "passed"
+      ? (isZh ? "已找到可核验的 workflow 证据。" : "Workflow evidence is present.")
+      : status === "pending"
+        ? (isZh ? "当前还没有适用节点，后续节点完成后再评估。" : "No applicable nodes yet; evaluate after related nodes complete.")
+        : (isZh ? "证据不足，需要补充结构化记录。" : "Evidence is insufficient; add structured records.")),
+  };
+}
+
+function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) {
+  const evidence = check.evidence || {};
+  const terminalNodes = projectedNodes.filter((node) => TERMINAL_STATUSES.has(node.status));
+  const passedNodes = projectedNodes.filter((node) => node.status === "passed");
+  const requiredNodes = projectedNodes.filter((node) => node.required);
+  const isZh = language === "zh-CN";
+  const failStatus = (check.severity || "recommended") === "required" ? "failed" : "warning";
+  const pending = () => scorecardResult(check, "pending", language);
+  const pass = () => scorecardResult(check, "passed", language);
+  const fail = (nodes, detail) => scorecardResult(check, failStatus, language, nodes, detail);
+
+  switch (evidence.type) {
+    case "terminal_handoff_summary": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => !node.handoff_summary).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点缺少 handoff.summary。" : "Terminal nodes are missing handoff.summary.");
+    }
+    case "terminal_work_items": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => node.work_items.length === 0).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录 work_items。" : "Terminal nodes did not record work_items.");
+    }
+    case "changed_files_summary": {
+      const files = project?.main_changes || [];
+      const filesNeedingSummary = files.filter((item) => item.status !== "D");
+      if (filesNeedingSummary.length === 0) return pending();
+      const missing = filesNeedingSummary.filter((item) => !item.summary).map((item) => item.path);
+      return missing.length === 0 ? pass() : fail([], isZh ? `缺少主要改动说明：${missing.join(", ")}` : `Missing change summaries: ${missing.join(", ")}`);
+    }
+    case "verification_recorded": {
+      if (passedNodes.length === 0) return pending();
+      const failing = passedNodes.filter((node) => node.required_checks.length === 0).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "通过节点没有记录 verification 检查。" : "Passed nodes did not record verification checks.");
+    }
+    case "verification_evidence_exists": {
+      if (passedNodes.length === 0) return pending();
+      const failing = passedNodes
+        .filter((node) => node.required_checks.length > 0 && node.evidence_items.some((item) => !item.exists))
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "部分验证证据路径不存在。" : "Some verification evidence paths are missing.");
+    }
+    case "token_usage_source": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => !node.token_usage.recorded).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点缺少来源感知 token_usage。" : "Terminal nodes are missing source-aware token_usage.");
+    }
+    case "context_usage_source": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => !node.context_usage.recorded).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点缺少来源感知 context_usage。" : "Terminal nodes are missing source-aware context_usage.");
+    }
+    case "required_nodes_not_failed_or_blocked": {
+      const failing = requiredNodes.filter((node) => ["failed", "blocked"].includes(node.status)).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "必需节点仍处于失败或阻塞状态。" : "Required nodes are failed or blocked.");
+    }
+    case "agent_activity_scoped": {
+      const activities = projectedNodes.flatMap((node) => node.agent_activity.map((activity) => ({ node, activity })));
+      if (activities.length === 0) return pending();
+      const failing = activities
+        .filter(({ activity }) => !activity.agent_id || !activity.role || !activity.scope || !activity.task || !activity.status)
+        .map(({ node }) => node.id);
+      return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "部分子智能体活动缺少 role/scope/task/status。" : "Some agent activities lack role/scope/task/status.");
+    }
+    case "model_tier_policy": {
+      const failing = projectedNodes
+        .filter((node) => node.task_complexity === "expert" && node.model_tier !== "frontier")
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "expert 复杂度节点必须使用 frontier 档位。" : "Expert-complexity nodes must use the frontier tier.");
+    }
+    case "board_language": {
+      const expected = graph.metadata?.language || language;
+      return expected === language ? pass() : fail([], isZh ? "看板语言与 workflow metadata 不一致。" : "Board language does not match workflow metadata.");
+    }
+    default:
+      return scorecardResult(check, "warning", language, [], isZh ? `未知 evidence.type：${evidence.type}` : `Unknown evidence.type: ${evidence.type}`);
+  }
+}
+
+function evaluateScorecards(graph, projectedNodes, project, language) {
+  let definitions = [];
+  try {
+    definitions = loadScorecardsForGraph(graph);
+  } catch (error) {
+    return {
+      definitions: [],
+      checks: [{
+        id: "scorecard-load-error",
+        title: "Scorecard load error",
+        severity: "required",
+        status: "failed",
+        node_ids: [],
+        detail: error.message,
+      }],
+      counts: { passed: 0, failed: 1, warning: 0, pending: 0 },
+      score_percent: 0,
+    };
+  }
+  const checks = [];
+  for (const definition of definitions) {
+    for (const check of definition.checks || []) {
+      const result = evaluateEvidenceCheck(check, projectedNodes, graph, project, language);
+      checks.push({
+        scorecard_id: definition.scorecard_id,
+        scorecard_name: localizedValue(definition.name, language) || definition.scorecard_id,
+        ...result,
+      });
+    }
+  }
+  const counts = { passed: 0, failed: 0, warning: 0, pending: 0 };
+  for (const check of checks) {
+    if (counts[check.status] === undefined) counts[check.status] = 0;
+    counts[check.status] += 1;
+  }
+  const completed = counts.passed + counts.failed + counts.warning;
+  const scorePercent = completed === 0 ? 0 : Math.round((counts.passed / completed) * 100);
+  return {
+    definitions: definitions.map((definition) => ({
+      scorecard_id: definition.scorecard_id,
+      name: localizedValue(definition.name, language) || definition.scorecard_id,
+      description: localizedValue(definition.description, language) || null,
+    })),
+    checks,
+    counts,
+    score_percent: scorePercent,
+  };
+}
+
 function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const cards = loadNodeCards(workflowDir, graph);
   const handoffs = loadHandoffs(workflowDir);
@@ -2231,7 +2867,18 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
+  const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
   const recommendations = buildRecommendations(projectedNodes, usage, context, risks, project, language);
+  for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
+    recommendations.push(recommendation(
+      `scorecard-${check.id}`,
+      "high",
+      `${boardText(language).scorecard}: ${check.title}`,
+      check.detail,
+      language === "zh-CN" ? "补齐对应 handoff、证据或节点记录，然后重新生成看板。" : "Add the required handoff, evidence, or node record, then regenerate the board.",
+      check.node_ids,
+    ));
+  }
   return {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
@@ -2239,6 +2886,13 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     mode: graph.mode,
     language,
     generated_at: now(),
+    template: {
+      template_id: graph.metadata?.template_id || null,
+      template_version: graph.metadata?.template_version || null,
+      name: graph.metadata?.template_name || null,
+      description: graph.metadata?.template_description || null,
+      layers: graph.metadata?.layers || {},
+    },
     project,
     summary: {
       total: projectedNodes.length,
@@ -2277,6 +2931,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     usage,
     context,
     timing,
+    scorecard,
     risks,
     recommendations,
     improvement_plan: recommendations,
@@ -2489,6 +3144,26 @@ function renderRecommendations(items, text) {
   });
 }
 
+function renderScorecard(scorecard, text) {
+  const checks = scorecard?.checks || [];
+  const counts = scorecard?.counts || {};
+  const definitions = scorecard?.definitions || [];
+  const names = definitions.map((definition) => definition.name || definition.scorecard_id).join(", ") || text.none;
+  const checksHtml = renderObjectList(checks, text.none, (check) => {
+    const nodes = check.node_ids?.length ? `<p><strong>${escapeHtml(text.nodes)}:</strong> ${check.node_ids.map((nodeId) => `<a href="#node-${escapeHtml(nodeId)}">${escapeHtml(nodeId)}</a>`).join(", ")}</p>` : "";
+    return `<strong>${escapeHtml(check.status.toUpperCase())}</strong> ${escapeHtml(check.title)}<p class="muted">${escapeHtml(check.scorecard_name || check.scorecard_id || "")} · ${escapeHtml(text.severity)}: ${escapeHtml(check.severity)}</p><p>${escapeHtml(check.detail || "")}</p>${nodes}`;
+  });
+  return `<div class="metrics">
+      ${renderMetric(text.score, `${scorecard?.score_percent ?? 0}%`)}
+      ${renderMetric(text.scorecardPassed, counts.passed || 0)}
+      ${renderMetric(text.scorecardFailed, counts.failed || 0)}
+      ${renderMetric(text.scorecardWarnings, counts.warning || 0)}
+      ${renderMetric(text.scorecardPending, counts.pending || 0)}
+    </div>
+    <p><strong>${escapeHtml(text.scorecard)}:</strong> ${escapeHtml(names)}</p>
+    ${checksHtml}`;
+}
+
 function renderRecentEvents(events, text) {
   return renderObjectList(events, text.none, (event) => {
     const nodeLink = event.node_id ? `<a href="#node-${escapeHtml(event.node_id)}">${escapeHtml(event.node_id)}</a>` : "";
@@ -2520,6 +3195,7 @@ function renderNodeCard(node, text) {
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
       <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
+      <dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd>
       <dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd>
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
@@ -2587,7 +3263,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.tokenUsage)}</h4>${renderTokenUsage(node.token_usage, text)}</section>
         <section><h4>${escapeHtml(text.contextUsage)}</h4>${renderContextUsage(node.context_usage, text)}</section>
         <section><h4>${escapeHtml(text.timeUsage)}</h4>${renderTiming(node.timing, text)}</section>
-        <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.model_selection_reason)}</dd></dl></section>
+        <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(node.model_profile || text.none)}</dd><dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(node.runtime_profile || text.none)}</dd><dt>${escapeHtml(text.safetyProfile)}</dt><dd>${escapeHtml(node.safety_profile || text.none)}</dd><dt>${escapeHtml(text.scorecard)}</dt><dd>${escapeHtml(node.scorecard || text.none)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.model_selection_reason)}</dd></dl></section>
         <section><h4>${escapeHtml(text.agentActivity)}</h4>${renderAgentActivity(node.agent_activity, text)}</section>
         <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList([...node.open_risks, ...node.non_blocking_notes], text.none)}</section>
         <section><h4>${escapeHtml(text.timeline)}</h4>${renderTimeline(node.timeline, text)}</section>
@@ -2602,6 +3278,8 @@ function renderBoardHtml(board) {
   const allNodes = Object.values(board.columns).flat();
   const project = board.project || {};
   const git = project.git || {};
+  const template = board.template || {};
+  const layers = template.layers || {};
   const keyFileItems = (project.key_files || []).map((item) => item.path);
   const topLevelItems = (project.top_level || []).map((item) => `${item.type === "dir" ? "/" : ""}${item.name}`);
 
@@ -2743,6 +3421,27 @@ function renderBoardHtml(board) {
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
+      </div>
+    </section>
+
+    <section class="grid-2" id="template-scorecard">
+      <div class="panel">
+        <h2>${escapeHtml(text.workflowTemplate)}</h2>
+        <dl>
+          <dt>${escapeHtml(text.templateId)}</dt><dd>${escapeHtml(template.template_id || text.none)}</dd>
+          <dt>${escapeHtml(text.templateVersion)}</dt><dd>${escapeHtml(template.template_version || text.none)}</dd>
+          <dt>${escapeHtml(text.template)}</dt><dd>${escapeHtml(template.name || text.none)}</dd>
+          <dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(layers.agents || text.none)}</dd>
+          <dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(layers.model_profile || text.none)}</dd>
+          <dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(layers.runtime_profile || text.none)}</dd>
+          <dt>${escapeHtml(text.safetyLimits)}</dt><dd>${escapeHtml(layers.safety_limits || text.none)}</dd>
+        </dl>
+        ${template.description ? `<p class="muted">${escapeHtml(template.description)}</p>` : ""}
+      </div>
+      <div class="panel">
+        <h2>${escapeHtml(text.scorecard)}</h2>
+        <p class="muted">${escapeHtml(text.scorecardHelp)}</p>
+        ${renderScorecard(board.scorecard, text)}
       </div>
     </section>
 
@@ -2982,24 +3681,25 @@ function cmdInit(positional, options) {
   const title = positional.join(" ").trim();
   if (!title) throw new Error("init requires a workflow title");
 
-  const mode = options.mode ? String(options.mode) : DEFAULT_MODE;
+  const templateId = options.template ? String(options.template) : DEFAULT_TEMPLATE_ID;
+  const template = loadWorkflowTemplate(templateId);
+  const mode = options.mode ? String(options.mode) : template.default_mode || DEFAULT_MODE;
   if (!MODES.has(mode)) throw new Error(`--mode must be one of ${[...MODES].join(", ")}`);
+  const language = options.lang ? normalizeBoardLanguage(options.lang) : inferLanguageFromText(title);
 
   const workflowId = options.id ? slugify(options.id) : `${dateStamp()}-${slugify(title)}`;
   const workflowDir = path.join(workflowsRoot(), workflowId);
   if (fs.existsSync(workflowDir)) throw new Error(`Workflow already exists: ${workflowId}`);
 
-  const graph = {
-    schema_version: SCHEMA_VERSION,
-    workflow_id: workflowId,
+  const templateErrors = validateWorkflowTemplate(template);
+  if (templateErrors.length > 0) throw new Error(templateErrors.join("\n"));
+  const graph = compileTemplateToGraph(template, {
+    templateId,
+    workflowId,
     title,
     mode,
-    created_at: now(),
-    metadata: {
-      controller: "omykit-workflow",
-    },
-    nodes: defaultGraphNodes(),
-  };
+    language,
+  });
   const graphErrors = validateGraph(graph);
   if (graphErrors.length > 0) throw new Error(graphErrors.join("\n"));
 
@@ -3011,7 +3711,7 @@ function cmdInit(positional, options) {
   for (const node of graph.nodes) writeJson(path.join(workflowDir, "nodes", `${node.id}.json`), nodeCard(graph, node));
   fs.writeFileSync(path.join(workflowDir, "decisions.md"), `# Decisions\n\nWorkflow: ${workflowId}\n\n`);
   fs.writeFileSync(path.join(workflowDir, "blockers.md"), `# Blockers\n\nWorkflow: ${workflowId}\n\n`);
-  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode });
+  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, language });
 
   const { graph: savedGraph, state } = loadWorkflow(workflowDir);
   console.log(`Workflow created: ${workflowId}`);
@@ -3042,6 +3742,76 @@ function cmdValidate(options) {
   console.log(`Workflow valid: ${graph.workflow_id}`);
 }
 
+function cmdTemplates(positional, options) {
+  const action = positional[0] || "list";
+  const language = normalizeBoardLanguage(options.lang);
+  if (action === "validate") {
+    const templates = listWorkflowTemplates();
+    const errors = templates.flatMap((template) => validateWorkflowTemplate(template));
+    if (errors.length > 0) throw new Error(errors.join("\n"));
+    console.log(`Workflow templates valid: ${templates.length}`);
+    return;
+  }
+  if (action === "show") {
+    const templateId = positional[1];
+    if (!templateId) throw new Error("templates show requires a template id");
+    const template = loadWorkflowTemplate(templateId);
+    const errors = validateWorkflowTemplate(template);
+    if (errors.length > 0) throw new Error(errors.join("\n"));
+    const graph = compileTemplateToGraph(template, {
+      templateId,
+      workflowId: "preview",
+      title: localizedValue(template.name, language) || templateId,
+      mode: template.default_mode || DEFAULT_MODE,
+      language,
+    });
+    console.log(JSON.stringify({
+      template_id: template.template_id,
+      template_version: template.template_version,
+      name: localizedValue(template.name, language),
+      description: localizedValue(template.description, language),
+      layers: template.layers || {},
+      nodes: graph.nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        title: node.title,
+        depends_on: node.depends_on,
+        agent: node.agent || node.worker_profile || null,
+        model_tier: node.model_tier || defaultNodePolicy(node).model_tier,
+        task_complexity: node.task_complexity || defaultNodePolicy(node).task_complexity,
+      })),
+    }, null, 2));
+    return;
+  }
+  if (action !== "list") throw new Error(`Unknown templates action: ${action}`);
+  const templates = listWorkflowTemplates();
+  for (const template of templates) {
+    const name = localizedValue(template.name, language) || template.template_id;
+    const description = localizedValue(template.description, language) || "";
+    console.log(`${template.template_id} (${template.default_mode || DEFAULT_MODE}) - ${name}${description ? `: ${description}` : ""}`);
+  }
+}
+
+function cmdScorecard(options) {
+  const workflowDir = resolveWorkflowDir(options);
+  const errors = validateWorkflow(workflowDir);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const { graph, state } = loadWorkflow(workflowDir);
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
+  const board = buildBoardProjection(workflowDir, graph, state, language);
+  const text = boardText(language);
+  console.log(`${text.scorecard}: ${board.workflow_id}`);
+  console.log(`${text.score}: ${board.scorecard.score_percent}%`);
+  console.log(`${text.scorecardPassed}: ${board.scorecard.counts.passed || 0}`);
+  console.log(`${text.scorecardFailed}: ${board.scorecard.counts.failed || 0}`);
+  console.log(`${text.scorecardWarnings}: ${board.scorecard.counts.warning || 0}`);
+  console.log(`${text.scorecardPending}: ${board.scorecard.counts.pending || 0}`);
+  for (const check of board.scorecard.checks) {
+    const nodes = check.node_ids?.length ? ` [${check.node_ids.join(", ")}]` : "";
+    console.log(`- ${check.status} ${check.severity} ${check.title}${nodes}: ${check.detail}`);
+  }
+}
+
 function cmdResume(options) {
   const workflowDir = resolveWorkflowDir(options);
   const { graph, state } = loadWorkflow(workflowDir);
@@ -3065,7 +3835,7 @@ function cmdBoard(options) {
     throw new Error(`${errors.join("\n")}\nRun validate and fix workflow artifacts before rendering the board.`);
   }
   const { graph, state } = loadWorkflow(workflowDir);
-  const language = normalizeBoardLanguage(options.lang);
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
   const board = buildBoardProjection(workflowDir, graph, state, language);
   const { jsonPath, htmlPath } = writeBoard(workflowDir, board);
 
@@ -3221,6 +3991,9 @@ function main() {
     case "init":
       cmdInit(positional, options);
       return;
+    case "templates":
+      cmdTemplates(positional, options);
+      return;
     case "status":
       cmdStatus(options);
       return;
@@ -3229,6 +4002,9 @@ function main() {
       return;
     case "validate":
       cmdValidate(options);
+      return;
+    case "scorecard":
+      cmdScorecard(options);
       return;
     case "resume":
       cmdResume(options);

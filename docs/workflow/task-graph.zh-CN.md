@@ -4,6 +4,8 @@
 
 Controller 使用有向无环图。每个节点只负责一类事情，并声明依赖、验收条件和 handoff 要求。
 
+Graph 通常由 `change.standard`、`bugfix.standard` 或 `frontend-ui.strict` 等 workflow 模板编译而来。你仍然可以查看和编辑生成后的 `graph.json`，但持久改动通常应进入 template/profile YAML，让流程保持可复用。
+
 ## 节点类型
 
 | Type | 职责 |
@@ -63,6 +65,11 @@ pending -> ready -> running -> passed
 | `model_tier` | 推荐模型档位：`fast`、`standard` 或 `frontier`；controller 只记录策略，不调用模型。 |
 | `model_selection_reason` | 为什么使用该档位的简短说明。 |
 | `estimated_minutes` | 用于看板 ETA 和剩余时间计算的计划估算。 |
+| `agent` | 模板层期望执行或负责该节点的角色 id。 |
+| `model_profile` | 模板层模型策略引用。 |
+| `runtime_profile` | 模板层运行或验证环境引用。 |
+| `safety_profile` | 模板层安全限位引用。 |
+| `scorecard` | 用于审计该节点证据的 scorecard id。 |
 
 这些字段避免同类能力“打架”：graph 负责依赖顺序，节点卡负责局部验收，handoff 负责证据，看板只负责把这些状态可视化。
 
@@ -93,4 +100,4 @@ pending -> ready -> running -> passed
 - 节点卡存在
 - handoff 文件字段完整
 
-命令见 [controller.zh-CN.md](controller.zh-CN.md)，节点输出见 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。
+命令见 [controller.zh-CN.md](controller.zh-CN.md)、[workflow-templates.zh-CN.md](workflow-templates.zh-CN.md) 和 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。

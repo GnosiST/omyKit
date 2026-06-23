@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GnosiST/omyKit/schemas/workflow-template.schema.json",
+  "title": "omyKit Workflow Template",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "template_id",
+    "template_version",
+    "name",
+    "default_mode",
+    "layers",
+    "nodes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "template_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]+$"
+    },
+    "template_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "$ref": "#/definitions/i18nString"
+    },
+    "description": {
+      "$ref": "#/definitions/i18nString"
+    },
+    "default_mode": {
+      "type": "string",
+      "enum": [
+        "Lite",
+        "Standard",
+        "Strict"
+      ]
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agents",
+        "model_profile",
+        "runtime_profile",
+        "safety_limits",
+        "scorecards"
+      ],
+      "properties": {
+        "agents": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safety_limits": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scorecards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "type",
+          "title",
+          "objective",
+          "depends_on",
+          "required",
+          "retry_limit",
+          "acceptance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]{2}-[a-z0-9][a-z0-9-]*$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "intake",
+              "research",
+              "design",
+              "plan",
+              "implement",
+              "verify",
+              "review",
+              "delivery",
+              "evolution"
+            ]
+          },
+          "title": {
+            "$ref": "#/definitions/i18nString"
+          },
+          "objective": {
+            "$ref": "#/definitions/i18nString"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "retry_limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "acceptance": {
+            "$ref": "#/definitions/i18nStringArray"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "i18nString": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "zh-CN": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "i18nStringArray": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "en": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zh-CN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

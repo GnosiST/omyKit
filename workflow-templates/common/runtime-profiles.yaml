@@ -1,0 +1,23 @@
+schema_version: "1"
+runtime_profiles:
+  - id: project-default
+    name:
+      en: Project Default
+      zh-CN: 项目默认
+    description:
+      en: Use tools already available in the target project; do not provision extra runtime dependencies unless verification requires them.
+      zh-CN: 使用目标项目已有工具；除非验证需要，不额外安装运行时依赖。
+  - id: browser-qa
+    name:
+      en: Browser QA
+      zh-CN: 浏览器验收
+    description:
+      en: Expect local dev server, browser screenshot checks, and interactive state verification when the project supports them.
+      zh-CN: 项目支持时，预期使用本地 dev server、浏览器截图检查和交互状态验证。
+  - id: docs-only
+    name:
+      en: Docs Only
+      zh-CN: 文档工作
+    description:
+      en: Prefer markdown and repository validation scripts; avoid runtime setup unrelated to documentation output.
+      zh-CN: 优先使用 Markdown 和仓库验证脚本，避免与文档产物无关的运行时准备。
