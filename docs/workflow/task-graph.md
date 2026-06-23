@@ -62,6 +62,13 @@ Nodes may include optional collaboration fields. They are routing and display me
 
 These fields prevent similar capabilities from fighting by keeping responsibility explicit: the graph owns dependency order, node cards own local acceptance, handoffs own evidence, and the board only visualizes the resulting state.
 
+For multi-agent work, treat this as two layers:
+
+- `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
+- `agent_activity` in handoffs and related ledger events describe actual worker activity, including task, status, evidence, and token usage when available.
+
+Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
+
 ## Retry Limits
 
 Each graph node has `retry_limit`. When the same reject edge exceeds the target node's limit, the controller blocks the target node and requires human decision or design review. This prevents quiet loops.

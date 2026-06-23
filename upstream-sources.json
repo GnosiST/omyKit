@@ -136,7 +136,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "a22e3d0b8295550b6b8630cdaf4291af18aa4de1",
+      "baseline": "6e0c8b45170eb295cfbba514a4e8aca00efb43aa",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -256,7 +256,7 @@
       "id": "moby",
       "repo": "moby/moby",
       "url": "https://github.com/moby/moby.git",
-      "baseline": "70e47b0404ad8d7fc2cb71fb0b01b149c2f3b2aa",
+      "baseline": "746a916bbfc1c56a6ef022ab3f2d597115107f95",
       "role": "Moby/Docker engine ecosystem reference for container runtime behavior",
       "verification": {
         "owner": "moby",
@@ -331,7 +331,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "66495c54e952ae1f1c922067a0e49de5a6d5b7f2",
+      "baseline": "c5c5d9440a536b8fc5ff8d2a2cffe5263f1682ec",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

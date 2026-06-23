@@ -82,7 +82,7 @@ When asking about mode, allow the user to answer with `Lite`, `Standard`, `Stric
 ## Route
 
 - `maintenance` -> handle directly with the omyKit repository scripts; then report install/update evidence
-- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, or validation evidence
+- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, task-tracker highlights, token coverage, failed/blocked nodes, or validation evidence
 - `init` -> `codex-project-init`
 - `retrofit` -> `codex-project-retrofit`
 - `change` -> `codex-change-workflow`

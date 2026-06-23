@@ -11,7 +11,7 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "03-implement",
   "status": "passed",
-  "summary": "Implemented the scoped change."
+  "summary": "已完成限定范围内的实现。"
 }
 ```
 
@@ -26,10 +26,30 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "03-implement",
   "status": "passed",
-  "summary": "Implemented the scoped change.",
+  "summary": "已完成限定范围内的实现，并更新聚焦测试。",
+  "work_items": [
+    {
+      "title": "补齐空状态文案兜底",
+      "status": "done",
+      "detail": "保留既有 API 契约，只修改 UI 兜底分支。",
+      "files": [
+        "src/foo.ts"
+      ],
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ]
+    }
+  ],
   "outputs": [
     "src/foo.ts",
     "tests/foo.test.ts"
+  ],
+  "changed_files": [
+    {
+      "path": "src/foo.ts",
+      "status": "modified",
+      "summary": "增加空状态兜底。"
+    }
   ],
   "verification": [
     {
@@ -38,11 +58,36 @@
       "evidence": "evidence/03-implement-test-output.txt"
     }
   ],
+  "agent_activity": [
+    {
+      "agent_id": "agent-1",
+      "role": "coder",
+      "task": "实现限定范围内的兜底逻辑并补测试。",
+      "status": "done",
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ],
+      "token_usage": {
+        "source": "tool_reported",
+        "model": "gpt-5.4",
+        "total_tokens": 18420
+      }
+    }
+  ],
+  "token_usage": {
+    "source": "derived_from_agent_activity",
+    "total_tokens": 18420,
+    "notes": "由已记录的 agent activity 汇总。"
+  },
   "open_risks": [],
   "non_blocking_notes": [],
   "next_recommended_node": "04-verify"
 }
 ```
+
+使用 `work_items` 和 `changed_files`，让看板成为任务追踪表，而不是通用状态板。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。
+
+token 记录必须有来源。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。
 
 ## Failed And Reject
 
@@ -53,13 +98,13 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "04-verify",
   "status": "failed",
-  "summary": "Focused regression test failed.",
+  "summary": "聚焦回归测试失败。",
   "reject_to": "03-implement",
-  "reason": "Empty-state behavior regressed.",
+  "reason": "空状态行为发生回归。",
   "evidence": [
     "evidence/04-verify-test-output.txt"
   ],
-  "required_fix": "Preserve the previous empty-state behavior and rerun the focused test."
+  "required_fix": "保留原空状态行为，并重新运行聚焦测试。"
 }
 ```
 
@@ -72,10 +117,10 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "02-design",
   "status": "blocked",
-  "summary": "Delivery policy needs confirmation.",
+  "summary": "交付策略需要确认。",
   "blocker_type": "user_confirmation",
-  "question": "Should release tagging be automatic?",
-  "blocked_scope": "delivery only",
+  "question": "是否自动创建 release tag？",
+  "blocked_scope": "仅交付阶段",
   "can_continue_nodes": [
     "03-research-current-docs"
   ]
@@ -91,8 +136,8 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "05-visual-review",
   "status": "skipped",
-  "summary": "No rendered UI changed.",
-  "reason": "The change only touched non-visual markdown docs."
+  "summary": "没有渲染 UI 变化。",
+  "reason": "本次只修改非视觉类 markdown 文档。"
 }
 ```
 
@@ -104,5 +149,6 @@
 - blocked 节点不要阻塞无依赖关系的 ready 节点。
 - evidence 路径必须能从 workflow 目录或目标项目找回。
 - 用户可见 summary 使用用户当前语言。
+- token 用量必须带来源；无法取得真实用量时标记未记录，不要估成 0。
 
 节点状态见 [task-graph.zh-CN.md](task-graph.zh-CN.md)，命令见 [controller.zh-CN.md](controller.zh-CN.md)。

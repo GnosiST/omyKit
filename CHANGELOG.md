@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Redesigned the workflow board as a project task tracker: nodes now project actual work items, changed files, evidence availability, agent activity, token usage coverage, per-node timelines, and parallel-group token summaries instead of only generic node contracts.
+- Extended workflow handoffs with optional `work_items`, `changed_files`, `agent_activity`, and source-aware `token_usage`; token totals only aggregate recorded usage and leave missing nodes visible.
+- Refreshed upstream baselines for OpenAI Codex, Moby, and Sentry after reviewing GitHub compare metadata; no omyKit workflow rule was promoted.
 - Upgraded the visual board from a generic workflow status view into a project-aware collaboration map with project snapshot, Git state, active changes, key files, recent commits, node handoff summaries, and verification evidence.
 - Dogfooded the controller and visual board on the omyKit repository itself; ignored local `.omykit/` state, filtered template metadata out of risk panels, and added `board --lang zh-CN` so Codex-first Chinese board requests render Chinese dashboard labels.
 - Refreshed the `openai/codex` upstream baseline after reviewing compact-remote style/test and Codex Apps manager flag cleanup changes; no omyKit workflow rule was promoted.

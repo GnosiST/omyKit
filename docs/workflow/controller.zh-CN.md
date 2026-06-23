@@ -35,7 +35,7 @@ $omykit 生成看板并打开
 $omykit 校验工作流
 ```
 
-Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、failed/blocked 节点和剩余风险报告给用户。
+Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、token 覆盖率、failed/blocked 节点和剩余风险报告给用户。
 
 只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
 
@@ -90,11 +90,13 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示总控指标、项目快照、Git 分支/提交/状态、当前改动、关键文件、最近提交、状态列、依赖边、打回边、并行组、worker profile 分道、节点合同、handoff 摘要、验证证据、blocker、decision、重试告警和最近 ledger 事件。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示任务追踪表、每个节点实际完成的工作项、变更文件、验证结果、证据是否存在、子智能体活动、token 消耗覆盖率、总控指标、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警和最近 ledger 事件。
+
+token 总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。
 
 使用 `--lang zh-CN` 可以生成简体中文看板标签。使用 `--open` 可以让 controller 尝试用系统默认浏览器打开 HTML。如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
-这个看板是静态视图，不启动 agent，不 claim 节点，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。
+这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组和 handoff 证据。
 
 ## 文件
 
@@ -114,7 +116,7 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
       board.html
 ```
 
-`graph.json` 定义 DAG。`state.json` 记录当前节点状态。`ledger.jsonl` 是追加式事件历史。`nodes/` 保存任务卡。`handoffs/` 保存结构化节点结果。`evidence/` 保存命令输出、截图、摘要或导出证据。`board.json` 和 `board.html` 是生成出来的只读视图，可随时重新生成。
+`graph.json` 定义 DAG。`state.json` 记录当前节点状态，并可用 `active_nodes` 记录并行工作中的多个活动节点。`ledger.jsonl` 是追加式事件历史。`nodes/` 保存任务卡。`handoffs/` 保存结构化节点结果。`evidence/` 保存命令输出、截图、摘要或导出证据。`board.json` 和 `board.html` 是生成出来的只读视图，可随时重新生成。
 
 ## Compact 后续跑
 
@@ -130,7 +132,8 @@ compact 或中断后按这个顺序读取：
 
 ## 不做什么
 
-- 不启动 agent。
+- 不自动启动 agent。
+- 不把 `parallel_group` 当成真实物理并发证明；真实 worker 活动应写入 handoff 或 ledger event。
 - 不调用 LLM。
 - 不自动运行测试，除非 Codex 或用户显式运行命令。
 - 不替代目标项目现有约定。

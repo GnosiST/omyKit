@@ -99,6 +99,31 @@ const BOARD_LABELS = {
     retry: "Retry",
     handoff: "Handoff",
     evidence: "Evidence",
+    taskTracker: "Task Tracker",
+    workItems: "Work Items",
+    changedFiles: "Changed Files",
+    tokenUsage: "Token Usage",
+    tokenTotal: "Total tokens",
+    tokenRecorded: "Recorded nodes",
+    tokenMissing: "Missing token records",
+    tokenCoverage: "Token coverage",
+    parallelGroups: "Parallel Groups",
+    agentActivity: "Agent Activity",
+    actualWork: "Actual Work",
+    nodeContract: "Node Contract",
+    timeline: "Timeline",
+    noWorkItems: "No work items recorded",
+    noChangedFiles: "No changed files recorded",
+    noAgentActivity: "No agent activity recorded",
+    notRecorded: "not recorded",
+    exists: "exists",
+    missingPath: "missing",
+    source: "source",
+    files: "files",
+    checks: "checks",
+    work: "work",
+    agents: "agents",
+    tokens: "tokens",
     unclaimed: "unclaimed",
     missing: "missing",
     deliveryComplete: "Delivery complete or no ready nodes.",
@@ -176,6 +201,31 @@ const BOARD_LABELS = {
     retry: "重试",
     handoff: "交接",
     evidence: "证据",
+    taskTracker: "任务追踪",
+    workItems: "工作项",
+    changedFiles: "变更文件",
+    tokenUsage: "Token 消耗",
+    tokenTotal: "总 token",
+    tokenRecorded: "已记录节点",
+    tokenMissing: "未记录 token 的节点",
+    tokenCoverage: "Token 覆盖率",
+    parallelGroups: "并行组",
+    agentActivity: "子智能体活动",
+    actualWork: "实际完成",
+    nodeContract: "节点合同",
+    timeline: "时间线",
+    noWorkItems: "未记录工作项",
+    noChangedFiles: "未记录变更文件",
+    noAgentActivity: "未记录子智能体活动",
+    notRecorded: "未记录",
+    exists: "存在",
+    missingPath: "缺失",
+    source: "来源",
+    files: "文件",
+    checks: "检查",
+    work: "工作项",
+    agents: "智能体",
+    tokens: "tokens",
     unclaimed: "未认领",
     missing: "缺失",
     deliveryComplete: "交付已完成，或没有就绪节点。",
@@ -185,6 +235,40 @@ const BOARD_LABELS = {
     start: "启动",
     completeHandoff: "完成",
     withHandoff: "并提交结构化 handoff。",
+  },
+};
+const DEFAULT_NODE_TRANSLATIONS = {
+  "zh-CN": {
+    intake: {
+      title: "需求接收",
+      objective: "固化用户目标、约束、交付物、语言和成功标准。",
+      acceptance: ["目标、约束、交付物、语言和成功标准已经明确。"],
+    },
+    design: {
+      title: "方案设计",
+      objective: "确定方案、边界、风险和验证策略。",
+      acceptance: ["方案、边界、风险和验证策略已经清楚。"],
+    },
+    plan: {
+      title: "执行计划",
+      objective: "把已接受的方案拆成小的实现和验证步骤。",
+      acceptance: ["执行步骤有顺序、有边界，并且每一步都可验证。"],
+    },
+    implement: {
+      title: "实现",
+      objective: "应用限定范围内的变更并收集聚焦证据。",
+      acceptance: ["请求的交付物变更已实现，并且范围受控。"],
+    },
+    verify: {
+      title: "验证",
+      objective: "运行相关检查并记录通过、失败、跳过或剩余风险。",
+      acceptance: ["相关检查已通过，或剩余风险已明确记录。"],
+    },
+    delivery: {
+      title: "交付",
+      objective: "汇总最终证据并明确完成状态。",
+      acceptance: ["最终交付包含证据、跳过的检查、风险和后续步骤。"],
+    },
   },
 };
 
@@ -486,6 +570,7 @@ function initialState(graph) {
     workflow_id: graph.workflow_id,
     updated_at: now(),
     active_node: null,
+    active_nodes: [],
     nodes: entries,
     retry_edges: {},
   };
@@ -585,6 +670,15 @@ function validateState(graph, state) {
   if (state.active_node !== null && !graphNodes.has(state.active_node)) {
     errors.push(`active_node does not exist: ${state.active_node}`);
   }
+  if (state.active_nodes !== undefined) {
+    if (!Array.isArray(state.active_nodes)) {
+      errors.push("active_nodes must be an array when present");
+    } else {
+      for (const nodeId of state.active_nodes) {
+        if (!graphNodes.has(nodeId)) errors.push(`active_nodes entry does not exist: ${nodeId}`);
+      }
+    }
+  }
   return errors;
 }
 
@@ -618,6 +712,69 @@ function validateNodeCards(workflowDir, graph) {
   return errors;
 }
 
+function validateTokenUsageShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  for (const field of ["input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens", "total_tokens"]) {
+    if (value[field] !== undefined && (!Number.isInteger(value[field]) || value[field] < 0)) {
+      errors.push(`${label}.${field} must be a non-negative integer`);
+    }
+  }
+  return errors;
+}
+
+function validateTaskTrackingFields(handoff) {
+  const errors = [];
+  if (handoff.work_items !== undefined) {
+    if (!Array.isArray(handoff.work_items)) {
+      errors.push("handoff.work_items must be an array");
+    } else {
+      handoff.work_items.forEach((item, index) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.push(`handoff.work_items[${index}] must be an object`);
+          return;
+        }
+        if (!item.title) errors.push(`handoff.work_items[${index}].title is required`);
+        if (!item.status) errors.push(`handoff.work_items[${index}].status is required`);
+      });
+    }
+  }
+  if (handoff.changed_files !== undefined) {
+    if (!Array.isArray(handoff.changed_files)) {
+      errors.push("handoff.changed_files must be an array");
+    } else {
+      handoff.changed_files.forEach((item, index) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.push(`handoff.changed_files[${index}] must be an object`);
+          return;
+        }
+        if (!item.path) errors.push(`handoff.changed_files[${index}].path is required`);
+      });
+    }
+  }
+  errors.push(...validateTokenUsageShape(handoff.token_usage, "handoff.token_usage"));
+  if (handoff.agent_activity !== undefined) {
+    if (!Array.isArray(handoff.agent_activity)) {
+      errors.push("handoff.agent_activity must be an array");
+    } else {
+      handoff.agent_activity.forEach((item, index) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.push(`handoff.agent_activity[${index}] must be an object`);
+          return;
+        }
+        if (!item.role) errors.push(`handoff.agent_activity[${index}].role is required`);
+        if (!item.task) errors.push(`handoff.agent_activity[${index}].task is required`);
+        if (!item.status) errors.push(`handoff.agent_activity[${index}].status is required`);
+        errors.push(...validateTokenUsageShape(item.token_usage, `handoff.agent_activity[${index}].token_usage`));
+      });
+    }
+  }
+  return errors;
+}
+
 function validateHandoff(graph, handoff) {
   const errors = [];
   const map = nodeMap(graph);
@@ -625,6 +782,7 @@ function validateHandoff(graph, handoff) {
   if (!map.has(handoff.node_id)) errors.push(`handoff node does not exist: ${handoff.node_id}`);
   if (!HANDOFF_STATUSES.has(handoff.status)) errors.push(`invalid handoff status: ${handoff.status}`);
   if (!handoff.summary) errors.push("handoff.summary is required");
+  errors.push(...validateTaskTrackingFields(handoff));
 
   if (handoff.status === "passed") {
     if (!Array.isArray(handoff.outputs)) errors.push("passed handoff requires outputs array");
@@ -707,6 +865,25 @@ function validateWorkflow(workflowDir) {
 function saveState(workflowDir, state) {
   state.updated_at = now();
   writeJson(path.join(workflowDir, "state.json"), state);
+}
+
+function activeNodes(state) {
+  return Array.isArray(state.active_nodes) ? state.active_nodes : state.active_node ? [state.active_node] : [];
+}
+
+function markActive(state, nodeId) {
+  const active = new Set(activeNodes(state));
+  active.add(nodeId);
+  state.active_nodes = [...active];
+  state.active_node = nodeId;
+}
+
+function clearActive(state, ...nodeIds) {
+  const remove = new Set(nodeIds.filter(Boolean));
+  state.active_nodes = activeNodes(state).filter((nodeId) => !remove.has(nodeId));
+  if (remove.has(state.active_node)) {
+    state.active_node = state.active_nodes[state.active_nodes.length - 1] || null;
+  }
 }
 
 function dependenciesSatisfied(node, state) {
@@ -957,18 +1134,183 @@ function collectEvidencePaths(handoff) {
   const paths = new Set();
   for (const value of handoff.outputs || []) paths.add(value);
   for (const value of handoff.evidence || []) paths.add(value);
+  for (const item of handoff.work_items || []) {
+    for (const value of item.evidence || []) paths.add(value);
+  }
   for (const item of handoff.verification || []) {
     if (item.evidence) paths.add(item.evidence);
   }
   return [...paths];
 }
 
-function evidenceStatus(entry, handoff) {
+function evidenceItems(workflowDir, handoff) {
+  const root = projectRootFromWorkflow(workflowDir);
+  return collectEvidencePaths(handoff).map((itemPath) => {
+    const workflowPath = path.join(workflowDir, itemPath);
+    const projectPath = path.join(root, itemPath);
+    const exists = fs.existsSync(workflowPath) || fs.existsSync(projectPath);
+    return { path: itemPath, exists };
+  });
+}
+
+function evidenceStatus(entry, handoff, items = []) {
   if (handoff?.status === "missing") return "missing";
   if (handoff?.status === "invalid") return "invalid";
-  if (handoff) return "present";
+  if (handoff) return items.some((item) => !item.exists) ? "partial" : "present";
   if (["passed", "failed", "blocked", "skipped"].includes(entry?.status)) return "missing";
   return "not_required_yet";
+}
+
+function localizedNodeText(node, card, language) {
+  const translated = DEFAULT_NODE_TRANSLATIONS[language]?.[node.type];
+  return {
+    title: translated?.title || node.title,
+    objective: translated?.objective || card.objective || nodeObjective(node),
+    acceptance: translated?.acceptance || card.acceptance || node.acceptance || [],
+  };
+}
+
+function normalizeTokenUsage(value) {
+  if (!value || typeof value !== "object") {
+    return {
+      recorded: false,
+      source: "not_recorded",
+      input_tokens: null,
+      output_tokens: null,
+      reasoning_tokens: null,
+      cached_tokens: null,
+      total_tokens: null,
+      notes: null,
+    };
+  }
+  const input = Number.isFinite(value.input_tokens) ? value.input_tokens : value.prompt_tokens ?? null;
+  const output = Number.isFinite(value.output_tokens) ? value.output_tokens : value.completion_tokens ?? null;
+  const reasoning = Number.isFinite(value.reasoning_tokens) ? value.reasoning_tokens : null;
+  const cached = Number.isFinite(value.cached_tokens) ? value.cached_tokens : null;
+  const summed = [input, output, reasoning].filter((item) => Number.isFinite(item)).reduce((sum, item) => sum + item, 0);
+  const total = Number.isFinite(value.total_tokens) ? value.total_tokens : summed || null;
+  return {
+    recorded: Number.isFinite(total),
+    source: value.source || "manual",
+    provider: value.provider || null,
+    model: value.model || null,
+    input_tokens: Number.isFinite(input) ? input : null,
+    output_tokens: Number.isFinite(output) ? output : null,
+    reasoning_tokens: Number.isFinite(reasoning) ? reasoning : null,
+    cached_tokens: Number.isFinite(cached) ? cached : null,
+    total_tokens: Number.isFinite(total) ? total : null,
+    recorded_at: value.recorded_at || null,
+    notes: value.notes || null,
+  };
+}
+
+function mergeTokenUsage(target, usage) {
+  if (!usage?.recorded) return;
+  for (const field of ["input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens", "total_tokens"]) {
+    if (Number.isFinite(usage[field])) target[field] += usage[field];
+  }
+}
+
+function normalizeWorkItems(handoff) {
+  const items = Array.isArray(handoff?.work_items) ? handoff.work_items : [];
+  if (items.length > 0) {
+    return items.map((item, index) => {
+      if (typeof item === "string") {
+        return { title: item, status: handoff.status || "recorded", detail: null, files: [], evidence: [], index };
+      }
+      return {
+        title: item.title || item.task || `work item ${index + 1}`,
+        status: item.status || handoff.status || "recorded",
+        detail: item.detail || item.summary || null,
+        files: Array.isArray(item.files) ? item.files : [],
+        evidence: Array.isArray(item.evidence) ? item.evidence : [],
+        index,
+      };
+    });
+  }
+  if (handoff?.summary) {
+    return [{
+      title: handoff.summary,
+      status: handoff.status || "recorded",
+      detail: null,
+      files: [],
+      evidence: [],
+      index: 0,
+      source: "handoff.summary",
+    }];
+  }
+  return [];
+}
+
+function workflowInternalPath(value) {
+  return /^(nodes|handoffs|evidence)\//.test(value) || ["board.json", "board.html"].includes(value);
+}
+
+function normalizeChangedFiles(handoff) {
+  const files = Array.isArray(handoff?.changed_files) ? handoff.changed_files : [];
+  if (files.length > 0) {
+    return files.map((item) => {
+      if (typeof item === "string") return { path: item, status: "changed", summary: null };
+      return {
+        path: item.path,
+        status: item.status || "changed",
+        summary: item.summary || null,
+      };
+    }).filter((item) => item.path);
+  }
+  return (handoff?.outputs || [])
+    .filter((item) => typeof item === "string" && !workflowInternalPath(item))
+    .map((item) => ({ path: item, status: "output", summary: "derived from handoff.outputs" }));
+}
+
+function normalizeAgentActivity(handoff) {
+  const activity = Array.isArray(handoff?.agent_activity) ? handoff.agent_activity : [];
+  return activity.map((item, index) => ({
+    agent_id: item.agent_id || item.name || `agent-${index + 1}`,
+    role: item.role || "worker",
+    task: item.task || item.summary || "",
+    status: item.status || "recorded",
+    mode: item.mode || "subagent",
+    started_at: item.started_at || null,
+    completed_at: item.completed_at || null,
+    evidence: Array.isArray(item.evidence) ? item.evidence : [],
+    token_usage: normalizeTokenUsage(item.token_usage),
+  }));
+}
+
+function deriveTokenUsageFromAgents(agentActivity) {
+  const recorded = agentActivity.filter((item) => item.token_usage.recorded);
+  if (recorded.length === 0) return normalizeTokenUsage(null);
+  const totals = {
+    input_tokens: 0,
+    output_tokens: 0,
+    reasoning_tokens: 0,
+    cached_tokens: 0,
+    total_tokens: 0,
+  };
+  for (const item of recorded) mergeTokenUsage(totals, item.token_usage);
+  return {
+    recorded: true,
+    source: "derived_from_agent_activity",
+    provider: null,
+    model: null,
+    ...totals,
+    recorded_at: null,
+    notes: "Summed from agent_activity token records.",
+  };
+}
+
+function readNodeLedgerEvents(allEvents, nodeId) {
+  return allEvents
+    .filter((event) => event.node_id === nodeId)
+    .map((event) => ({
+      at: event.at || null,
+      event: event.event || "unknown",
+      handoff: event.handoff || null,
+      reject_to: event.reject_to || null,
+      reason: event.reason || null,
+      token_usage: normalizeTokenUsage(event.token_usage),
+    }));
 }
 
 function retryInfoForNode(state, nodeId) {
@@ -987,14 +1329,23 @@ function collaborationValue(node, card, field, fallback) {
   return value === undefined || value === null || value === "" ? fallback : value;
 }
 
-function projectNode(state, cards, handoffs, node) {
+function projectNode(workflowDir, state, cards, handoffs, allEvents, node, language) {
   const entry = state.nodes[node.id] || {};
   const card = cards.get(node.id) || {};
   const handoff = latestHandoffForNode(entry, handoffs, node.id);
   const retry = retryInfoForNode(state, node.id);
+  const display = localizedNodeText(node, card, language);
+  const evidence = evidenceItems(workflowDir, handoff);
+  const workItems = normalizeWorkItems(handoff);
+  const changedFiles = normalizeChangedFiles(handoff);
+  const agentActivity = normalizeAgentActivity(handoff);
+  const explicitTokenUsage = normalizeTokenUsage(handoff?.token_usage);
+  const tokenUsage = explicitTokenUsage.recorded ? explicitTokenUsage : deriveTokenUsageFromAgents(agentActivity);
+  const timeline = readNodeLedgerEvents(allEvents, node.id);
   return {
     id: node.id,
     title: node.title,
+    display_title: display.title,
     type: node.type,
     status: entry.status || "missing",
     owner: node.owner || "codex",
@@ -1012,13 +1363,15 @@ function projectNode(state, cards, handoffs, node) {
     last_handoff: entry.last_handoff || handoff?.path || null,
     handoff_status: handoff?.status || null,
     handoff_summary: handoff?.summary || null,
-    evidence_status: evidenceStatus(entry, handoff),
+    evidence_status: evidenceStatus(entry, handoff, evidence),
     objective: card.objective || nodeObjective(node),
+    display_objective: display.objective,
     depends_on: node.depends_on || [],
     inputs: node.depends_on || [],
     inputs_used: handoff?.inputs_used || [],
     allowed_scope: card.allowed_scope || [],
     acceptance: card.acceptance || node.acceptance || [],
+    display_acceptance: display.acceptance,
     required_checks: (handoff?.verification || []).map((item) => ({
       command: item.command,
       result: item.result,
@@ -1027,8 +1380,14 @@ function projectNode(state, cards, handoffs, node) {
     outputs: card.allowed_outputs || [],
     handoff_outputs: handoff?.outputs || [],
     evidence_paths: collectEvidencePaths(handoff),
+    evidence_items: evidence,
+    work_items: workItems,
+    changed_files: changedFiles,
+    agent_activity: agentActivity,
+    token_usage: tokenUsage,
+    timeline,
     open_risks: ["failed", "blocked"].includes(entry.status) && entry.reason ? [entry.reason] : [],
-    non_blocking_notes: [],
+    non_blocking_notes: handoff?.non_blocking_notes || [],
     updated_at: entry.updated_at || null,
     reason: entry.reason || null,
   };
@@ -1183,6 +1542,70 @@ function buildCollaboration(projectedNodes) {
   };
 }
 
+function buildUsage(projectedNodes) {
+  const totals = {
+    input_tokens: 0,
+    output_tokens: 0,
+    reasoning_tokens: 0,
+    cached_tokens: 0,
+    total_tokens: 0,
+  };
+  const byNode = [];
+  const byAgent = new Map();
+  const byParallelGroup = new Map();
+  const missingNodes = [];
+  for (const node of projectedNodes) {
+    const groupName = node.parallel_group || "none";
+    if (!byParallelGroup.has(groupName)) {
+      byParallelGroup.set(groupName, {
+        parallel_group: groupName,
+        nodes: [],
+        missing_nodes: [],
+        input_tokens: 0,
+        output_tokens: 0,
+        reasoning_tokens: 0,
+        cached_tokens: 0,
+        total_tokens: 0,
+      });
+    }
+    const group = byParallelGroup.get(groupName);
+    group.nodes.push(node.id);
+    if (node.token_usage.recorded) {
+      mergeTokenUsage(totals, node.token_usage);
+      mergeTokenUsage(group, node.token_usage);
+      byNode.push({ node_id: node.id, ...node.token_usage });
+    } else {
+      missingNodes.push(node.id);
+      group.missing_nodes.push(node.id);
+    }
+    for (const activity of node.agent_activity) {
+      if (!activity.token_usage.recorded) continue;
+      const key = `${activity.agent_id}:${activity.role}`;
+      if (!byAgent.has(key)) {
+        byAgent.set(key, {
+          agent_id: activity.agent_id,
+          role: activity.role,
+          input_tokens: 0,
+          output_tokens: 0,
+          reasoning_tokens: 0,
+          cached_tokens: 0,
+          total_tokens: 0,
+        });
+      }
+      mergeTokenUsage(byAgent.get(key), activity.token_usage);
+    }
+  }
+  return {
+    totals,
+    recorded_nodes: byNode.length,
+    missing_nodes: missingNodes,
+    coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
+    by_node: byNode,
+    by_agent: [...byAgent.values()],
+    by_parallel_group: [...byParallelGroup.values()],
+  };
+}
+
 function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
   const map = nodeMap(graph);
   return {
@@ -1219,14 +1642,16 @@ function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
 function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const cards = loadNodeCards(workflowDir, graph);
   const handoffs = loadHandoffs(workflowDir);
-  const projectedNodes = graph.nodes.map((node) => projectNode(state, cards, handoffs, node));
+  const allEvents = readLedgerEvents(workflowDir, 1000);
+  const projectedNodes = graph.nodes.map((node) => projectNode(workflowDir, state, cards, handoffs, allEvents, node, language));
   const counts = statusCounts(projectedNodes);
   const columns = {};
   for (const status of COLUMN_STATUSES) {
     columns[status] = projectedNodes.filter((node) => node.status === status);
   }
-  const recentEvents = readLedgerEvents(workflowDir, 10);
+  const recentEvents = allEvents.slice(-10);
   const critical = criticalPath(graph);
+  const usage = buildUsage(projectedNodes);
   return {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
@@ -1245,6 +1670,10 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       failed: counts.failed || 0,
       passed: counts.passed || 0,
       skipped: counts.skipped || 0,
+      work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
+      changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
+      verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
+      agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
       next_recommended_action: nextRecommendedAction(graph, state, language),
       critical_path: critical,
       latest_ledger_event: recentEvents[recentEvents.length - 1] || null,
@@ -1265,6 +1694,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       critical_path: critical,
     },
     collaboration: buildCollaboration(projectedNodes),
+    usage,
     risks: buildRisks(workflowDir, graph, state, projectedNodes, handoffs),
     recent_events: recentEvents,
   };
@@ -1288,6 +1718,11 @@ function renderList(items, empty = "none") {
   return `<ul>${items.map((item) => `<li>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</li>`).join("")}</ul>`;
 }
 
+function renderObjectList(items, empty, renderItem) {
+  if (!items || items.length === 0) return `<span class="muted">${escapeHtml(empty)}</span>`;
+  return `<ul>${items.map((item) => `<li>${renderItem(item)}</li>`).join("")}</ul>`;
+}
+
 function renderMetric(label, value) {
   return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
@@ -1309,6 +1744,72 @@ function truncateText(value, limit = 150) {
   return text.length > limit ? `${text.slice(0, limit - 1)}...` : text;
 }
 
+function formatTokens(usage, text) {
+  if (!usage?.recorded) return text.notRecorded;
+  return `${usage.total_tokens} (${text.source}: ${usage.source})`;
+}
+
+function renderTokenUsage(usage, text) {
+  if (!usage?.recorded) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const fields = [
+    ["input", usage.input_tokens],
+    ["output", usage.output_tokens],
+    ["reasoning", usage.reasoning_tokens],
+    ["cached", usage.cached_tokens],
+    ["total", usage.total_tokens],
+    [text.source, usage.source],
+    ["provider", usage.provider],
+    ["model", usage.model],
+    ["recorded_at", usage.recorded_at],
+  ].filter(([, value]) => value !== null && value !== undefined);
+  return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>${usage.notes ? `<p class="muted">${escapeHtml(usage.notes)}</p>` : ""}`;
+}
+
+function renderWorkItems(items, text) {
+  return renderObjectList(items, text.noWorkItems, (item) => {
+    const detail = item.detail ? `<p class="muted">${escapeHtml(item.detail)}</p>` : "";
+    const files = item.files?.length ? `<p><strong>${escapeHtml(text.files)}:</strong> ${escapeHtml(item.files.join(", "))}</p>` : "";
+    return `<strong>${escapeHtml(item.status)}</strong> ${escapeHtml(item.title)}${detail}${files}`;
+  });
+}
+
+function renderChangedFiles(files, text) {
+  return renderObjectList(files, text.noChangedFiles, (file) => {
+    const summary = file.summary ? ` - ${escapeHtml(file.summary)}` : "";
+    return `<code>${escapeHtml(file.path)}</code> <span class="muted">${escapeHtml(file.status)}</span>${summary}`;
+  });
+}
+
+function renderEvidenceItems(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    const label = item.exists ? text.exists : text.missingPath;
+    return `<code>${escapeHtml(item.path)}</code> <span class="muted">${escapeHtml(label)}</span>`;
+  });
+}
+
+function renderAgentActivity(items, text) {
+  return renderObjectList(items, text.noAgentActivity, (item) => {
+    const tokens = formatTokens(item.token_usage, text);
+    const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
+    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p><p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${evidence}`;
+  });
+}
+
+function renderTimeline(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    const details = [item.handoff ? `handoff=${item.handoff}` : null, item.reject_to ? `reject_to=${item.reject_to}` : null, item.reason ? `reason=${item.reason}` : null]
+      .filter(Boolean)
+      .join(" · ");
+    return `<code>${escapeHtml(item.at || "")}</code> ${escapeHtml(item.event)}${details ? ` <span class="muted">${escapeHtml(details)}</span>` : ""}`;
+  });
+}
+
+function renderUsageGroups(groups, text) {
+  return renderObjectList(groups, text.none, (group) => {
+    return `<strong>${escapeHtml(group.parallel_group)}</strong><p>${escapeHtml(text.nodes)}: ${escapeHtml(group.nodes.join(", "))}</p><p>${escapeHtml(text.tokenTotal)}: ${escapeHtml(group.total_tokens || text.notRecorded)}</p><p>${escapeHtml(text.tokenMissing)}: ${escapeHtml(group.missing_nodes.join(", ") || text.none)}</p>`;
+  });
+}
+
 function statusTitle(status, text) {
   return text[status] || status;
 }
@@ -1319,13 +1820,20 @@ function renderNodeCard(node, text) {
       <strong>${escapeHtml(node.id)}</strong>
       <span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span>
     </div>
-    <div class="node-title">${escapeHtml(node.title)}</div>
+    <div class="node-title">${escapeHtml(node.display_title || node.title)}</div>
     ${node.handoff_summary ? `<p class="node-summary">${escapeHtml(truncateText(node.handoff_summary))}</p>` : ""}
+    <p class="node-counts">
+      <span>${escapeHtml(text.work)} ${escapeHtml(node.work_items.length)}</span>
+      <span>${escapeHtml(text.files)} ${escapeHtml(node.changed_files.length)}</span>
+      <span>${escapeHtml(text.checks)} ${escapeHtml(node.required_checks.length)}</span>
+      <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
+    </p>
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
       <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
+      <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
       <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(node.last_handoff || text.missing)}</dd>
       <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(node.evidence_status)}</dd>
     </dl>
@@ -1337,6 +1845,35 @@ function renderEdgeList(edges, empty = "No edges") {
   return `<div class="edge-list">${edges
     .map((edge) => `<div class="edge"><code>${escapeHtml(edge.from)}</code><span>-></span><code>${escapeHtml(edge.to)}</code>${edge.retry_count ? `<small>retry ${escapeHtml(edge.retry_count)}</small>` : ""}</div>`)
     .join("")}</div>`;
+}
+
+function renderTaskTracker(nodes, text) {
+  return `<div class="task-table" role="table">
+    <div class="task-row task-head" role="row">
+      <span>${escapeHtml(text.nodes)}</span>
+      <span>${escapeHtml(text.actualWork)}</span>
+      <span>${escapeHtml(text.changedFiles)}</span>
+      <span>${escapeHtml(text.verification)}</span>
+      <span>${escapeHtml(text.tokenUsage)}</span>
+      <span>${escapeHtml(text.openRisks)}</span>
+    </div>
+    ${nodes
+      .map((node) => {
+        const work = node.work_items.map((item) => item.title).join("; ") || text.noWorkItems;
+        const files = node.changed_files.map((file) => file.path).join(", ") || text.noChangedFiles;
+        const checks = node.required_checks.map((item) => `${item.command}: ${item.result}`).join("; ") || text.none;
+        const risks = [...node.open_risks, ...node.non_blocking_notes].join("; ") || text.none;
+        return `<div class="task-row" role="row">
+          <span><strong>${escapeHtml(node.id)}</strong><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
+          <span>${escapeHtml(truncateText(work, 240))}</span>
+          <span>${escapeHtml(truncateText(files, 180))}</span>
+          <span>${escapeHtml(truncateText(checks, 220))}</span>
+          <span>${escapeHtml(formatTokens(node.token_usage, text))}</span>
+          <span>${escapeHtml(truncateText(risks, 180))}</span>
+        </div>`;
+      })
+      .join("")}
+  </div>`;
 }
 
 function renderBoardHtml(board) {
@@ -1351,20 +1888,25 @@ function renderBoardHtml(board) {
   const detailsHtml = Object.values(board.columns)
     .flat()
     .map((node) => `<details class="detail">
-      <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.title)}</summary>
+      <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
-        <section><h4>${escapeHtml(text.objective)}</h4><p>${escapeHtml(node.objective)}</p></section>
+        <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
+        <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
+        <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
+        <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
+        <section><h4>${escapeHtml(text.tokenUsage)}</h4>${renderTokenUsage(node.token_usage, text)}</section>
+        <section><h4>${escapeHtml(text.agentActivity)}</h4>${renderAgentActivity(node.agent_activity, text)}</section>
+        <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList([...node.open_risks, ...node.non_blocking_notes], text.none)}</section>
+        <section><h4>${escapeHtml(text.timeline)}</h4>${renderTimeline(node.timeline, text)}</section>
+        <section><h4>${escapeHtml(text.nodeContract)}</h4><p><strong>${escapeHtml(text.objective)}:</strong> ${escapeHtml(node.display_objective || node.objective)}</p></section>
         <section><h4>${escapeHtml(text.handoffSummary)}</h4><p>${escapeHtml(node.handoff_summary || text.none)}</p></section>
         <section><h4>${escapeHtml(text.dependsOn)}</h4>${renderList(node.depends_on, text.none)}</section>
-        <section><h4>${escapeHtml(text.acceptance)}</h4>${renderList(node.acceptance, text.none)}</section>
+        <section><h4>${escapeHtml(text.acceptance)}</h4>${renderList(node.display_acceptance || node.acceptance, text.none)}</section>
         <section><h4>${escapeHtml(text.outputs)}</h4>${renderList(node.handoff_outputs.length > 0 ? node.handoff_outputs : node.outputs, text.none)}</section>
-        <section><h4>${escapeHtml(text.requiredChecks)}</h4>${renderList(node.required_checks, text.none)}</section>
-        <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderList(node.evidence_paths, text.none)}</section>
-        <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList(node.open_risks, text.none)}</section>
-        <section><h4>${escapeHtml(text.notes)}</h4>${renderList(node.non_blocking_notes, text.none)}</section>
       </div>
     </details>`)
     .join("");
+  const allNodes = Object.values(board.columns).flat();
   const project = board.project || {};
   const git = project.git || {};
   const keyFileItems = (project.key_files || []).map((item) => item.path);
@@ -1424,6 +1966,14 @@ function renderBoardHtml(board) {
     .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
     .board { display: grid; grid-template-columns: repeat(7, minmax(170px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
     .column { min-width: 170px; background: #fdfefe; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .task-table { display: grid; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.5fr) minmax(160px, 1fr) minmax(200px, 1.3fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
+    .task-row:first-child { border-top: 0; }
+    .task-row > span { padding: 10px; border-left: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+    .task-row > span:first-child { border-left: 0; }
+    .task-head { background: #eef2f6; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; font-weight: 700; }
+    .node-counts { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+    .node-counts span { background: #eef2f6; border-radius: 999px; color: var(--muted); font-size: 11px; padding: 1px 6px; }
     .node-card { border: 1px solid var(--line); border-left: 4px solid var(--pending); border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 8px; }
     .node-card.ready { border-left-color: var(--ready); }
     .node-card.running { border-left-color: var(--running); }
@@ -1459,6 +2009,9 @@ function renderBoardHtml(board) {
       header, main { padding: 16px; }
       .command, .grid-2, .detail-grid { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: repeat(2, minmax(90px, 1fr)); }
+      .task-row { grid-template-columns: 1fr; }
+      .task-row > span { border-left: 0; border-top: 1px solid var(--line); }
+      .task-row > span:first-child { border-top: 0; }
       .board { grid-template-columns: 1fr; overflow-x: visible; }
       .column { min-width: 0; }
     }
@@ -1487,7 +2040,34 @@ function renderBoardHtml(board) {
         ${renderMetric(text.passed, board.summary.passed)}
         ${renderMetric(text.skipped, board.summary.skipped)}
         ${renderMetric(text.pending, board.summary.pending)}
+        ${renderMetric(text.workItems, board.summary.work_items)}
+        ${renderMetric(text.changedFiles, board.summary.changed_files)}
+        ${renderMetric(text.checks, board.summary.verification_checks)}
+        ${renderMetric(text.agents, board.summary.agent_activities)}
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>${escapeHtml(text.taskTracker)}</h2>
+      ${renderTaskTracker(allNodes, text)}
+    </section>
+
+    <section class="panel">
+      <h2>${escapeHtml(text.tokenUsage)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.tokenTotal, board.usage.totals.total_tokens || text.notRecorded)}
+        ${renderMetric(text.tokenRecorded, board.usage.recorded_nodes)}
+        ${renderMetric(text.tokenMissing, board.usage.missing_nodes.length)}
+        ${renderMetric(text.tokenCoverage, `${board.usage.coverage_percent}%`)}
+      </div>
+      <p><strong>${escapeHtml(text.tokenMissing)}:</strong> ${escapeHtml(board.usage.missing_nodes.join(", ") || text.none)}</p>
+      <h3>${escapeHtml(text.parallelGroups)}</h3>
+      ${renderUsageGroups(board.usage.by_parallel_group, text)}
+    </section>
+
+    <section class="panel">
+      <h2>${escapeHtml(text.nodeDetails)}</h2>
+      ${detailsHtml}
     </section>
 
     <section class="panel">
@@ -1547,11 +2127,6 @@ function renderBoardHtml(board) {
     <section class="panel">
       <h2>${escapeHtml(text.workBoard)}</h2>
       <div class="board">${columnsHtml}</div>
-    </section>
-
-    <section class="panel">
-      <h2>${escapeHtml(text.nodeDetails)}</h2>
-      ${detailsHtml}
     </section>
 
     <section class="grid-2">
@@ -1735,7 +2310,7 @@ function cmdStart(positional, options) {
   const entry = state.nodes[nodeId];
   if (entry.status !== "ready") throw new Error(`Node ${nodeId} is ${entry.status}, not ready`);
   state.nodes[nodeId] = stateEntry("running", "Started", entry.last_handoff || null);
-  state.active_node = nodeId;
+  markActive(state, nodeId);
   saveState(workflowDir, state);
   appendLedger(workflowDir, { event: "node.start", node_id: nodeId });
   printStatus(graph, state);
@@ -1759,10 +2334,15 @@ function cmdComplete(positional, options) {
 
   const relativeHandoff = relativeToWorkflow(workflowDir, handoffPath);
   state.nodes[nodeId] = stateEntry("passed", null, relativeHandoff);
-  if (state.active_node === nodeId) state.active_node = null;
+  clearActive(state, nodeId);
   recalculateReady(graph, state);
   saveState(workflowDir, state);
-  appendLedger(workflowDir, { event: "node.complete", node_id: nodeId, handoff: relativeHandoff });
+  appendLedger(workflowDir, {
+    event: "node.complete",
+    node_id: nodeId,
+    handoff: relativeHandoff,
+    token_usage: handoff.token_usage || null,
+  });
   printStatus(graph, state);
 }
 
@@ -1797,7 +2377,7 @@ function cmdReject(positional, options) {
       state.nodes[rejectTo].last_handoff || null,
     );
   }
-  if (state.active_node === nodeId || state.active_node === rejectTo) state.active_node = null;
+  clearActive(state, nodeId, rejectTo);
   saveState(workflowDir, state);
   appendLedger(workflowDir, {
     event: "node.reject",
@@ -1805,6 +2385,7 @@ function cmdReject(positional, options) {
     reject_to: rejectTo,
     retry_count: retryCount,
     handoff: relativeHandoff,
+    token_usage: handoff.token_usage || null,
   });
   printStatus(graph, state);
 }
@@ -1819,7 +2400,7 @@ function cmdBlock(positional, options) {
   requireNode(graph, nodeId);
   const entry = state.nodes[nodeId];
   state.nodes[nodeId] = stateEntry("blocked", String(reason), entry.last_handoff || null);
-  if (state.active_node === nodeId) state.active_node = null;
+  clearActive(state, nodeId);
   saveState(workflowDir, state);
   appendLedger(workflowDir, { event: "node.block", node_id: nodeId, reason: String(reason) });
   appendText(path.join(workflowDir, "blockers.md"), `- ${now()} ${nodeId}: ${reason}\n`);

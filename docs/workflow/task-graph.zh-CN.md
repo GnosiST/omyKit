@@ -62,6 +62,13 @@ pending -> ready -> running -> passed
 
 这些字段避免同类能力“打架”：graph 负责依赖顺序，节点卡负责局部验收，handoff 负责证据，看板只负责把这些状态可视化。
 
+多 agent 工作要分两层理解：
+
+- `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
+- handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括任务、状态、证据，以及可用时的 token 消耗。
+
+不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
+
 ## 重试限制
 
 每个 graph 节点都有 `retry_limit`。同一条打回边超过目标节点限制时，controller 会把目标节点标成 blocked，要求人工决策或设计复核，避免静默循环。

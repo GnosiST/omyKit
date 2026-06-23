@@ -139,7 +139,7 @@ node scripts/omykit-workflow.mjs board --open --lang zh-CN
 
 Controller 是本地确定性机制。它不调用模型，不自动改代码，不替代 Codex，也不会让 Lite 任务默认变重。全局安装会把它复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`，schemas 位于 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`。
 
-`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示项目快照、Git 分支/提交/状态、当前改动、关键文件、最近提交、状态列、依赖流、打回边、worker 分道、节点 handoff 摘要、验证证据、blocker、decision、重试和最近 ledger 事件，不引入服务端或数据库。
+`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示任务追踪表、每个节点实际完成的工作项、变更文件、验证结果、证据是否存在、子智能体活动、token 消耗覆盖率、项目快照、Git 分支/提交/状态、依赖流、打回边、worker 分道、blocker、decision、重试和最近 ledger 事件，不引入服务端或数据库。只有记录了来源的 token 才会聚合，缺失节点会明确展示，不会被当作 0。
 
 ## 工作流模型
 
