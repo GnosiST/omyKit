@@ -17,6 +17,7 @@ Codex should clone the repository, run `./scripts/install-global.sh`, report the
 After install, use `$omykit` for normal operation:
 
 ```text
+$omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
@@ -27,6 +28,8 @@ $omykit 更新自己
 ```
 
 The leading `$` is part of the skill trigger, not a shell prompt.
+
+Use `$omykit help` or `$omykit 帮助` to get the common command list inside Codex without opening the docs.
 
 ## Manual Global Install
 

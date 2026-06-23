@@ -49,6 +49,11 @@ function writeJson(file, value) {
 
 fs.writeFileSync(path.join(tmpRoot, "README.md"), "# Feature X Project\n\nTemporary project context.\n");
 
+const helpOutput = run(["help"]);
+assert.match(helpOutput, /Usage:/);
+assert.match(helpOutput, /templates/);
+assert.match(helpOutput, /board/);
+
 const templatesList = run(["templates", "list", "--lang", "zh-CN"]);
 assert.match(templatesList, /change\.standard/);
 assert.match(templatesList, /标准变更/);

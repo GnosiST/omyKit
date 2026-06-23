@@ -74,6 +74,7 @@ cd omyKit
 打开新的 Codex 线程，然后在 Codex 对话里输入：
 
 ```text
+$omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
@@ -84,6 +85,8 @@ $omykit 更新自己
 ```
 
 Codex 应该在内部运行需要的 controller 或安装命令，并把结果、路径和剩余风险返回给你。开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
+
+如果只是想看命令和用法，直接输入 `$omykit help` 或 `$omykit 帮助`，不需要再翻文档。
 
 如果你的 Codex 客户端支持 prompt 文件，这也是 Codex 对话输入，不是终端命令：
 

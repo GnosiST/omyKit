@@ -6,6 +6,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 
 | User phrase | Entry |
 | --- | --- |
+| `help`, `帮助`, `怎么用`, `有哪些命令`, `how to use omyKit` | Answer directly with concise help; do not start a workflow |
 | `安装 omyKit`, `帮我安装 omyKit`, `install omyKit` | `maintenance` |
 | `更新 omyKit`, `重新安装 omyKit`, `检查 omyKit 版本`, `update omyKit` | `maintenance` |
 | `创建工作流`, `初始化 workflow`, `开始追踪任务`, `create workflow` | `controller` |
@@ -24,6 +25,8 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 These are Codex chat prompts, not shell commands.
 
 ```text
+$omykit help
+$omykit 帮助
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求

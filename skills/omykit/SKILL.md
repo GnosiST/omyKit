@@ -1,6 +1,6 @@
 ---
 name: omykit
-description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
+description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
 ---
 
 # omyKit
@@ -44,6 +44,20 @@ Map user intent to commands:
 In Codex Desktop, after generating a board, return the local `board.html` link and open it in the built-in browser when that surface is available. Treat CLI `--open` as a system-browser fallback, not as the only UX.
 
 If there are multiple workflows and no active/latest workflow is safe to infer, ask which workflow to use. If the controller script is missing, tell the user omyKit must be installed or reinstalled first.
+
+## Help
+
+When the user asks for `help`, `帮助`, `怎么用`, available commands, or how to use omyKit, answer directly in the user's language. Do not start a workflow, inspect the repository broadly, or generate a board unless the user also asks for that action.
+
+Include these concise groups:
+
+- start: `$omykit 初始化项目`, `$omykit 改造旧项目`, `$omykit 开始一个需求`
+- tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 继续工作流`
+- board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
+- maintenance: `$omykit 更新自己`, `$omykit 交付检查`
+- templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
+
+Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `templates list`, `status`, or `board --open`.
 
 ## Start
 

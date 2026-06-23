@@ -74,6 +74,7 @@ cd omyKit
 Open a fresh Codex thread and type one of these in Codex chat:
 
 ```text
+$omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
@@ -84,6 +85,8 @@ $omykit 更新自己
 ```
 
 Codex should run any required controller or install commands internally and return the result, paths, and residual risks. The leading `$` is part of the skill trigger, not a shell prompt.
+
+Use `$omykit help` or `$omykit 帮助` when you want the command list and usage guidance without opening the docs.
 
 If your Codex client supports prompt files, this is also a Codex chat input:
 

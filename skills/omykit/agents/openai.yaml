@@ -1,4 +1,4 @@
 interface:
   display_name: "omyKit"
-  short_description: "Start guided Codex project workflows."
-  default_prompt: "Use omykit to initialize, retrofit, run, or verify a project with guided Codex workflows."
+  short_description: "Explain and run guided Codex project workflows."
+  default_prompt: "Use omykit to show help, initialize, retrofit, run, or verify a project with guided Codex workflows."

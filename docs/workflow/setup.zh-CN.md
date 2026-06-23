@@ -17,6 +17,7 @@ Codex 应该 clone 仓库、运行 `./scripts/install-global.sh`、返回 instal
 安装后，日常使用 `$omykit`：
 
 ```text
+$omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
@@ -27,6 +28,8 @@ $omykit 更新自己
 ```
 
 开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
+
+想看常用命令时，直接输入 `$omykit help` 或 `$omykit 帮助`，不需要打开文档。
 
 ## 手动全局安装
 
