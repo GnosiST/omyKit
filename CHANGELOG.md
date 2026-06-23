@@ -34,7 +34,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 - Tightened source admission rules so stars are supporting evidence, not sufficient proof for default routing.
 - Added source marks and verified sources to every tool-registry row, covering installed local skills, platform tools, OpenAI bundled tools, and repo-local mechanisms.
 - Added star-count suffixes to verified GitHub sources in the tool registry and documented a no-low-signal-community-skill admission rule.
-- Added source-integrity baselines for admitted local skill origins and platform-tool GitHub references such as Impeccable, UI Skills, Better Icons, Motion, Remotion, FFmpeg, Docker, Playwright, GitHub MCP, Linear, Sentry, SonarQube, and OpenAI CUA samples.
+- Added source-integrity baselines for admitted local skill origins and platform-tool GitHub references such as Impeccable, Motion, Remotion, FFmpeg, Docker, Playwright, GitHub MCP, Linear, Sentry, SonarQube, and OpenAI CUA samples.
 - Added source-integrity snapshots and validation for external references, including developer/owner, star counts as of 2026-06-22, fork/archive status, and scoped reference boundaries.
 - Refreshed the `openai/codex` upstream baseline after reviewing a remote-exec sandboxing change; no omyKit workflow rule was promoted.
 - Refreshed the `getsentry/sentry` upstream baseline after reviewing an internal migration-helper change; no omyKit workflow rule was promoted.
