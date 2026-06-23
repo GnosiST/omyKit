@@ -52,4 +52,33 @@ for skill_dir in "$source_root"/skills/*; do
   fi
 done
 
+omykit_skill="$source_root/skills/omykit/SKILL.md"
+router_skill="$source_root/skills/codex-project-router/SKILL.md"
+change_skill="$source_root/skills/codex-change-workflow/SKILL.md"
+
+if ! grep -q 'intake decision gate' "$omykit_skill"; then
+  echo "omyKit skill is missing the intake decision gate: $omykit_skill" >&2
+  exit 1
+fi
+if ! grep -q 'ask 1-3 concise questions' "$omykit_skill"; then
+  echo "omyKit skill is missing bounded intake-question guidance: $omykit_skill" >&2
+  exit 1
+fi
+if ! grep -q 'custom answer' "$omykit_skill"; then
+  echo "omyKit skill is missing custom-answer intake guidance: $omykit_skill" >&2
+  exit 1
+fi
+if ! grep -q 'intake question gate' "$router_skill"; then
+  echo "Router skill is missing the intake question gate: $router_skill" >&2
+  exit 1
+fi
+if ! grep -q 'Workflow shape:' "$router_skill"; then
+  echo "Router skill output is missing workflow shape: $router_skill" >&2
+  exit 1
+fi
+if ! grep -q 'Confirm the intake decision' "$change_skill"; then
+  echo "Change workflow is missing intake-decision confirmation: $change_skill" >&2
+  exit 1
+fi
+
 echo "All omyKit skills are valid."

@@ -17,6 +17,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 ## Why omyKit
 
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
+- **Intake decision gate:** show the chosen route and ask 1-3 custom-answer questions only when ambiguity would change the work.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
@@ -159,6 +160,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 Operational rules:
 
 - Route once at task intake, when scope or risk changes, or before delivery.
+- At intake, state the goal, route, execution shape or controller template, and material assumptions before implementation.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
@@ -168,7 +170,7 @@ Operational rules:
 - Prefer project-native commands and existing repository conventions before adding new tools.
 - Check versioning readiness for durable changes: branch state, history lookup, rollback path, release notes, and customization boundary.
 - Treat generated project rules as local project assets, not global defaults.
-- Ask for user input only when a safe assumption is not possible; when asking, allow custom answers instead of limiting the user to fixed options.
+- Ask 1-3 questions only when a safe assumption is not possible and the answer would change the deliverable, target project, risk, runtime, workflow template, or controller choice; when asking, allow custom answers instead of limiting the user to fixed options.
 
 ## Documentation
 

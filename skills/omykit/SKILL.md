@@ -63,6 +63,18 @@ Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user 
 
 Apply `codex-context-budget` and stay in `scan`.
 
+Run an intake decision gate before edits, installs, controller state changes, broad tool use, or long-running work. For help, status, board, template inspection, validation, install, or update requests, use the matching direct operation instead of forcing a change workflow.
+
+The intake gate must settle or show:
+
+- `Goal`: one-sentence user goal.
+- `Route`: entry type, project type, mode, and next skill.
+- `Workflow`: direct Lite/Standard execution or tracked controller workflow with the nearest template.
+- `Assumptions`: only assumptions that affect deliverables, target project, risk, runtime, language, or versioning.
+- `Questions`: ask only when a wrong assumption would change the deliverable, target project, risk mode, destructive action, runtime/deployment constraint, workflow template, or controller choice.
+
+If the route is clear, state the route and assumptions briefly, then proceed without extra confirmation. If questions are needed, ask 1-3 concise questions before implementation. Questions may include suggested choices, but must explicitly allow a custom answer. Do not repeat the intake gate for routine file reads, edits, commands, or verification; rerun it only when scope, risk, artifact type, or user intent changes.
+
 Classify the user request:
 
 1. `maintenance`: install, update, reinstall, rollback, or inspect omyKit itself.

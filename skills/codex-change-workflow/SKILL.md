@@ -22,24 +22,28 @@ Run this workflow once to frame the change, then execute directly. Re-enter the 
    - Lite: brief in conversation or `docs/workflow`.
    - Standard: OpenSpec-style change, issue, or project spec.
    - Strict: Spec-Kit constitution plus change spec/tasks.
-3. Invoke the relevant Superpowers discipline:
+3. Confirm the intake decision from `omykit` or `codex-project-router` before implementation:
+   - If deliverable, target project, success criteria, risky/destructive boundary, runtime constraint, workflow mode, controller need, or template choice is unclear, ask 1-3 questions before editing.
+   - If the decision is clear, state route, execution shape, and material assumptions briefly, then proceed.
+   - Questions may offer choices but must allow custom answers.
+4. Invoke the relevant Superpowers discipline:
    - fuzzy idea -> `superpowers:brainstorming`
    - multi-step implementation -> `superpowers:writing-plans`
    - existing plan -> `superpowers:executing-plans`
    - bug -> `superpowers:systematic-debugging`
    - risky logic -> `superpowers:test-driven-development`
-4. Decide whether to enable the omyKit workflow controller:
+5. Decide whether to enable the omyKit workflow controller:
    - Lite: do not enable by default.
    - Standard: enable only for multi-node, compact-prone, parallel, rejected, resumable, or user-requested tracked work.
    - Strict: enable by default.
-5. If enabled, use the first available controller script: project `scripts/omykit-workflow.mjs`, then `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`. Keep node handoffs structured; failed gates must reject to a named upstream node with evidence and required fix. Generate `board` only when the user asks for progress visualization, the task is long enough to need a collaboration map, or before a tracked handoff where board evidence helps review.
-6. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
-7. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
-8. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a secondary only for a separate high-signal gap such as responsive adaptation, copy, hardening, taste/anti-generic review, advanced UI/UX direction, motion, GSAP implementation, or current shadcn/ecosystem discovery. Handle accessibility, metadata, icons, and performance with project-native checks and targeted fixes unless the user explicitly requests a trusted specialist.
-9. Load only the current project-type reference.
-10. Execute surgically.
-11. Run focused verification as soon as something is testable.
-12. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence appears, route it to `codex-workflow-evolution` after delivery.
+6. If enabled, use the first available controller script: project `scripts/omykit-workflow.mjs`, then `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`. Keep node handoffs structured; failed gates must reject to a named upstream node with evidence and required fix. Generate `board` only when the user asks for progress visualization, the task is long enough to need a collaboration map, or before a tracked handoff where board evidence helps review.
+7. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
+8. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
+9. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a secondary only for a separate high-signal gap such as responsive adaptation, copy, hardening, taste/anti-generic review, advanced UI/UX direction, motion, GSAP implementation, or current shadcn/ecosystem discovery. Handle accessibility, metadata, icons, and performance with project-native checks and targeted fixes unless the user explicitly requests a trusted specialist.
+10. Load only the current project-type reference.
+11. Execute surgically.
+12. Run focused verification as soon as something is testable.
+13. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence appears, route it to `codex-workflow-evolution` after delivery.
 
 ## App-Code Rules
 

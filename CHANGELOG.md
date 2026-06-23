@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added an explicit omyKit intake decision gate so tasks show route, execution shape/template, material assumptions, ask only targeted custom-answer questions before ambiguous work, and keep that behavior covered by skill validation.
 - Tightened runtime readiness so Docker-backed checks reuse compatible local images or stopped containers before pulling/building, and report the actual local version used.
 - Added a first-class omyKit help entry so `$omykit help` / `$omykit 帮助` can return usage guidance without requiring users to open the docs.
 - Added CI coverage for workflow template validation and controller tests, added scheduled/manual upstream reference monitoring, and fixed global rollback so workflow templates are restored with skills, prompts, controller, and schemas.
