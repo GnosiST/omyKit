@@ -20,7 +20,8 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
-- **Scorecard audit:** check real handoffs, verification evidence, language consistency, usage records, and model-tier policy before trusting completion claims.
+- **Scorecard audit:** check real handoffs, verification evidence, language consistency, skill usage, usage records, and model-tier policy before trusting completion claims.
+- **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -103,7 +104,7 @@ Codex will run the controller internally and return the generated paths. Manual 
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It is a local static view, not a realtime service.
+This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage per node and per worker when handoffs provide it. It is a local static view, not a realtime service.
 
 ## What It Includes
 

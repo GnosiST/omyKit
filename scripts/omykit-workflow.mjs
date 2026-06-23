@@ -132,6 +132,11 @@ const BOARD_LABELS = {
     workItems: "Work Items",
     changedFiles: "Changed Files",
     changeSummary: "Change Summary",
+    skillsUsed: "Skills Used",
+    skillUsage: "Skill Usage",
+    skillCoverage: "Skill coverage",
+    skillRecorded: "Recorded nodes",
+    skillMissing: "Missing skill records",
     tokenUsage: "Token Usage",
     tokenTotal: "Total tokens",
     tokenRecorded: "Recorded nodes",
@@ -195,6 +200,7 @@ const BOARD_LABELS = {
     noLeases: "No active leases",
     noWorkItems: "No work items recorded",
     noChangedFiles: "No changed files recorded",
+    noSkillsUsed: "No skills recorded",
     noAgentActivity: "No agent activity recorded",
     notRecorded: "not recorded",
     exists: "exists",
@@ -292,6 +298,11 @@ const BOARD_LABELS = {
     workItems: "工作项",
     changedFiles: "变更文件",
     changeSummary: "改动说明",
+    skillsUsed: "使用的 Skills",
+    skillUsage: "Skill 使用记录",
+    skillCoverage: "Skill 覆盖率",
+    skillRecorded: "已记录节点",
+    skillMissing: "未记录 skill 的节点",
     tokenUsage: "Token 消耗",
     tokenTotal: "总 token",
     tokenRecorded: "已记录节点",
@@ -355,6 +366,7 @@ const BOARD_LABELS = {
     noLeases: "没有有效租约",
     noWorkItems: "未记录工作项",
     noChangedFiles: "未记录变更文件",
+    noSkillsUsed: "未记录使用的 skills",
     noAgentActivity: "未记录子智能体活动",
     notRecorded: "未记录",
     exists: "存在",
@@ -1401,6 +1413,32 @@ function validateTimingShape(value, label) {
   return errors;
 }
 
+function validateSkillsUsedShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!Array.isArray(value)) return [`${label} must be an array`];
+  value.forEach((item, index) => {
+    if (typeof item === "string") {
+      if (!item) errors.push(`${label}[${index}] must be a non-empty string`);
+      return;
+    }
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push(`${label}[${index}] must be a string or object`);
+      return;
+    }
+    if (!item.name) errors.push(`${label}[${index}].name is required`);
+    for (const field of ["name", "source", "path", "purpose", "triggered_by"]) {
+      if (item[field] !== undefined && typeof item[field] !== "string") {
+        errors.push(`${label}[${index}].${field} must be a string`);
+      }
+    }
+    if (item.evidence !== undefined && (!Array.isArray(item.evidence) || item.evidence.some((entry) => typeof entry !== "string" || !entry))) {
+      errors.push(`${label}[${index}].evidence must be an array of non-empty strings`);
+    }
+  });
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -1408,6 +1446,7 @@ function validateTaskTrackingFields(handoff) {
   }
   errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
+  errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -1461,6 +1500,7 @@ function validateTaskTrackingFields(handoff) {
         if (item.model_tier !== undefined && !MODEL_TIERS.has(item.model_tier)) {
           errors.push(`handoff.agent_activity[${index}].model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
         }
+        errors.push(...validateSkillsUsedShape(item.skills_used, `handoff.agent_activity[${index}].skills_used`));
         errors.push(...validateTokenUsageShape(item.token_usage, `handoff.agent_activity[${index}].token_usage`));
         errors.push(...validateContextUsageShape(item.context_usage, `handoff.agent_activity[${index}].context_usage`));
       });
@@ -2046,6 +2086,54 @@ function normalizeChangedFiles(handoff) {
     .map((item) => ({ path: item, status: "output", summary: "derived from handoff.outputs" }));
 }
 
+function normalizeSkillsUsed(value) {
+  const skills = Array.isArray(value) ? value : [];
+  return skills
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          name: item,
+          source: null,
+          path: null,
+          purpose: null,
+          triggered_by: null,
+          evidence: [],
+        };
+      }
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      const name = item.name || item.skill || item.id;
+      if (!name) return null;
+      return {
+        name,
+        source: item.source || null,
+        path: item.path || null,
+        purpose: item.purpose || item.reason || null,
+        triggered_by: item.triggered_by || null,
+        evidence: Array.isArray(item.evidence) ? item.evidence : [],
+      };
+    })
+    .filter(Boolean);
+}
+
+function mergeSkillRecords(...skillLists) {
+  const map = new Map();
+  for (const skill of skillLists.flat()) {
+    if (!skill?.name) continue;
+    const key = String(skill.name).toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, { ...skill, evidence: [...(skill.evidence || [])] });
+      continue;
+    }
+    const current = map.get(key);
+    current.source ||= skill.source || null;
+    current.path ||= skill.path || null;
+    current.purpose ||= skill.purpose || null;
+    current.triggered_by ||= skill.triggered_by || null;
+    current.evidence = [...new Set([...(current.evidence || []), ...(skill.evidence || [])])];
+  }
+  return [...map.values()];
+}
+
 function normalizeAgentActivity(handoff) {
   const activity = Array.isArray(handoff?.agent_activity) ? handoff.agent_activity : [];
   return activity.map((item, index) => ({
@@ -2061,6 +2149,7 @@ function normalizeAgentActivity(handoff) {
     started_at: item.started_at || null,
     completed_at: item.completed_at || null,
     evidence: Array.isArray(item.evidence) ? item.evidence : [],
+    skills_used: normalizeSkillsUsed(item.skills_used),
     token_usage: normalizeTokenUsage(item.token_usage),
     context_usage: normalizeContextUsage(item.context_usage, null),
   }));
@@ -2145,6 +2234,10 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const workItems = normalizeWorkItems(handoff);
   const changedFiles = normalizeChangedFiles(handoff);
   const agentActivity = normalizeAgentActivity(handoff);
+  const skillsUsed = mergeSkillRecords(
+    normalizeSkillsUsed(handoff?.skills_used),
+    agentActivity.flatMap((activity) => activity.skills_used || []),
+  );
   const explicitTokenUsage = normalizeTokenUsage(handoff?.token_usage);
   const tokenUsage = explicitTokenUsage.recorded ? explicitTokenUsage : deriveTokenUsageFromAgents(agentActivity);
   const timeline = readNodeLedgerEvents(allEvents, node.id);
@@ -2218,6 +2311,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     evidence_items: evidence,
     work_items: workItems,
     changed_files: changedFiles,
+    skills_used: skillsUsed,
     agent_activity: agentActivity,
     token_usage: tokenUsage,
     context_usage: contextUsage,
@@ -2480,6 +2574,68 @@ function buildContextUsage(projectedNodes) {
   };
 }
 
+function buildSkillUsage(projectedNodes) {
+  const byNode = [];
+  const bySkill = new Map();
+  const byAgent = new Map();
+  const missingNodes = [];
+  for (const node of projectedNodes) {
+    if (node.skills_used.length > 0) {
+      byNode.push({ node_id: node.id, skills: node.skills_used });
+      for (const skill of node.skills_used) {
+        const key = skill.name;
+        if (!bySkill.has(key)) {
+          bySkill.set(key, { name: skill.name, nodes: [], sources: new Set(), paths: new Set(), purposes: new Set() });
+        }
+        const entry = bySkill.get(key);
+        entry.nodes.push(node.id);
+        if (skill.source) entry.sources.add(skill.source);
+        if (skill.path) entry.paths.add(skill.path);
+        if (skill.purpose) entry.purposes.add(skill.purpose);
+      }
+    } else {
+      missingNodes.push(node.id);
+    }
+    for (const activity of node.agent_activity) {
+      for (const skill of activity.skills_used || []) {
+        const key = `${activity.agent_id}:${skill.name}`;
+        if (!byAgent.has(key)) {
+          byAgent.set(key, {
+            agent_id: activity.agent_id,
+            role: activity.role,
+            skill: skill.name,
+            nodes: [],
+            purposes: new Set(),
+          });
+        }
+        const entry = byAgent.get(key);
+        entry.nodes.push(node.id);
+        if (skill.purpose) entry.purposes.add(skill.purpose);
+      }
+    }
+  }
+  return {
+    recorded_nodes: byNode.length,
+    missing_nodes: missingNodes,
+    coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
+    by_node: byNode,
+    by_skill: [...bySkill.values()].map((entry) => ({
+      name: entry.name,
+      nodes: [...new Set(entry.nodes)],
+      sources: [...entry.sources],
+      paths: [...entry.paths],
+      purposes: [...entry.purposes],
+    })),
+    by_agent: [...byAgent.values()].map((entry) => ({
+      agent_id: entry.agent_id,
+      role: entry.role,
+      skill: entry.skill,
+      nodes: [...new Set(entry.nodes)],
+      purposes: [...entry.purposes],
+    })),
+  };
+}
+
 function buildTiming(projectedNodes) {
   const durations = projectedNodes
     .map((node) => node.timing.duration_ms)
@@ -2528,7 +2684,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, risks, project, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, skills, risks, project, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -2598,6 +2754,16 @@ function buildRecommendations(projectedNodes, usage, context, risks, project, la
       isZh ? "上下文记录可以帮助后续优化 compact、检索和子智能体拆分策略。" : "Context records are needed to optimize future workflow cost and compact behavior.",
       isZh ? "后续节点记录 context_usage.source_bytes、estimated_tokens、input_files 和 source。" : "Record context_usage.source_bytes, estimated_tokens, input_files, and source for future nodes.",
       context.missing_nodes,
+    ));
+  }
+  if (skills.missing_nodes.length > 0) {
+    items.push(recommendation(
+      "missing-skill-usage",
+      "low",
+      isZh ? "Skill 使用记录不完整" : "Skill usage coverage is incomplete",
+      isZh ? "缺少节点级 skill 记录时，很难复盘每个节点为什么调用某个 specialist skill。" : "Without node-level skill records, it is hard to audit why a specialist skill was used.",
+      isZh ? "后续 handoff 记录 skills_used；如果没有使用 skill，保持缺失即可。" : "Record skills_used in future handoffs; leave it missing when no skill was used.",
+      skills.missing_nodes,
     ));
   }
   const overloaded = projectedNodes.filter((node) => node.agent_activity.length > 3);
@@ -2785,6 +2951,11 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
         .map(({ node }) => node.id);
       return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "部分子智能体活动缺少 role/scope/task/status。" : "Some agent activities lack role/scope/task/status.");
     }
+    case "skills_used_recorded": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => node.skills_used.length === 0).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录使用过的 skills。" : "Terminal nodes did not record skills_used.");
+    }
     case "model_tier_policy": {
       const failing = projectedNodes
         .filter((node) => node.task_complexity === "expert" && node.model_tier !== "frontier")
@@ -2863,12 +3034,13 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const critical = criticalPath(graph);
   const usage = buildUsage(projectedNodes);
   const context = buildContextUsage(projectedNodes);
+  const skills = buildSkillUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, risks, project, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, risks, project, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -2906,6 +3078,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       skipped: counts.skipped || 0,
       work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
+      skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
       agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
       next_recommended_action: nextRecommendedAction(graph, state, language),
@@ -2930,6 +3103,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     collaboration: buildCollaboration(projectedNodes),
     usage,
     context,
+    skills,
     timing,
     scorecard,
     risks,
@@ -3081,15 +3255,25 @@ function renderEvidenceItems(items, text) {
   });
 }
 
+function renderSkillsUsed(items, text) {
+  return renderObjectList(items, text.noSkillsUsed, (item) => {
+    const meta = [item.source, item.path, item.triggered_by].filter(Boolean).join(" · ");
+    const purpose = item.purpose ? `<p class="muted">${escapeHtml(item.purpose)}</p>` : "";
+    const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
+    return `<strong>${escapeHtml(item.name)}</strong>${meta ? ` <span class="muted">${escapeHtml(meta)}</span>` : ""}${purpose}${evidence}`;
+  });
+}
+
 function renderAgentActivity(items, text) {
   return renderObjectList(items, text.noAgentActivity, (item) => {
     const tokens = formatTokens(item.token_usage, text);
     const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
     const model = item.model_tier || item.model ? `<p><strong>${escapeHtml(text.modelSelection)}:</strong> ${escapeHtml([item.model_tier, item.model].filter(Boolean).join(" / "))}</p>` : "";
     const scope = item.scope ? `<p><strong>${escapeHtml(text.scope)}:</strong> ${escapeHtml(item.scope)}</p>` : "";
+    const skills = item.skills_used?.length ? `<p><strong>${escapeHtml(text.skillsUsed)}:</strong> ${escapeHtml(item.skills_used.map((skill) => skill.name).join(", "))}</p>` : "";
     const context = item.context_usage?.recorded ? `<p>${escapeHtml(text.contextUsage)}: ${escapeHtml(item.context_usage.estimated_tokens || item.context_usage.source_bytes || text.notRecorded)} (${escapeHtml(item.context_usage.source)})</p>` : "";
     const timing = [item.started_at, item.completed_at].filter(Boolean).join(" -> ");
-    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
+    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${skills}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
   });
 }
 
@@ -3105,6 +3289,16 @@ function renderTimeline(items, text) {
 function renderUsageGroups(groups, text) {
   return renderObjectList(groups, text.none, (group) => {
     return `<strong>${escapeHtml(group.parallel_group)}</strong><p>${escapeHtml(text.nodes)}: ${escapeHtml(group.nodes.join(", "))}</p><p>${escapeHtml(text.tokenTotal)}: ${escapeHtml(group.total_tokens || text.notRecorded)}</p><p>${escapeHtml(text.tokenMissing)}: ${escapeHtml(group.missing_nodes.join(", ") || text.none)}</p>`;
+  });
+}
+
+function renderSkillGroups(groups, text) {
+  return renderObjectList(groups, text.noSkillsUsed, (group) => {
+    const meta = [
+      group.sources?.length ? `${text.source}: ${group.sources.join(", ")}` : null,
+      group.paths?.length ? `${text.files}: ${group.paths.join(", ")}` : null,
+    ].filter(Boolean).join(" · ");
+    return `<strong>${escapeHtml(group.name)}</strong><p>${escapeHtml(text.nodes)}: ${renderNodeLinks(group.nodes, text)}</p>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}`;
   });
 }
 
@@ -3190,6 +3384,7 @@ function renderNodeCard(node, text) {
       <span>${escapeHtml(text.work)} ${escapeHtml(node.work_items.length)}</span>
       <span>${escapeHtml(text.files)} ${escapeHtml(node.changed_files.length)}</span>
       <span>${escapeHtml(text.checks)} ${escapeHtml(node.required_checks.length)}</span>
+      <span>${escapeHtml(text.skillsUsed)} ${escapeHtml(node.skills_used.length)}</span>
       <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
     </p>
     <dl>
@@ -3200,6 +3395,7 @@ function renderNodeCard(node, text) {
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
+      <dt>${escapeHtml(text.skillsUsed)}</dt><dd>${escapeHtml(node.skills_used.map((skill) => skill.name).join(", ") || text.none)}</dd>
       <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(node.last_handoff || text.missing)}</dd>
       <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(node.evidence_status)}</dd>
     </dl>
@@ -3218,6 +3414,7 @@ function renderTaskTracker(nodes, text) {
     <div class="task-row task-head" role="row">
       <span>${escapeHtml(text.nodes)}</span>
       <span>${escapeHtml(text.actualWork)}</span>
+      <span>${escapeHtml(text.skillsUsed)}</span>
       <span>${escapeHtml(text.changedFiles)}</span>
       <span>${escapeHtml(text.verification)}</span>
       <span>${escapeHtml(text.tokenUsage)}</span>
@@ -3226,12 +3423,14 @@ function renderTaskTracker(nodes, text) {
     ${nodes
       .map((node) => {
         const work = node.work_items.map((item) => item.title).join("; ") || text.noWorkItems;
+        const skills = node.skills_used.map((skill) => skill.name).join(", ") || text.noSkillsUsed;
         const files = node.changed_files.map((file) => file.path).join(", ") || text.noChangedFiles;
         const checks = node.required_checks.map((item) => `${item.command}: ${item.result}`).join("; ") || text.none;
         const risks = [...node.open_risks, ...node.non_blocking_notes].join("; ") || text.none;
         return `<div class="task-row" role="row" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
           <span><a href="#node-${escapeHtml(node.id)}"><strong>${escapeHtml(node.id)}</strong></a><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
           <span>${escapeHtml(truncateText(work, 240))}</span>
+          <span>${escapeHtml(truncateText(skills, 160))}</span>
           <span>${escapeHtml(truncateText(files, 180))}</span>
           <span>${escapeHtml(truncateText(checks, 220))}</span>
           <span>${escapeHtml(formatTokens(node.token_usage, text))}</span>
@@ -3257,6 +3456,7 @@ function renderBoardHtml(board) {
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
+        <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
         <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
@@ -3341,7 +3541,7 @@ function renderBoardHtml(board) {
     .board { display: grid; grid-template-columns: repeat(7, minmax(170px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
     .column { min-width: 170px; background: #fdfefe; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .task-table { display: grid; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.5fr) minmax(160px, 1fr) minmax(200px, 1.3fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
+    .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.4fr) minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(200px, 1.2fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
     .task-row:first-child { border-top: 0; }
     .task-row > span { padding: 10px; border-left: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
     .task-row > span:first-child { border-left: 0; }
@@ -3418,6 +3618,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.skipped, board.summary.skipped, { filterStatus: "skipped" })}
         ${renderMetric(text.pending, board.summary.pending, { filterStatus: "pending" })}
         ${renderMetric(text.workItems, board.summary.work_items, "#task-tracker")}
+        ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
@@ -3454,6 +3655,19 @@ function renderBoardHtml(board) {
       <h2>${escapeHtml(text.taskTracker)}</h2>
       ${renderTaskTracker(allNodes, text)}
       <p id="filter-status" class="muted" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" id="skill-usage">
+      <h2>${escapeHtml(text.skillUsage)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.skillsUsed, board.summary.skills_used || text.notRecorded)}
+        ${renderMetric(text.skillRecorded, board.skills.recorded_nodes)}
+        ${renderMetric(text.skillMissing, board.skills.missing_nodes.length)}
+        ${renderMetric(text.skillCoverage, `${board.skills.coverage_percent}%`)}
+      </div>
+      <p><strong>${escapeHtml(text.skillMissing)}:</strong> ${escapeHtml(board.skills.missing_nodes.join(", ") || text.none)}</p>
+      <h3>${escapeHtml(text.skillsUsed)}</h3>
+      ${renderSkillGroups(board.skills.by_skill, text)}
     </section>
 
     <section class="panel">

@@ -59,6 +59,18 @@ Use `passed` when the node completed and evidence is available.
       "evidence": "evidence/03-implement-test-output.txt"
     }
   ],
+  "skills_used": [
+    {
+      "name": "omykit",
+      "source": "local_skill",
+      "path": "/Users/example/.codex/skills/omykit/SKILL.md",
+      "purpose": "Routed and operated the tracked workflow.",
+      "triggered_by": "$omykit",
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ]
+    }
+  ],
   "agent_activity": [
     {
       "agent_id": "agent-1",
@@ -72,6 +84,16 @@ Use `passed` when the node completed and evidence is available.
       "completed_at": "2026-06-23T10:24:00.000Z",
       "evidence": [
         "evidence/03-implement-test-output.txt"
+      ],
+      "skills_used": [
+        {
+          "name": "codex-change-workflow",
+          "source": "local_skill",
+          "purpose": "Kept implementation and verification scoped.",
+          "evidence": [
+            "evidence/03-implement-test-output.txt"
+          ]
+        }
       ],
       "token_usage": {
         "source": "tool_reported",
@@ -111,7 +133,7 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `work_items`, `changed_files`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, and evidence.
+Use `language`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, and evidence.
 
 Token and context records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata.
 
@@ -175,6 +197,7 @@ Use `skipped` only when skipping is intentional and the remaining risk is explic
 - Do not let a blocked node stop unrelated ready nodes.
 - Keep evidence paths retrievable from the workflow directory or target project.
 - Keep user-facing summaries in the user's current language.
+- Record only skills that were actually used; include purpose and evidence when available.
 - Keep token usage source-aware; when usage is unavailable, leave it missing instead of estimating zero.
 
 See [task-graph.md](task-graph.md) for node states and [controller.md](controller.md) for commands.

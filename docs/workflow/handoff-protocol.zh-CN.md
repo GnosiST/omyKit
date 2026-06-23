@@ -59,6 +59,18 @@
       "evidence": "evidence/03-implement-test-output.txt"
     }
   ],
+  "skills_used": [
+    {
+      "name": "omykit",
+      "source": "local_skill",
+      "path": "/Users/example/.codex/skills/omykit/SKILL.md",
+      "purpose": "路由并操作可追踪 workflow。",
+      "triggered_by": "$omykit",
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ]
+    }
+  ],
   "agent_activity": [
     {
       "agent_id": "agent-1",
@@ -72,6 +84,16 @@
       "completed_at": "2026-06-23T10:24:00.000Z",
       "evidence": [
         "evidence/03-implement-test-output.txt"
+      ],
+      "skills_used": [
+        {
+          "name": "codex-change-workflow",
+          "source": "local_skill",
+          "purpose": "约束实现和验证范围。",
+          "evidence": [
+            "evidence/03-implement-test-output.txt"
+          ]
+        }
       ],
       "token_usage": {
         "source": "tool_reported",
@@ -111,7 +133,7 @@
 }
 ```
 
-使用 `language`、`work_items`、`changed_files`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier` 和证据。
+使用 `language`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier` 和证据。
 
 token 和上下文记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只作为执行事实记录。
 
@@ -175,6 +197,7 @@ token 和上下文记录必须有来源。只要出现 `token_usage` 或 `contex
 - blocked 节点不要阻塞无依赖关系的 ready 节点。
 - evidence 路径必须能从 workflow 目录或目标项目找回。
 - 用户可见 summary 使用用户当前语言。
+- 只记录实际使用过的 skill；可取得时写清用途和证据。
 - token 用量必须带来源；无法取得真实用量时标记未记录，不要估成 0。
 
 节点状态见 [task-graph.zh-CN.md](task-graph.zh-CN.md)，命令见 [controller.zh-CN.md](controller.zh-CN.md)。

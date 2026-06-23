@@ -68,6 +68,7 @@ Current evidence checks cover:
 - actual work item records
 - changed-file summaries
 - verification records and evidence paths
+- recorded skill usage when skills were actually used
 - source-aware token and context usage records
 - required nodes not being failed or blocked
 - subagent role/scope/task/status records

@@ -49,6 +49,13 @@ checks:
     severity: recommended
     evidence:
       type: context_usage_source
+  - id: skills-used-recorded
+    title:
+      en: Terminal nodes record skills used when applicable
+      zh-CN: 终态节点记录使用过的 skills
+    severity: recommended
+    evidence:
+      type: skills_used_recorded
   - id: required-not-failed
     title:
       en: Required nodes are not failed or blocked

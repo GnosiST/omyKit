@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added workflow skill-usage traceability: handoffs can now record node-level and agent-level `skills_used`, the board exposes skill coverage and missing records, scorecards warn about missing terminal-node skill records, and docs/tests cover the contract.
+- Refreshed FFmpeg, Docker Compose, and Playwright upstream baselines after reviewing AMF requirement, compose-go/e2e cleanup, and worker leak-fix changes; no additional omyKit workflow rule was promoted.
 - Refreshed Context7, OpenAI Codex, and Sentry upstream baselines after reviewing enterprise API docs, MCP sandbox-state handling, and Sentry migration-flag changes; no additional omyKit workflow rule was promoted.
 - Added layered workflow templates and scorecards: `change.standard`, `bugfix.standard`, and `frontend-ui.strict` now compile into controller graphs with agent/model/runtime/safety profiles, template inspection commands, scorecard audits, language-aware board inference, schemas, tests, and English/Chinese docs.
 - Added board interaction and operations telemetry: clickable status filters, node-detail anchors, project change summaries, generated improvement actions, context-size coverage, node timing/ETA, and supplier-independent model-tier policy for agent work.

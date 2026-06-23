@@ -226,7 +226,7 @@
       "id": "ffmpeg",
       "repo": "FFmpeg/FFmpeg",
       "url": "https://github.com/FFmpeg/FFmpeg.git",
-      "baseline": "7c176c068d0992e277c59bba0e0beea0be47dd46",
+      "baseline": "cbbbe4a8624f180fc954cea0a74437f40ff4002d",
       "role": "Official FFmpeg GitHub mirror reference for media processing and export workflows",
       "verification": {
         "owner": "FFmpeg",
@@ -241,7 +241,7 @@
       "id": "docker-compose",
       "repo": "docker/compose",
       "url": "https://github.com/docker/compose.git",
-      "baseline": "9b55a6e9c1016fd3c31859b7e09260378d45a783",
+      "baseline": "46b806eafb1fbefa8eb471a9da90a2a732e84f4a",
       "role": "Official Docker Compose reference for local multi-service runtime readiness",
       "verification": {
         "owner": "docker",
@@ -286,7 +286,7 @@
       "id": "playwright",
       "repo": "microsoft/playwright",
       "url": "https://github.com/microsoft/playwright.git",
-      "baseline": "d0c98af9f4f2ee972a08192ef5eda424a0043984",
+      "baseline": "fca6a5d12081c3febb23b0b29bc8882b82e0841b",
       "role": "Official Playwright reference for repeatable browser automation",
       "verification": {
         "owner": "microsoft",

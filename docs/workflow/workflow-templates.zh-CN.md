@@ -68,6 +68,7 @@ Scorecard 检查已记录的 workflow 证据。它不能取代判断，但能避
 - 实际工作项记录
 - 变更文件摘要
 - 验证记录和证据路径
+- 实际使用过 skill 时的 skill 使用记录
 - 来源感知 token 和上下文用量记录
 - 必需节点没有失败或阻塞
 - 子智能体 role/scope/task/status 记录

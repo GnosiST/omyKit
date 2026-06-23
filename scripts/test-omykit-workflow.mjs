@@ -182,6 +182,16 @@ writeJson(intakeHandoff, {
       summary: "需求接收节点卡。",
     },
   ],
+  skills_used: [
+    {
+      name: "omykit",
+      source: "local_skill",
+      path: "/Users/irainbow/.codex/skills/omykit/SKILL.md",
+      purpose: "路由并操作可追踪 workflow。",
+      triggered_by: "$omykit",
+      evidence: ["evidence/01-intake-summary.txt"],
+    },
+  ],
   token_usage: {
     source: "manual",
     input_tokens: 100,
@@ -226,6 +236,14 @@ writeJson(intakeHandoff, {
         estimated_tokens: 300,
         input_files: 2,
       },
+      skills_used: [
+        {
+          name: "omykit",
+          source: "local_skill",
+          purpose: "创建 intake handoff 测试夹具。",
+          evidence: ["evidence/01-intake-summary.txt"],
+        },
+      ],
       evidence: ["evidence/01-intake-summary.txt"],
     },
   ],
@@ -259,6 +277,27 @@ writeJson(badUsageHandoff, {
 });
 runFails(["validate"], /source is required/);
 fs.rmSync(badUsageHandoff);
+const badSkillHandoff = path.join(dir, "handoffs", "01-intake-bad-skill.json");
+writeJson(badSkillHandoff, {
+  workflow_id: "feature-x",
+  node_id: "01-intake",
+  status: "passed",
+  summary: "Invalid fixture with missing skill name.",
+  outputs: ["nodes/01-intake.json"],
+  skills_used: [
+    {
+      purpose: "missing skill name",
+    },
+  ],
+  verification: [
+    {
+      command: "manual intake check",
+      result: "passed",
+    },
+  ],
+});
+runFails(["validate"], /handoff\.skills_used\[0\]\.name is required/);
+fs.rmSync(badSkillHandoff);
 const completeOutput = run(["complete", "01-intake", "--handoff", "handoffs/01-intake-to-02-design.json"]);
 assert.match(completeOutput, /Ready nodes: 02-design design - Design, 02-research research - Research/);
 state = readJson(path.join(dir, "state.json"));
@@ -347,6 +386,9 @@ assert.ok(Array.isArray(board.usage.by_agent));
 assert.ok(Array.isArray(board.usage.by_parallel_group));
 assert.ok(Array.isArray(board.context.by_node));
 assert.ok(Array.isArray(board.context.by_agent));
+assert.ok(Array.isArray(board.skills.by_node));
+assert.ok(Array.isArray(board.skills.by_skill));
+assert.ok(Array.isArray(board.skills.by_agent));
 assert.ok(Array.isArray(board.timing.by_node));
 assert.ok(Array.isArray(board.project.main_changes));
 assert.ok(Array.isArray(board.recommendations));
@@ -362,6 +404,8 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.co
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.timing.duration_minutes === 8));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.model_tier === "fast"));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex" && activity.scope)));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skills_used.some((skill) => skill.name === "omykit")));
+assert.equal(board.summary.skills_used, 1);
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
 assert.ok(board.usage.missing_nodes.includes("02-research"));
@@ -370,9 +414,13 @@ assert.ok(board.usage.by_parallel_group.some((group) => group.parallel_group ===
 assert.equal(board.context.totals.estimated_tokens, 300);
 assert.ok(board.context.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.estimated_tokens === 300));
 assert.ok(board.context.missing_nodes.includes("02-research"));
+assert.ok(board.skills.by_skill.some((skill) => skill.name === "omykit" && skill.nodes.includes("01-intake")));
+assert.ok(board.skills.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.skill === "omykit"));
+assert.ok(board.skills.missing_nodes.includes("02-research"));
 assert.ok(board.project.main_changes.some((change) => change.path === "nodes/01-intake.json" && /需求接收节点卡/.test(change.summary)));
 assert.ok(board.recommendations.some((item) => item.id === "missing-token-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "missing-context-usage"));
+assert.ok(board.recommendations.some((item) => item.id === "missing-skill-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "resolve-02-design"));
 assert.ok(board.columns.blocked.some((node) => node.id === "02-design"));
 assert.ok(board.columns.ready.some((node) => node.id === "02-research"));
@@ -391,6 +439,8 @@ assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
 assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /Token 消耗/);
+assert.match(boardHtml, /Skill 使用记录/);
+assert.match(boardHtml, /使用的 Skills/);
 assert.match(boardHtml, /整改建议/);
 assert.match(boardHtml, /上下文用量/);
 assert.match(boardHtml, /工作流模板/);

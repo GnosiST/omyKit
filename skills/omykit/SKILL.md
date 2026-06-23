@@ -99,7 +99,7 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 
 ## Agent And Cost Signals
 
-Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
+Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
 
 ## Workflow Templates And Scorecards
 
