@@ -25,6 +25,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `初始化旧项目`, `改造旧项目`, `接入现有项目`, `retrofit` | `retrofit` |
 | `开始一个需求`, `做一个功能`, `修 bug`, `重构`, `设计一个页面`, `做 PPT`, `剪视频` | `change` |
 | `交付检查`, `发布前检查`, `验收`, `handoff`, `ship it` | `delivery` |
+| `收尾`, `整理文档`, `同步知识`, `知识同步`, `neat-freak`, `tidy docs`, `sync up` | `delivery` knowledge sync |
 | `版本管理`, `回滚`, `历史版本`, `定制化修改`, `release readiness` | Route by task stage, then include `codex-version-readiness` |
 
 ## Recommended Prompts
@@ -54,6 +55,7 @@ $omykit 修 bug：登录后跳转错误
 $omykit 做 UI：设置页响应式优化
 $omykit 做调研：对比三种数据导出方案
 $omykit 交付检查
+$omykit 收尾：同步文档和记忆
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 更新自己

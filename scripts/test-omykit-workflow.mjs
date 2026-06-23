@@ -63,6 +63,7 @@ assert.match(helpOutput, /--surface/);
 assert.match(helpOutput, /Codex chat intents:/);
 assert.match(helpOutput, /Long task loop:/);
 assert.match(helpOutput, /只创建工作流/);
+assert.match(helpOutput, /收尾/);
 
 const templatesList = run(["templates", "list", "--lang", "zh-CN"]);
 assert.match(templatesList, /change\.standard/);
@@ -624,6 +625,36 @@ writeJson(badEvolutionHandoff, {
 runFails(["validate"], /evolution_candidates\[0\]\.evidence must contain at least one evidence path/);
 fs.rmSync(badEvolutionHandoff);
 
+const badKnowledgeHandoff = path.join(dir, "handoffs", "06-delivery-bad-knowledge-sync.json");
+writeJson(badKnowledgeHandoff, {
+  workflow_id: "feature-x",
+  node_id: "06-delivery",
+  status: "passed",
+  language: "zh-CN",
+  summary: "知识同步状态非法。",
+  work_items: [
+    {
+      title: "记录知识同步审查",
+      status: "done",
+      evidence: ["evidence/06-delivery-summary.txt"],
+    },
+  ],
+  outputs: ["evidence/06-delivery-summary.txt"],
+  verification: [
+    {
+      command: "manual delivery review",
+      result: "passed",
+      evidence: "evidence/06-delivery-summary.txt",
+    },
+  ],
+  evolution_candidates: [],
+  knowledge_sync: {
+    status: "skipped",
+  },
+});
+runFails(["validate"], /handoff\.knowledge_sync\.status must be one of/);
+fs.rmSync(badKnowledgeHandoff);
+
 const deliveryHandoff = path.join(dir, "handoffs", "06-delivery.json");
 writeJson(deliveryHandoff, {
   workflow_id: "feature-x",
@@ -659,6 +690,16 @@ writeJson(deliveryHandoff, {
       evidence: ["evidence/06-delivery-summary.txt"],
     },
   ],
+  knowledge_sync: {
+    status: "completed",
+    skill: "neat-freak",
+    performed_by: "main-codex",
+    reason: "本轮修改了 workflow 文档、schema 和 skill 说明，交付前需要同步知识层。",
+    files_reviewed: ["README.md", "README.zh-CN.md", "docs/workflow/handoff-protocol.zh-CN.md", "skills/omykit/SKILL.md"],
+    files_updated: ["README.md", "docs/workflow/handoff-protocol.zh-CN.md"],
+    memory_updated: [],
+    evidence: ["evidence/06-delivery-summary.txt"],
+  },
 });
 state = readJson(path.join(dir, "state.json"));
 state.nodes["06-delivery"] = {
@@ -697,6 +738,7 @@ assert.ok(Array.isArray(board.scorecard.checks));
 assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "downstream-context-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "knowledge-sync-reviewed" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "subagent-model-recorded-or-explained" && check.status === "pending"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-handoff-coverage" && check.status === "warning"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-write-scope-conflicts" && check.status === "passed"));
@@ -764,7 +806,10 @@ assert.equal(board.summary.skills_used, 1);
 assert.equal(board.summary.actual_models, 1);
 assert.equal(board.summary.intake_decisions, 1);
 assert.equal(board.summary.evolution_candidates, 1);
+assert.equal(board.summary.knowledge_sync_reviews, 1);
 assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.evolution_candidates.some((item) => item.scope === "generic_omykit")));
+assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.knowledge_sync?.status === "completed"));
+assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.knowledge_sync?.skill === "neat-freak"));
 assert.ok(board.evolution.by_node.some((item) => item.node_id === "06-delivery" && item.candidates.length === 1));
 assert.ok(board.evolution.candidates.some((item) => /交付节点应记录进化候选/.test(item.lesson) && item.owner === "codex-workflow-evolution"));
 assert.equal(board.evolution.by_scope.generic_omykit, 1);
@@ -808,6 +853,7 @@ assert.match(boardHtml, /总控中心/);
 assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
 assert.match(boardHtml, /Agent 通讯录/);
+assert.match(boardHtml, /知识同步/);
 assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /入口决策/);
 assert.match(boardHtml, /为 Feature X 创建可追踪的项目化看板/);

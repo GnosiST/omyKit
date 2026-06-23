@@ -87,6 +87,38 @@ Passed delivery nodes must record `evolution_candidates`. Use an empty array whe
 
 Allowed `scope` values are `generic_omykit`, `project_local`, `one_off`, and `volatile_ecosystem`. Allowed `promotion_status` values are `candidate`, `promoted`, `not_promoted`, and `needs_review`. Real candidates require at least one evidence path.
 
+## Knowledge Sync Review
+
+Passed delivery nodes must also record `knowledge_sync`. This records whether project knowledge was reconciled at handoff time. It is not a requirement to run a heavy cleanup after every node.
+
+Use `completed` when README, docs, AGENTS/CLAUDE rules, workflow handoffs, or agent memory were reviewed and updated. Use `not_needed` when no durable knowledge changed. Use `deferred` only with a concrete reason.
+
+```json
+{
+  "knowledge_sync": {
+    "status": "completed",
+    "skill": "neat-freak",
+    "performed_by": "main-codex",
+    "reason": "The change updated workflow docs and handoff contracts.",
+    "files_reviewed": [
+      "README.md",
+      "docs/workflow/handoff-protocol.md",
+      "AGENTS.md"
+    ],
+    "files_updated": [
+      "README.md",
+      "docs/workflow/handoff-protocol.md"
+    ],
+    "memory_updated": [],
+    "evidence": [
+      "evidence/06-delivery-summary.txt"
+    ]
+  }
+}
+```
+
+When the installed `neat-freak` skill is available, use it for milestone cleanup, stale docs, or clean handoff requests. If it is unavailable, perform an equivalent targeted docs/AGENTS review and record `skill` as the method used.
+
 ## Downstream Context
 
 When a downstream node or subagent needs facts from the current node, the handoff should record `downstream_context`. This is not a long recap; it is a low-token fact packet for the next node.
@@ -269,7 +301,7 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
+Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `knowledge_sync`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
 
 Token, context, and model records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata through `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, `agent_activity[].model_provider`, or `agent_activity[].token_usage.model`. If a subagent runtime hides the actual model, record `agent_activity[].model_unavailable_reason`.
 

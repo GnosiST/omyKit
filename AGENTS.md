@@ -12,6 +12,7 @@ This repository packages omyKit as global Codex skills plus human-readable workf
 - Keep detailed target-project versioning checks in `codex-version-readiness`; reference it from other skills instead of duplicating the checklist.
 - When adding, removing, or changing skills, update `README.md`, `CHANGELOG.md`, and relevant `docs/workflow/` files.
 - Review referenced upstream sources with `node ./scripts/check-upstream-refs.mjs` before releases or when changing workflow/spec/code-intelligence/docs/design/motion/ecosystem/context-compression routing.
+- For tracked delivery handoffs, record `knowledge_sync` as `completed`, `not_needed`, or `deferred` with a reason; use `neat-freak` only for milestone/stale-doc cleanup, not every node.
 - Update the global install by running `./scripts/install-global.sh` after changing skill files. For release/handoff, run it from the final clean commit and confirm `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest` points to that commit with `git_dirty=false`.
 - Validate all skills before handoff:
 

@@ -126,7 +126,7 @@ node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command 
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
+The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -166,7 +166,7 @@ The controller is local and deterministic. It does not call models, spawn agents
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, delivery knowledge sync review, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
 
 ## Workflow Model
 
@@ -185,6 +185,7 @@ Operational rules:
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
 - For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.
+- Also record delivery `knowledge_sync`: `completed` when README/docs/AGENTS or memory were reconciled, `not_needed` when no durable knowledge changed, or `deferred` with a reason.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
 - For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.

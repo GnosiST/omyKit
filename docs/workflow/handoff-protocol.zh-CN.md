@@ -87,6 +87,38 @@
 
 `scope` 允许 `generic_omykit`、`project_local`、`one_off` 和 `volatile_ecosystem`。`promotion_status` 允许 `candidate`、`promoted`、`not_promoted` 和 `needs_review`。真实候选至少需要一个证据路径。
 
+## 知识同步审查
+
+通过的 delivery 节点还必须记录 `knowledge_sync`。它表示交付时是否已经同步项目知识库，不表示每个节点都要运行重型清理。
+
+当 README、docs、AGENTS/CLAUDE 规则、workflow handoff 或 agent 记忆已经审查并更新时，用 `completed`。没有持久知识变化时，用 `not_needed`。确实无法当场处理时，用 `deferred` 并写明原因。
+
+```json
+{
+  "knowledge_sync": {
+    "status": "completed",
+    "skill": "neat-freak",
+    "performed_by": "main-codex",
+    "reason": "本次变更更新了 workflow 文档和 handoff contract。",
+    "files_reviewed": [
+      "README.md",
+      "docs/workflow/handoff-protocol.zh-CN.md",
+      "AGENTS.md"
+    ],
+    "files_updated": [
+      "README.md",
+      "docs/workflow/handoff-protocol.zh-CN.md"
+    ],
+    "memory_updated": [],
+    "evidence": [
+      "evidence/06-delivery-summary.txt"
+    ]
+  }
+}
+```
+
+如果本地安装了 `neat-freak`，在阶段收口、文档过期或 clean handoff 请求时使用它。没有该 skill 时，执行等价的 docs/AGENTS 定向审查，并在 `skill` 里记录实际方法。
+
 ## 下游交接上下文
 
 当下游节点或子智能体需要继承当前节点的事实时，handoff 应记录 `downstream_context`。它不是长篇复述，而是给下游的低 token 事实包。
@@ -269,7 +301,7 @@
 }
 ```
 
-使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
+使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
 
 token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。若子智能体运行时隐藏实际模型，记录 `agent_activity[].model_unavailable_reason`。
 

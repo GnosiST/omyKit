@@ -13,6 +13,7 @@
 | Codex | 核心控制面 | [openai/codex](https://github.com/openai/codex) (92,647★) | 控制面 | 始终使用。它负责路由、规划、编辑、验证和总结。 | 不要用不协调的独立工具绕过它。 |
 | Codex app threads/worktrees | OpenAI 平台能力 | [Codex app features](https://developers.openai.com/codex/app/features)、[Worktrees](https://developers.openai.com/codex/app/worktrees)、[Prompting threads](https://developers.openai.com/codex/prompting) | 后台协作 | 长任务、写操作较重、需要独立审查或适合放到独立 thread/worktree 的工作。 | 小任务、未约束共享写范围，或替代 omyKit 结构化 handoff。 |
 | AGENTS.md | 仓库本地规则 | 本仓库 | 持久仓库规则 | 稳定约定、命令、边界和 definition of done。 | 一次性 notes、历史或长机制更适合 docs。 |
+| neat-freak | 本地已安装 specialist | 用户提供的本地 skill；不 vendoring，也不作为上游来源跟踪 | 知识同步 | 阶段收口、文档/记忆过期、给同事或其他 agent 的 clean handoff，或追踪型交付的 `knowledge_sync` 审查。 | 每个节点、小型 Lite 任务，或把 skill body 复制进 omyKit。 |
 | Workflow Controller | 仓库本地机制 | [scripts/omykit-workflow.mjs](../../scripts/omykit-workflow.mjs) 和 [schemas](../../schemas/workflow-graph.schema.json) | 持久任务图状态 | 多节点、可续跑、容易 compact、被打回、需要并行或 Strict workflow 工作。 | Lite 工作、一次性任务，或替代 Codex 执行。 |
 | [Superpowers](https://github.com/obra/Superpowers) | 已跟踪上游参考 | [obra/Superpowers](https://github.com/obra/Superpowers) (235,582★) | 执行纪律 | Brainstorming、planning、debugging、TDD、verification、review。 | 不作为 spec source 或项目事实来源。 |
 | [Spec-Kit](https://github.com/github/spec-kit) | 官方上游参考 | [github/spec-kit](https://github.com/github/spec-kit) (114,714★) | 项目 constitution 和 strict SDD | 新的持久项目或重大产品基础。 | 小变更或已有轻量 spec system 的项目。 |
@@ -62,6 +63,7 @@
 - 视觉前端工作：加入层级、品牌适配、布局韧性、响应式、基础可访问性和视觉 QA 检查；只有高信号视觉 specialist 会实质改变方向时才调用。
 - shadcn/ui 生态工作：只有任务需要当前示例、组件选项或生态研究时，才查询当前项目依赖、官方/当前来源或 `awesome-shadcn-ui`；不要把目录内容持久化进 omyKit。
 - Workflow controller 工作：只有持久任务图状态、结构化 handoff、打回循环、阻塞项或 compact 后恢复能实质提高可靠性时，才在当前 change route 内使用；不要创建单独 route，也不要强加给 Lite 任务。
+- 知识同步：只在阶段收口、文档/记忆过期或追踪型交付 `knowledge_sync` 时使用 `neat-freak` 或等价定向审查；不要每个节点都运行。
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
 
@@ -97,6 +99,7 @@
 | 上下文压缩 | 先用 `codex-context-budget`：避免读取、索引、聚焦、紧凑输出，再摘要。 | 只有大型重复内容仍有价值、可取回原文，且路径是本地可信时，才使用可选本地压缩。 |
 | 持久 workflow 状态 | 当前 `codex-change-workflow` 加 Workflow Controller。 | 只用于多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作；不要把它当单独 route。 |
 | Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |
+| 知识同步 | 已安装时用 `neat-freak`，否则做定向 docs/AGENTS 审查。 | 只在阶段收口、文档/记忆过期或追踪型交付 `knowledge_sync` 使用；不要把它当成规划或编码 skill。 |
 
 ## 版本管理准备度
 

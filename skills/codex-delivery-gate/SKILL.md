@@ -30,7 +30,9 @@ Use this gate at handoff, export, commit, PR, release, or when making a completi
    - controller workflow status, failed/blocked nodes, handoff evidence, and skipped required gates, if `.omykit/workflows/` is active
    - generated `board.json` / `board.html` paths when a controller board was used for review
    - for passed delivery nodes in tracked workflows, `evolution_candidates`; use an empty array only after reviewing and finding no reusable lesson
-7. Review whether stable lessons should trigger `codex-workflow-evolution`; record candidate scope, evidence, owner, update surface, next action, and promotion status. Do not promote one-off project facts into omyKit.
+   - for passed delivery nodes in tracked workflows, `knowledge_sync`; use `completed`, `not_needed`, or `deferred` with a reason
+7. If durable docs, README, AGENTS, workflow rules, or agent memory may be stale, run `neat-freak` or an equivalent knowledge cleanup pass before final handoff. Do not run it after every node.
+8. Review whether stable lessons should trigger `codex-workflow-evolution`; record candidate scope, evidence, owner, update surface, next action, and promotion status. Do not promote one-off project facts into omyKit.
 
 ## Do Not
 

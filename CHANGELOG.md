@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added tracked-delivery knowledge sync review: delivery handoffs now record `knowledge_sync`, controller validation and scorecards audit it, boards show the result, and docs explain when to use installed `neat-freak` versus recording `not_needed`.
+- Refreshed OpenAI Codex and Sentry upstream baselines after reviewing dependency security updates, Sentry agent run-option inheritance, issue-search relevance, tracing shim changes, and a log-row unpin hover-state reset; no additional omyKit workflow rule was promoted.
 - Added thread/worktree assignment tracking for controller workflows: `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster board projection, assignment scorecard checks, assignment schema, tests, and English/Chinese docs.
 - Refreshed Spec-Kit, OpenAI Codex, Motion, Docker Compose, FFmpeg, and Sentry upstream baselines after reviewing Spec-Kit extension/version metadata, Codex resumed rollout history and MCP dependency updates, Motion v12.41.0 release metadata, Compose `ps --format json` JSON Lines docs, FFmpeg TLS/HLS test fixes, and Sentry frontend observability/dashboard plus sample-transaction endpoint changes; no additional omyKit workflow rule was promoted.
 - Added multi-agent coordination assessment docs covering omyKit's workflow intent, requested and added reference sources, implementation fit, and a thread/worktree-native Codex collaboration roadmap.

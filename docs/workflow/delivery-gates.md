@@ -57,4 +57,7 @@ Final handoff should include:
 - skipped checks
 - residual risk
 - controller workflow status, failed/blocked nodes, handoff evidence, and skipped required gates when `.omykit/workflows/` is active
+- tracked delivery `knowledge_sync` status: `completed`, `not_needed`, or `deferred` with a reason
 - suggested next step when useful
+
+Use `neat-freak` or an equivalent knowledge cleanup pass only when durable project knowledge may be stale: README, docs, AGENTS/CLAUDE rules, workflow handoffs, or agent memory. Do not run it after every node.

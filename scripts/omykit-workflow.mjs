@@ -33,6 +33,7 @@ const EVOLUTION_SCOPES = new Set(["generic_omykit", "project_local", "one_off", 
 const EVOLUTION_PROMOTION_STATUSES = new Set(["candidate", "promoted", "not_promoted", "needs_review"]);
 const EXECUTION_SURFACES = new Set(["main-thread", "subagent", "background_thread", "thread_worktree"]);
 const ASSIGNMENT_STATUSES = new Set(["planned", "running", "handoff_received", "passed", "failed", "blocked", "cancelled"]);
+const KNOWLEDGE_SYNC_STATUSES = new Set(["completed", "not_needed", "deferred"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
@@ -180,6 +181,13 @@ const BOARD_LABELS = {
     templateVersion: "Template version",
     workflowTemplate: "Workflow Template",
     workflowEvolution: "Workflow Evolution",
+    knowledgeSync: "Knowledge Sync",
+    knowledgeSyncReviews: "Knowledge sync reviews",
+    knowledgeSyncStatus: "Status",
+    knowledgeSyncSkill: "Skill",
+    knowledgeFilesReviewed: "Files reviewed",
+    knowledgeFilesUpdated: "Files updated",
+    knowledgeMemoryUpdated: "Memory updated",
     evolutionCandidates: "Evolution Candidates",
     genericCandidates: "Generic candidates",
     missingEvolutionReview: "Missing evolution review",
@@ -394,6 +402,13 @@ const BOARD_LABELS = {
     templateVersion: "模板版本",
     workflowTemplate: "工作流模板",
     workflowEvolution: "Workflow 进化",
+    knowledgeSync: "知识同步",
+    knowledgeSyncReviews: "知识同步审查",
+    knowledgeSyncStatus: "状态",
+    knowledgeSyncSkill: "Skill",
+    knowledgeFilesReviewed: "已审查文件",
+    knowledgeFilesUpdated: "已更新文件",
+    knowledgeMemoryUpdated: "已更新记忆",
     evolutionCandidates: "进化候选",
     genericCandidates: "通用候选",
     missingEvolutionReview: "缺少进化复盘",
@@ -1119,6 +1134,7 @@ Codex chat intents:
   $omykit 查看进度               show status, blockers, failed nodes, and the next command
   $omykit 生成看板并打开         generate/open board.html
   $omykit scorecard 验票         audit recorded workflow evidence
+  $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
   $omykit 查看模板               list reusable workflow templates
 
 Long task loop:
@@ -1809,6 +1825,31 @@ function validateEvolutionCandidatesShape(value, label) {
   return errors;
 }
 
+function validateKnowledgeSyncShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (!value.status || !KNOWLEDGE_SYNC_STATUSES.has(value.status)) {
+    errors.push(`${label}.status must be one of ${[...KNOWLEDGE_SYNC_STATUSES].join(", ")}`);
+  }
+  for (const field of ["reason", "skill", "performed_by"]) {
+    if (value[field] !== undefined && (typeof value[field] !== "string" || !value[field])) {
+      errors.push(`${label}.${field} must be a non-empty string`);
+    }
+  }
+  for (const field of ["files_reviewed", "files_updated", "memory_updated", "evidence"]) {
+    if (value[field] !== undefined && (!Array.isArray(value[field]) || value[field].some((item) => typeof item !== "string" || !item))) {
+      errors.push(`${label}.${field} must be an array of non-empty strings`);
+    }
+  }
+  if (value.status === "deferred" && !value.reason) {
+    errors.push(`${label}.reason is required when status is deferred`);
+  }
+  return errors;
+}
+
 function validateDownstreamContextShape(value, label) {
   const errors = [];
   if (value === undefined) return errors;
@@ -1863,6 +1904,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
   errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
+  errors.push(...validateKnowledgeSyncShape(handoff.knowledge_sync, "handoff.knowledge_sync"));
   errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
@@ -1955,6 +1997,9 @@ function validateHandoff(graph, handoff) {
     }
     if (node?.type === "delivery" && !Array.isArray(handoff.evolution_candidates)) {
       errors.push("passed delivery handoff requires evolution_candidates");
+    }
+    if (node?.type === "delivery" && !handoff.knowledge_sync) {
+      errors.push("passed delivery handoff requires knowledge_sync");
     }
   }
   if (handoff.status === "failed") {
@@ -2739,6 +2784,21 @@ function normalizeEvolutionCandidates(handoff) {
     .filter((item) => item?.lesson);
 }
 
+function normalizeKnowledgeSync(handoff) {
+  const value = handoff?.knowledge_sync;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return {
+    status: value.status || null,
+    reason: value.reason || null,
+    skill: value.skill || null,
+    performed_by: value.performed_by || null,
+    files_reviewed: Array.isArray(value.files_reviewed) ? value.files_reviewed : [],
+    files_updated: Array.isArray(value.files_updated) ? value.files_updated : [],
+    memory_updated: Array.isArray(value.memory_updated) ? value.memory_updated : [],
+    evidence: Array.isArray(value.evidence) ? value.evidence : [],
+  };
+}
+
 function normalizeDownstreamContext(handoff) {
   const value = handoff?.downstream_context;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -3032,6 +3092,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const evidence = evidenceItems(workflowDir, handoff);
   const intakeDecision = normalizeIntakeDecision(handoff);
   const evolutionCandidates = normalizeEvolutionCandidates(handoff);
+  const knowledgeSync = normalizeKnowledgeSync(handoff);
   const downstreamContext = normalizeDownstreamContext(handoff);
   const workItems = normalizeWorkItems(handoff);
   const changedFiles = normalizeChangedFiles(handoff);
@@ -3129,6 +3190,8 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     downstream_context: downstreamContext,
     evolution_review_recorded: Array.isArray(handoff?.evolution_candidates),
     evolution_candidates: evolutionCandidates,
+    knowledge_sync_reviewed: Boolean(knowledgeSync),
+    knowledge_sync: knowledgeSync,
     work_items: workItems,
     changed_files: changedFiles,
     skills_used: skillsUsed,
@@ -3981,6 +4044,25 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       nodeIds,
     ));
   }
+  const missingKnowledgeSync = projectedNodes.filter((node) => (
+    node.type === "delivery"
+    && TERMINAL_STATUSES.has(node.status)
+    && !node.knowledge_sync_reviewed
+  ));
+  if (missingKnowledgeSync.length > 0) {
+    items.push(recommendation(
+      "run-knowledge-sync",
+      "medium",
+      isZh ? "交付缺少知识同步审查" : "Delivery is missing knowledge sync review",
+      isZh
+        ? "阶段收口前需要判断 README、docs、AGENTS 或 agent 记忆是否应更新；没有需要更新时也要记录 not_needed。"
+        : "Before handoff, review whether README, docs, AGENTS, or agent memory need updates; record not_needed when no update is required.",
+      isZh
+        ? "按需使用 neat-freak 或等价知识同步检查，然后在 delivery handoff 写入 knowledge_sync。"
+        : "Use neat-freak or an equivalent knowledge cleanup pass when needed, then record knowledge_sync in the delivery handoff.",
+      missingKnowledgeSync.map((node) => node.id),
+    ));
+  }
   const overloaded = projectedNodes.filter((node) => node.agent_activity.length > 3);
   if (overloaded.length > 0) {
     items.push(recommendation(
@@ -4159,6 +4241,14 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
       if (deliveryNodes.length === 0) return pending();
       const failing = deliveryNodes.filter((node) => !node.evolution_review_recorded).map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "通过的交付节点没有记录 evolution_candidates；空数组表示已复盘但无可提升候选。" : "Passed delivery nodes did not record evolution_candidates; an empty array means reviewed with no promotable candidate.");
+    }
+    case "knowledge_sync_reviewed": {
+      const deliveryNodes = projectedNodes.filter((node) => node.type === "delivery" && TERMINAL_STATUSES.has(node.status));
+      if (deliveryNodes.length === 0) return pending();
+      const failing = deliveryNodes
+        .filter((node) => !node.knowledge_sync_reviewed || (node.knowledge_sync?.status === "deferred" && !node.knowledge_sync?.reason))
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "交付节点没有记录 knowledge_sync；使用 completed、not_needed 或带原因的 deferred。" : "Delivery nodes did not record knowledge_sync; use completed, not_needed, or deferred with a reason.");
     }
     case "changed_files_summary": {
       const files = project?.main_changes || [];
@@ -4366,6 +4456,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
       downstream_contexts: projectedNodes.filter((node) => node.downstream_context).length,
       evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
+      knowledge_sync_reviews: projectedNodes.filter((node) => node.knowledge_sync_reviewed).length,
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
       agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
@@ -4796,6 +4887,19 @@ function renderEvolutionCandidates(items, text) {
   });
 }
 
+function renderKnowledgeSync(item, text) {
+  if (!item) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  return `<dl>
+      <dt>${escapeHtml(text.knowledgeSyncStatus)}</dt><dd>${escapeHtml(item.status || text.notRecorded)}</dd>
+      <dt>${escapeHtml(text.knowledgeSyncSkill)}</dt><dd>${escapeHtml(item.skill || text.none)}</dd>
+      <dt>${escapeHtml(text.owner)}</dt><dd>${escapeHtml(item.performed_by || text.none)}</dd>
+      <dt>${escapeHtml(text.knowledgeFilesReviewed)}</dt><dd>${escapeHtml(item.files_reviewed.join(", ") || text.none)}</dd>
+      <dt>${escapeHtml(text.knowledgeFilesUpdated)}</dt><dd>${escapeHtml(item.files_updated.join(", ") || text.none)}</dd>
+      <dt>${escapeHtml(text.knowledgeMemoryUpdated)}</dt><dd>${escapeHtml(item.memory_updated.join(", ") || text.none)}</dd>
+      <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(item.evidence.join(", ") || text.none)}</dd>
+    </dl>${item.reason ? `<p class="muted">${escapeHtml(item.reason)}</p>` : ""}`;
+}
+
 function renderCommandRuns(items, text) {
   return renderObjectList(items, text.none, (item) => {
     const meta = [
@@ -5005,6 +5109,7 @@ function renderNodeCard(node, text) {
       <span>${escapeHtml(text.skillsUsed)} ${escapeHtml(node.skills_used.length)}</span>
       <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
       <span>${escapeHtml(text.evolutionCandidates)} ${escapeHtml(node.evolution_candidates.length)}</span>
+      <span>${escapeHtml(text.knowledgeSync)} ${escapeHtml(node.knowledge_sync?.status || text.notRecorded)}</span>
     </p>
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
@@ -5017,6 +5122,7 @@ function renderNodeCard(node, text) {
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
       <dt>${escapeHtml(text.skillsUsed)}</dt><dd>${escapeHtml(node.skills_used.map((skill) => skill.name).join(", ") || text.none)}</dd>
+      <dt>${escapeHtml(text.knowledgeSync)}</dt><dd>${escapeHtml(node.knowledge_sync?.status || text.notRecorded)}</dd>
       <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(node.last_handoff || text.missing)}</dd>
       <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(node.evidence_status)}</dd>
     </dl>
@@ -5083,6 +5189,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.intakeDecision)}</h4>${renderIntakeDecision(node.intake_decision, text)}</section>
         <section><h4>${escapeHtml(text.downstreamContext)}</h4>${renderDownstreamContext(node.downstream_context, text)}</section>
         <section><h4>${escapeHtml(text.workflowEvolution)}</h4>${renderEvolutionCandidates(node.evolution_candidates, text)}</section>
+        <section><h4>${escapeHtml(text.knowledgeSync)}</h4>${renderKnowledgeSync(node.knowledge_sync, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
@@ -5252,6 +5359,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
         ${renderMetric(text.assignments, board.summary.assignments, "#agent-roster")}
         ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates, "#workflow-evolution")}
+        ${renderMetric(text.knowledgeSyncReviews, board.summary.knowledge_sync_reviews, "#node-details")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}

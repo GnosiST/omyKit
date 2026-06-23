@@ -1,6 +1,6 @@
 ---
 name: omykit
-description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 交接包, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
+description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 收尾, 整理文档, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 交接包, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, clean up knowledge, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
 ---
 
 # omyKit
@@ -80,7 +80,7 @@ Include these concise groups:
 - task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
-- maintenance: `$omykit 更新自己`, `$omykit 交付检查`
+- maintenance: `$omykit 更新自己`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
 
 Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `context-pack <node-id>`, `templates list`, `status`, or `board --open`.
@@ -178,3 +178,5 @@ For tracked controller work, select the nearest reusable template instead of inv
 Do not force strict UI or bugfix templates onto unrelated work. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
 
 Scorecards audit recorded evidence. Treat failed required scorecard checks as delivery blockers unless the user explicitly accepts the residual risk. Treat recommended scorecard warnings as improvement suggestions, not automatic blockers.
+
+For tracked delivery, record `knowledge_sync` in the delivery handoff. Use `completed` when README/docs/AGENTS or agent memory were reviewed and updated, `not_needed` when no durable knowledge changed, and `deferred` only with a reason. If the installed `neat-freak` skill is available and the task changed durable workflow docs, project rules, or handoff knowledge, use it as the knowledge cleanup pass; do not run it after every node or copy its body into omyKit.

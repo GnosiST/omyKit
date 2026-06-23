@@ -58,4 +58,7 @@
 - 跳过的检查
 - 剩余风险
 - 当 `.omykit/workflows/` 启用时，说明 controller workflow 状态、failed/blocked 节点、handoff 证据和跳过的 required gates
+- 追踪型交付的 `knowledge_sync` 状态：`completed`、`not_needed`，或带原因的 `deferred`
 - 有价值时给出下一步建议
+
+只有当 README、docs、AGENTS/CLAUDE 规则、workflow handoff 或 agent 记忆可能过期时，才使用 `neat-freak` 或等价知识同步检查。不要每个节点都运行。

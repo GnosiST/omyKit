@@ -94,7 +94,7 @@ Scorecard 检查已记录的 workflow 证据。它不能取代判断，但能避
 
 - 模板保持通用。不要把目标项目端口、凭据、产品规则或特定技术栈假设写进 omyKit 模板。
 - 当图拓扑确实不同，新增模板。
-- 当证据期望不同但流程相同，新增或修改 scorecard。
+- 当证据期望不同但流程相同，新增或修改 scorecard。通用追踪型交付 scorecard 要求 `evolution_candidates` 和 `knowledge_sync`，确保 workflow 进化与 docs/记忆收尾都被审查。
 - 当验证环境不同但图拓扑不变，新增 runtime profile。
 - 当成本/质量策略或具体模型推荐不同但节点职责不变，新增 model profile。
 - 第三方 skill 只能作为有边界参考；不要把第三方 skill 正文、模板、badge、图片或 branding 复制进 omyKit。

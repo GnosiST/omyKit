@@ -42,6 +42,13 @@ checks:
     severity: required
     evidence:
       type: evolution_review_recorded
+  - id: knowledge-sync-reviewed
+    title:
+      en: Delivery nodes record knowledge sync review
+      zh-CN: 交付节点记录知识同步审查
+    severity: required
+    evidence:
+      type: knowledge_sync_reviewed
   - id: changed-files-summary
     title:
       en: UI files explain their main changes

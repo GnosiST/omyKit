@@ -30,6 +30,8 @@ delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-ev
 
 看板会展示候选项，并把 `generic_omykit` 候选转成整改建议。Scorecard 要求 delivery 节点记录复盘，但不会要求每次交付都必须产生通用经验。
 
+这和 delivery `knowledge_sync` 分工不同：`evolution_candidates` 判断 omyKit 自身是否要改；`knowledge_sync` 记录当前项目交付时 README、docs、AGENTS/CLAUDE 规则或记忆是否已同步。
+
 ## 证据来源
 
 - 用户反复反馈

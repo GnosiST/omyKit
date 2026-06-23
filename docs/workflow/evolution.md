@@ -30,6 +30,8 @@ Passed delivery nodes must include `evolution_candidates`. An empty array means 
 
 The board shows candidates and turns `generic_omykit` candidates into improvement actions. Scorecards require delivery nodes to record the review but do not require every delivery to produce a generic lesson.
 
+This is separate from delivery `knowledge_sync`: `evolution_candidates` decide whether omyKit itself should change; `knowledge_sync` records whether README, docs, AGENTS/CLAUDE rules, or memory were reconciled for the current project handoff.
+
 ## Evidence Sources
 
 - repeated user feedback

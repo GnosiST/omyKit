@@ -126,7 +126,7 @@ node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command 
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以选择 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 等可复用模板；未指定时使用 `change.standard`。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、推荐模型、实际模型记录、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
+`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以选择 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 等可复用模板；未指定时使用 `change.standard`。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 
@@ -166,7 +166,7 @@ Controller 是本地确定性机制。它不调用模型，不自动启动 agent
 
 Controller 是模板驱动的。内置 YAML 模板把图拓扑、agent 角色、模型配置、运行配置、安全限位和 scorecard 分层定义；因此同类任务可以复用稳定流程，不同 issue 只改变输入、证据和产物。可以用 `templates list`、`templates show <id>` 和 `templates validate` 查看或校验已安装模板。
 
-`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、入口决策、workflow 进化候选、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。token、上下文、skill 使用和实际模型只聚合有记录的证据，缺失节点会明确展示，不会被当作 0。
+`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、入口决策、workflow 进化候选、delivery 知识同步审查、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。token、上下文、skill 使用和实际模型只聚合有记录的证据，缺失节点会明确展示，不会被当作 0。
 
 ## 工作流模型
 
@@ -185,6 +185,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 - 追踪型工作先选择最接近的 workflow 模板；需要定制时优先增改模板/profile YAML，不把一次性逻辑硬编码进 controller。
 - 每个节点选择最低足够模型档位；由模型配置给出推荐模型，实际 provider/model 只有在执行环境暴露时才记录。
 - 追踪型交付必须记录 `evolution_candidates`；已复盘但没有可复用 workflow 经验时使用空数组。
+- 同时记录 delivery `knowledge_sync`：README/docs/AGENTS 或记忆已同步时用 `completed`，没有持久知识变化时用 `not_needed`，确实延期时用带原因的 `deferred`。
 - 默认从 `scan` 开始，进入实现时切到 `focus`，只有风险或阻塞需要时才进入 `deep`。
 - 遇到大型输出时，先避免读取和缩小范围，再摘要；只有来源可信、可取回原文且仍有价值时才使用可选压缩。
 - 优先使用项目原生命令和现有仓库约定，再考虑新增工具。
