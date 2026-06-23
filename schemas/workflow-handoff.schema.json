@@ -178,6 +178,67 @@
         }
       }
     },
+    "evolution_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson",
+          "scope",
+          "promotion_status",
+          "evidence"
+        ],
+        "properties": {
+          "lesson": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "generic_omykit",
+              "project_local",
+              "one_off",
+              "volatile_ecosystem"
+            ]
+          },
+          "promotion_status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "promoted",
+              "not_promoted",
+              "needs_review"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "update_surface": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "next_action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
     "model": {
       "type": "string",
       "minLength": 1

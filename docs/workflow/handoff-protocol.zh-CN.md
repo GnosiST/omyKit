@@ -62,6 +62,31 @@
 
 没有需要提问时，使用空的 `questions` 数组。确实需要提问时，限制在 1-3 个问题，并记录已允许自定义答案。
 
+## Workflow 进化复盘
+
+通过的 delivery 节点必须记录 `evolution_candidates`。交付时已经复盘但没有可沉淀的 workflow 经验时，使用空数组。确实存在候选时，记录适用范围、证据、负责人、更新位置、下一步动作和提升状态，便于 `codex-workflow-evolution` 关闭闭环。
+
+```json
+{
+  "evolution_candidates": [
+    {
+      "lesson": "交付节点应记录 workflow 进化候选。",
+      "scope": "generic_omykit",
+      "promotion_status": "candidate",
+      "owner": "codex-workflow-evolution",
+      "update_surface": "workflow template / scorecard",
+      "rationale": "适用于所有 tracked workflow 的交付复盘。",
+      "next_action": "修改 omyKit 前先运行抽象测试。",
+      "evidence": [
+        "evidence/06-delivery-summary.txt"
+      ]
+    }
+  ]
+}
+```
+
+`scope` 允许 `generic_omykit`、`project_local`、`one_off` 和 `volatile_ecosystem`。`promotion_status` 允许 `candidate`、`promoted`、`not_promoted` 和 `needs_review`。真实候选至少需要一个证据路径。
+
 ## Passed
 
 节点完成并有证据时使用 `passed`。

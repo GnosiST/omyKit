@@ -21,7 +21,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
-- **Scorecard audit:** check real handoffs, intake decisions, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
+- **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node and show the actual recorded model when the runtime exposes it.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
@@ -30,7 +30,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
 - **Source-aware selection:** mark each registry entry as a core item, installed skill, tracked upstream reference, platform tool, OpenAI bundled tool, or repo-local mechanism before using it.
 - **Conservative skill admission:** keep community PM, taste, catalog, and meta-UX skills out of default routing unless the user explicitly requests them.
-- **Evidence-based evolution:** promote only reusable workflow lessons into omyKit, while keeping target-project facts isolated.
+- **Evidence-based evolution:** delivery handoffs record reusable workflow candidates, scorecards verify the review happened, and only abstracted lessons are promoted into omyKit.
 - **Upstream reference watch:** periodically check referenced external sources for changes, then review useful workflow lessons before adopting anything.
 
 ## Workflow At A Glance
@@ -149,7 +149,7 @@ The controller is local and deterministic. It does not call models, edit code by
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
 
 ## Workflow Model
 
@@ -165,6 +165,7 @@ Operational rules:
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
+- For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
 - For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.

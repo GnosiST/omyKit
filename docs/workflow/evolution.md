@@ -14,6 +14,22 @@ Learn from evidence, not from vibes. A workflow rule belongs in omyKit only when
 observe -> classify -> abstract -> update smallest surface -> verify -> install -> document
 ```
 
+For tracked workflows, the closed loop is:
+
+```text
+delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-evolution review -> smallest owner update -> validation/install -> changelog/evidence
+```
+
+Passed delivery nodes must include `evolution_candidates`. An empty array means the delivery was reviewed and no reusable lesson was found. A non-empty candidate must include:
+
+- `lesson`: what should change or be preserved
+- `scope`: `generic_omykit`, `project_local`, `one_off`, or `volatile_ecosystem`
+- `promotion_status`: `candidate`, `promoted`, `not_promoted`, or `needs_review`
+- `evidence`: at least one handoff, command output, board, user-feedback, or review path
+- optional `owner`, `update_surface`, `rationale`, and `next_action`
+
+The board shows candidates and turns `generic_omykit` candidates into improvement actions. Scorecards require delivery nodes to record the review but do not require every delivery to produce a generic lesson.
+
 ## Evidence Sources
 
 - repeated user feedback
@@ -35,6 +51,15 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 | Repeatable mechanical check | `scripts/` and CI |
 | Fast-changing ecosystem detail | Current source link or registry reference |
 | Changed upstream reference | Review with `upstream-watch`; promote only reusable workflow lessons |
+
+## Promotion States
+
+| State | Meaning |
+| --- | --- |
+| `candidate` | Captured during delivery and awaiting review. |
+| `needs_review` | Evidence is promising but requires more source checking or abstraction work. |
+| `promoted` | The smallest owner surface was updated, verified, installed, and documented. |
+| `not_promoted` | The lesson was one-off, project-local, volatile, insufficiently evidenced, or failed the abstraction test. |
 
 ## Abstraction Test
 

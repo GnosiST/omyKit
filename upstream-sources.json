@@ -31,7 +31,7 @@
       "id": "spec-kit",
       "repo": "github/spec-kit",
       "url": "https://github.com/github/spec-kit.git",
-      "baseline": "3c11f4d90be55e410c6b706ff1a0c8fec38815a2",
+      "baseline": "ac4f646144d1ba3472fbf523f2f592020c39968e",
       "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow",
       "verification": {
         "owner": "github",
@@ -196,7 +196,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "63f8f547c0b95800f3c61ee172a2a833b75faf3f",
+      "baseline": "49614a0391d83eec442ffeca1d4aa0fdeb119818",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -241,7 +241,7 @@
       "id": "remotion",
       "repo": "remotion-dev/remotion",
       "url": "https://github.com/remotion-dev/remotion.git",
-      "baseline": "5f8d829a669a323b9a0fb2d8500eda4babef3de7",
+      "baseline": "d032975a8cc50c65b3f407c26b64806ae8a6b153",
       "role": "Official Remotion reference for deterministic React video rendering",
       "verification": {
         "owner": "remotion-dev",
@@ -256,7 +256,7 @@
       "id": "ffmpeg",
       "repo": "FFmpeg/FFmpeg",
       "url": "https://github.com/FFmpeg/FFmpeg.git",
-      "baseline": "cbbbe4a8624f180fc954cea0a74437f40ff4002d",
+      "baseline": "30155f9c3aa869fd0a2db25809c2bf2114236d75",
       "role": "Official FFmpeg GitHub mirror reference for media processing and export workflows",
       "verification": {
         "owner": "FFmpeg",
@@ -331,7 +331,7 @@
       "id": "github-mcp-server",
       "repo": "github/github-mcp-server",
       "url": "https://github.com/github/github-mcp-server.git",
-      "baseline": "7613599bd6d5c51744808031b3a2151da2adfaf8",
+      "baseline": "9430064a2becb382644042ce9fe5752ace1d8409",
       "role": "Official GitHub MCP server reference for GitHub connector workflows",
       "verification": {
         "owner": "github",
@@ -361,7 +361,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "f46e58dc97ed32da219ff2b9548a700995b307f7",
+      "baseline": "01cee535dae53e8cd1b2b8f60ee212bacd1622a0",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

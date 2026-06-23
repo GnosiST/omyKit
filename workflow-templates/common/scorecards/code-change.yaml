@@ -28,6 +28,13 @@ checks:
     severity: recommended
     evidence:
       type: terminal_work_items
+  - id: evolution-review-recorded
+    title:
+      en: Delivery nodes record workflow evolution review
+      zh-CN: 交付节点记录 workflow 进化复盘
+    severity: required
+    evidence:
+      type: evolution_review_recorded
   - id: changed-files-summary
     title:
       en: Changed files explain their main changes

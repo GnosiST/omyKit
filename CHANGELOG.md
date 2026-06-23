@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Refreshed Spec-Kit, OpenAI Codex, Remotion, FFmpeg, GitHub MCP, and Sentry upstream baselines after reviewing latest changes; no additional omyKit workflow rule was promoted.
+- Formalized the workflow evolution loop: passed delivery nodes now record `evolution_candidates`, scorecards require the review, boards show candidates and generic promotion actions, and skills/docs/schemas/tests cover the closed-loop contract.
 - Added auditable intake-decision handoffs for tracked workflows: passed intake nodes now record route, workflow shape/template, assumptions, questions, and custom-answer policy; controller validation, scorecards, board projection, tests, and docs cover the contract.
 - Added an explicit omyKit intake decision gate so tasks show route, execution shape/template, material assumptions, ask only targeted custom-answer questions before ambiguous work, and keep that behavior covered by skill validation.
 - Tightened runtime readiness so Docker-backed checks reuse compatible local images or stopped containers before pulling/building, and report the actual local version used.

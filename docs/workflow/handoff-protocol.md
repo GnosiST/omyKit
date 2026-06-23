@@ -62,6 +62,31 @@ Passed intake nodes must record `intake_decision`. This makes the route, workflo
 
 Use an empty `questions` array when no question was needed. If questions are asked, keep them to 1-3 and record that custom answers were allowed.
 
+## Workflow Evolution Review
+
+Passed delivery nodes must record `evolution_candidates`. Use an empty array when the delivery was reviewed and no durable workflow lesson should be promoted. When a real candidate exists, include scope, evidence, owner, update surface, next action, and promotion status so `codex-workflow-evolution` can close the loop.
+
+```json
+{
+  "evolution_candidates": [
+    {
+      "lesson": "Delivery nodes should record workflow evolution candidates.",
+      "scope": "generic_omykit",
+      "promotion_status": "candidate",
+      "owner": "codex-workflow-evolution",
+      "update_surface": "workflow template / scorecard",
+      "rationale": "Applies to all tracked workflow delivery reviews.",
+      "next_action": "Run the abstraction test before changing omyKit.",
+      "evidence": [
+        "evidence/06-delivery-summary.txt"
+      ]
+    }
+  ]
+}
+```
+
+Allowed `scope` values are `generic_omykit`, `project_local`, `one_off`, and `volatile_ecosystem`. Allowed `promotion_status` values are `candidate`, `promoted`, `not_promoted`, and `needs_review`. Real candidates require at least one evidence path.
+
 ## Passed
 
 Use `passed` when the node completed and evidence is available.

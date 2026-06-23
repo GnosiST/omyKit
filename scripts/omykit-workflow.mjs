@@ -29,6 +29,8 @@ const CONTEXT_LEVELS = new Set(["scan", "focus", "deep"]);
 const JOIN_POLICIES = new Set(["all_required", "any_passed", "manual_review"]);
 const TASK_COMPLEXITIES = new Set(["simple", "standard", "complex", "expert"]);
 const MODEL_TIERS = new Set(["fast", "standard", "frontier"]);
+const EVOLUTION_SCOPES = new Set(["generic_omykit", "project_local", "one_off", "volatile_ecosystem"]);
+const EVOLUTION_PROMOTION_STATUSES = new Set(["candidate", "promoted", "not_promoted", "needs_review"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
@@ -90,6 +92,7 @@ const BOARD_LABELS = {
     none: "none",
     nodeDetails: "Node Details",
     objective: "Objective",
+    owner: "Owner",
     dependsOn: "Depends On",
     acceptance: "Acceptance",
     outputs: "Outputs",
@@ -167,6 +170,17 @@ const BOARD_LABELS = {
     templateId: "Template id",
     templateVersion: "Template version",
     workflowTemplate: "Workflow Template",
+    workflowEvolution: "Workflow Evolution",
+    evolutionCandidates: "Evolution Candidates",
+    genericCandidates: "Generic candidates",
+    missingEvolutionReview: "Missing evolution review",
+    noEvolutionCandidates: "No evolution candidates recorded",
+    evolutionScope: "Scope",
+    promotionStatus: "Promotion status",
+    updateSurface: "Update surface",
+    lesson: "Lesson",
+    rationale: "Rationale",
+    nextAction: "Next action",
     scorecard: "Scorecard",
     score: "Score",
     scorecardPassed: "Passed checks",
@@ -274,6 +288,7 @@ const BOARD_LABELS = {
     none: "无",
     nodeDetails: "节点详情",
     objective: "目标",
+    owner: "负责人",
     dependsOn: "依赖",
     acceptance: "验收条件",
     outputs: "输出",
@@ -351,6 +366,17 @@ const BOARD_LABELS = {
     templateId: "模板 ID",
     templateVersion: "模板版本",
     workflowTemplate: "工作流模板",
+    workflowEvolution: "Workflow 进化",
+    evolutionCandidates: "进化候选",
+    genericCandidates: "通用候选",
+    missingEvolutionReview: "缺少进化复盘",
+    noEvolutionCandidates: "未记录进化候选",
+    evolutionScope: "适用范围",
+    promotionStatus: "提升状态",
+    updateSurface: "更新位置",
+    lesson: "经验",
+    rationale: "理由",
+    nextAction: "下一步",
     scorecard: "Scorecard 验票",
     score: "得分",
     scorecardPassed: "通过检查",
@@ -1650,6 +1676,37 @@ function validateIntakeDecisionShape(value, label) {
   return errors;
 }
 
+function validateEvolutionCandidatesShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!Array.isArray(value)) return [`${label} must be an array`];
+  value.forEach((item, index) => {
+    const prefix = `${label}[${index}]`;
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push(`${prefix} must be an object`);
+      return;
+    }
+    if (!item.lesson || typeof item.lesson !== "string") errors.push(`${prefix}.lesson is required`);
+    if (!item.scope || !EVOLUTION_SCOPES.has(item.scope)) {
+      errors.push(`${prefix}.scope must be one of ${[...EVOLUTION_SCOPES].join(", ")}`);
+    }
+    if (!item.promotion_status || !EVOLUTION_PROMOTION_STATUSES.has(item.promotion_status)) {
+      errors.push(`${prefix}.promotion_status must be one of ${[...EVOLUTION_PROMOTION_STATUSES].join(", ")}`);
+    }
+    if (!Array.isArray(item.evidence) || item.evidence.length === 0) {
+      errors.push(`${prefix}.evidence must contain at least one evidence path`);
+    } else if (item.evidence.some((entry) => typeof entry !== "string" || !entry)) {
+      errors.push(`${prefix}.evidence must be an array of non-empty strings`);
+    }
+    for (const field of ["owner", "update_surface", "rationale", "next_action"]) {
+      if (item[field] !== undefined && (typeof item[field] !== "string" || !item[field])) {
+        errors.push(`${prefix}.${field} must be a non-empty string`);
+      }
+    }
+  });
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -1667,6 +1724,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
+  errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -1755,6 +1813,9 @@ function validateHandoff(graph, handoff) {
     }
     if (node?.type === "intake" && !handoff.intake_decision) {
       errors.push("passed intake handoff requires intake_decision");
+    }
+    if (node?.type === "delivery" && !Array.isArray(handoff.evolution_candidates)) {
+      errors.push("passed delivery handoff requires evolution_candidates");
     }
   }
   if (handoff.status === "failed") {
@@ -2321,6 +2382,26 @@ function normalizeIntakeDecision(handoff) {
   };
 }
 
+function normalizeEvolutionCandidates(handoff) {
+  const candidates = Array.isArray(handoff?.evolution_candidates) ? handoff.evolution_candidates : [];
+  return candidates
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      return {
+        lesson: item.lesson || null,
+        scope: item.scope || null,
+        promotion_status: item.promotion_status || null,
+        owner: item.owner || null,
+        update_surface: item.update_surface || null,
+        rationale: item.rationale || null,
+        next_action: item.next_action || null,
+        evidence: Array.isArray(item.evidence) ? item.evidence : [],
+        index,
+      };
+    })
+    .filter((item) => item?.lesson);
+}
+
 function normalizeWorkItems(handoff) {
   const items = Array.isArray(handoff?.work_items) ? handoff.work_items : [];
   if (items.length > 0) {
@@ -2591,6 +2672,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const display = localizedNodeText(node, card, language);
   const evidence = evidenceItems(workflowDir, handoff);
   const intakeDecision = normalizeIntakeDecision(handoff);
+  const evolutionCandidates = normalizeEvolutionCandidates(handoff);
   const workItems = normalizeWorkItems(handoff);
   const changedFiles = normalizeChangedFiles(handoff);
   const agentActivity = normalizeAgentActivity(handoff);
@@ -2684,6 +2766,8 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     evidence_paths: collectEvidencePaths(handoff),
     evidence_items: evidence,
     intake_decision: intakeDecision,
+    evolution_review_recorded: Array.isArray(handoff?.evolution_candidates),
+    evolution_candidates: evolutionCandidates,
     work_items: workItems,
     changed_files: changedFiles,
     skills_used: skillsUsed,
@@ -3099,6 +3183,47 @@ function buildTiming(projectedNodes) {
   };
 }
 
+function countBy(items, field) {
+  const counts = {};
+  for (const item of items) {
+    const key = item[field] || "unknown";
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+function buildEvolution(projectedNodes) {
+  const byNode = projectedNodes
+    .filter((node) => node.evolution_review_recorded || node.evolution_candidates.length > 0)
+    .map((node) => ({
+      node_id: node.id,
+      title: node.display_title || node.title,
+      status: node.status,
+      review_recorded: node.evolution_review_recorded,
+      candidates: node.evolution_candidates,
+    }));
+  const candidates = projectedNodes.flatMap((node) => node.evolution_candidates.map((candidate) => ({
+    node_id: node.id,
+    title: node.display_title || node.title,
+    status: node.status,
+    ...candidate,
+  })));
+  return {
+    recorded_nodes: byNode.filter((item) => item.review_recorded).length,
+    missing_review_nodes: projectedNodes
+      .filter((node) => node.type === "delivery" && TERMINAL_STATUSES.has(node.status) && !node.evolution_review_recorded)
+      .map((node) => node.id),
+    by_node: byNode,
+    candidates,
+    by_scope: countBy(candidates, "scope"),
+    by_status: countBy(candidates, "promotion_status"),
+    generic_candidates: candidates.filter((candidate) => (
+      candidate.scope === "generic_omykit"
+      && ["candidate", "needs_review"].includes(candidate.promotion_status)
+    )),
+  };
+}
+
 function buildProjectChanges(projectedNodes, gitStatus) {
   const byPath = new Map();
   for (const item of gitStatus || []) {
@@ -3122,7 +3247,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, skills, models, risks, project, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -3212,6 +3337,21 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ri
       isZh ? "看板已经能显示推荐模型，但缺少实际执行模型时，无法复盘成本和质量选择是否匹配。" : "The board can show recommended models, but actual model records are needed to audit cost and quality choices.",
       isZh ? "后续 handoff 或 agent_activity 记录 model；如果环境未暴露实际模型，保持缺失即可。" : "Record model in handoff or agent_activity when the runtime exposes it; leave it missing when unavailable.",
       models.missing_actual_nodes,
+    ));
+  }
+  if (evolution.generic_candidates.length > 0) {
+    const nodeIds = evolution.generic_candidates.map((candidate) => candidate.node_id);
+    items.push(recommendation(
+      "run-workflow-evolution",
+      "medium",
+      isZh ? "存在可审查的通用 workflow 进化候选" : "Generic workflow evolution candidates need review",
+      isZh
+        ? `已记录 ${evolution.generic_candidates.length} 条 generic_omykit 候选，需要按抽象测试判断是否提升到 omyKit。`
+        : `${evolution.generic_candidates.length} generic_omykit candidate(s) are recorded and need the abstraction test before promotion.`,
+      isZh
+        ? "运行 codex-workflow-evolution，保留证据、分类结果、更新位置和验证记录；未通过的候选标记为 not_promoted。"
+        : "Run codex-workflow-evolution, keep evidence, classification, update surface, and verification; mark candidates that fail as not_promoted.",
+      nodeIds,
     ));
   }
   const overloaded = projectedNodes.filter((node) => node.agent_activity.length > 3);
@@ -3374,6 +3514,12 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
       const failing = terminalNodes.filter((node) => node.work_items.length === 0).map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录 work_items。" : "Terminal nodes did not record work_items.");
     }
+    case "evolution_review_recorded": {
+      const deliveryNodes = projectedNodes.filter((node) => node.type === "delivery" && TERMINAL_STATUSES.has(node.status));
+      if (deliveryNodes.length === 0) return pending();
+      const failing = deliveryNodes.filter((node) => !node.evolution_review_recorded).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "通过的交付节点没有记录 evolution_candidates；空数组表示已复盘但无可提升候选。" : "Passed delivery nodes did not record evolution_candidates; an empty array means reviewed with no promotable candidate.");
+    }
     case "changed_files_summary": {
       const files = project?.main_changes || [];
       const filesNeedingSummary = files.filter((item) => item.status !== "D");
@@ -3506,11 +3652,12 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const skills = buildSkillUsage(projectedNodes);
   const models = buildModelUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
+  const evolution = buildEvolution(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, risks, project, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -3550,6 +3697,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       intake_decisions: projectedNodes.filter((node) => node.intake_decision).length,
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
       skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+      evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
       agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
@@ -3577,6 +3725,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     context,
     skills,
     models,
+    evolution,
     timing,
     scorecard,
     risks,
@@ -3741,6 +3890,22 @@ function renderIntakeDecision(decision, text) {
     ${decision.workflow?.reason ? `<p class="muted">${escapeHtml(decision.workflow.reason)}</p>` : ""}
     ${assumptions}
     ${questions}`;
+}
+
+function renderEvolutionCandidates(items, text) {
+  return renderObjectList(items, text.noEvolutionCandidates, (item) => {
+    const node = item.node_id ? `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a>` : "";
+    const meta = [
+      item.scope ? `${text.evolutionScope}: ${item.scope}` : null,
+      item.promotion_status ? `${text.promotionStatus}: ${item.promotion_status}` : null,
+      item.owner ? `${text.owner}: ${item.owner}` : null,
+      item.update_surface ? `${text.updateSurface}: ${item.update_surface}` : null,
+    ].filter(Boolean).join(" · ");
+    const rationale = item.rationale ? `<p><strong>${escapeHtml(text.rationale)}:</strong> ${escapeHtml(item.rationale)}</p>` : "";
+    const nextAction = item.next_action ? `<p><strong>${escapeHtml(text.nextAction)}:</strong> ${escapeHtml(item.next_action)}</p>` : "";
+    const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
+    return `${node} <strong>${escapeHtml(item.lesson)}</strong>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}${rationale}${nextAction}${evidence}`;
+  });
 }
 
 function renderWorkItems(items, text) {
@@ -3916,6 +4081,7 @@ function renderNodeCard(node, text) {
       <span>${escapeHtml(text.checks)} ${escapeHtml(node.required_checks.length)}</span>
       <span>${escapeHtml(text.skillsUsed)} ${escapeHtml(node.skills_used.length)}</span>
       <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
+      <span>${escapeHtml(text.evolutionCandidates)} ${escapeHtml(node.evolution_candidates.length)}</span>
     </p>
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
@@ -3992,6 +4158,7 @@ function renderBoardHtml(board) {
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
         <section><h4>${escapeHtml(text.intakeDecision)}</h4>${renderIntakeDecision(node.intake_decision, text)}</section>
+        <section><h4>${escapeHtml(text.workflowEvolution)}</h4>${renderEvolutionCandidates(node.evolution_candidates, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
@@ -4159,6 +4326,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.intakeDecision, board.summary.intake_decisions, "#node-details")}
         ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
+        ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates, "#workflow-evolution")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
@@ -4189,6 +4357,18 @@ function renderBoardHtml(board) {
     <section class="panel" id="recommendations">
       <h2>${escapeHtml(text.improvementPlan)}</h2>
       ${renderRecommendations(board.recommendations || board.improvement_plan, text)}
+    </section>
+
+    <section class="panel" id="workflow-evolution">
+      <h2>${escapeHtml(text.workflowEvolution)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates || 0)}
+        ${renderMetric(text.genericCandidates, board.evolution.generic_candidates.length)}
+        ${renderMetric(text.missingEvolutionReview, board.evolution.missing_review_nodes.length)}
+        ${renderMetric(text.nodes, board.evolution.recorded_nodes)}
+      </div>
+      <p><strong>${escapeHtml(text.missingEvolutionReview)}:</strong> ${renderNodeLinks(board.evolution.missing_review_nodes, text)}</p>
+      ${renderEvolutionCandidates(board.evolution.candidates, text)}
     </section>
 
     <section class="panel" id="task-tracker">

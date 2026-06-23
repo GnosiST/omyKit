@@ -431,6 +431,115 @@ state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["01-intake"].status, "passed");
 assert.equal(state.nodes["02-design"].status, "blocked");
 
+const badDeliveryHandoff = path.join(dir, "handoffs", "06-delivery-missing-evolution.json");
+fs.writeFileSync(path.join(dir, "evidence", "06-delivery-summary.txt"), "delivery review evidence\n");
+writeJson(badDeliveryHandoff, {
+  workflow_id: "feature-x",
+  node_id: "06-delivery",
+  status: "passed",
+  language: "zh-CN",
+  summary: "完成交付但没有记录 workflow 进化复盘。",
+  work_items: [
+    {
+      title: "整理交付证据",
+      status: "done",
+      detail: "缺少进化候选记录，应该被校验拦截。",
+      evidence: ["evidence/06-delivery-summary.txt"],
+    },
+  ],
+  outputs: ["evidence/06-delivery-summary.txt"],
+  verification: [
+    {
+      command: "manual delivery review",
+      result: "passed",
+      evidence: "evidence/06-delivery-summary.txt",
+    },
+  ],
+});
+runFails(["validate"], /passed delivery handoff requires evolution_candidates/);
+fs.rmSync(badDeliveryHandoff);
+
+const badEvolutionHandoff = path.join(dir, "handoffs", "06-delivery-bad-evolution.json");
+writeJson(badEvolutionHandoff, {
+  workflow_id: "feature-x",
+  node_id: "06-delivery",
+  status: "passed",
+  language: "zh-CN",
+  summary: "进化候选缺少证据。",
+  work_items: [
+    {
+      title: "记录 workflow 进化候选",
+      status: "done",
+      evidence: ["evidence/06-delivery-summary.txt"],
+    },
+  ],
+  outputs: ["evidence/06-delivery-summary.txt"],
+  verification: [
+    {
+      command: "manual delivery review",
+      result: "passed",
+      evidence: "evidence/06-delivery-summary.txt",
+    },
+  ],
+  evolution_candidates: [
+    {
+      lesson: "交付节点应记录进化候选。",
+      scope: "generic_omykit",
+      promotion_status: "candidate",
+      evidence: [],
+    },
+  ],
+});
+runFails(["validate"], /evolution_candidates\[0\]\.evidence must contain at least one evidence path/);
+fs.rmSync(badEvolutionHandoff);
+
+const deliveryHandoff = path.join(dir, "handoffs", "06-delivery.json");
+writeJson(deliveryHandoff, {
+  workflow_id: "feature-x",
+  node_id: "06-delivery",
+  status: "passed",
+  language: "zh-CN",
+  summary: "完成交付复盘，并记录可提升到 omyKit 的候选经验。",
+  work_items: [
+    {
+      title: "记录 workflow 进化候选",
+      status: "done",
+      detail: "把交付复盘沉淀为可审计候选，而不是只写自然语言总结。",
+      evidence: ["evidence/06-delivery-summary.txt"],
+    },
+  ],
+  outputs: ["evidence/06-delivery-summary.txt"],
+  verification: [
+    {
+      command: "manual delivery review",
+      result: "passed",
+      evidence: "evidence/06-delivery-summary.txt",
+    },
+  ],
+  evolution_candidates: [
+    {
+      lesson: "交付节点应记录进化候选，避免复盘停留在口头总结。",
+      scope: "generic_omykit",
+      promotion_status: "candidate",
+      owner: "codex-workflow-evolution",
+      update_surface: "workflow template / scorecard",
+      rationale: "适用于所有 tracked workflow 的交付复盘。",
+      next_action: "Run codex-workflow-evolution abstraction test.",
+      evidence: ["evidence/06-delivery-summary.txt"],
+    },
+  ],
+});
+state = readJson(path.join(dir, "state.json"));
+state.nodes["06-delivery"] = {
+  status: "passed",
+  updated_at: new Date().toISOString(),
+  last_handoff: "handoffs/06-delivery.json",
+  reason: null,
+  started_at: "2099-01-01T01:00:00.000Z",
+  completed_at: "2099-01-01T01:10:00.000Z",
+};
+writeJson(path.join(dir, "state.json"), state);
+
 const validateOutput = run(["validate"]);
 assert.match(validateOutput, /Workflow valid: feature-x/);
 
@@ -449,8 +558,10 @@ assert.equal(board.template.template_id, "change.standard");
 assert.equal(board.template.layers.model_profile, "balanced");
 assert.ok(Array.isArray(board.scorecard.checks));
 assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
 assert.ok(board.recommendations.some((item) => item.id === "scorecard-required-not-failed"));
+assert.ok(board.recommendations.some((item) => item.id === "run-workflow-evolution"));
 const projectedNodes = Object.values(board.columns).flat();
 const projectedPlan = projectedNodes.find((node) => node.id === "03-plan");
 assert.equal(projectedPlan.task_complexity, "expert");
@@ -475,6 +586,7 @@ assert.ok(Array.isArray(board.models.by_node));
 assert.ok(Array.isArray(board.models.recommended_by_model));
 assert.ok(Array.isArray(board.models.actual_by_model));
 assert.ok(Array.isArray(board.timing.by_node));
+assert.ok(Array.isArray(board.evolution.candidates));
 assert.ok(Array.isArray(board.project.main_changes));
 assert.ok(Array.isArray(board.recommendations));
 assert.deepEqual(board.improvement_plan, board.recommendations);
@@ -500,6 +612,13 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.sk
 assert.equal(board.summary.skills_used, 1);
 assert.equal(board.summary.actual_models, 1);
 assert.equal(board.summary.intake_decisions, 1);
+assert.equal(board.summary.evolution_candidates, 1);
+assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.evolution_candidates.some((item) => item.scope === "generic_omykit")));
+assert.ok(board.evolution.by_node.some((item) => item.node_id === "06-delivery" && item.candidates.length === 1));
+assert.ok(board.evolution.candidates.some((item) => /交付节点应记录进化候选/.test(item.lesson) && item.owner === "codex-workflow-evolution"));
+assert.equal(board.evolution.by_scope.generic_omykit, 1);
+assert.equal(board.evolution.by_status.candidate, 1);
+assert.equal(board.evolution.generic_candidates.length, 1);
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
 assert.ok(board.usage.missing_nodes.includes("02-research"));
@@ -551,6 +670,9 @@ assert.match(boardHtml, /整改建议/);
 assert.match(boardHtml, /上下文用量/);
 assert.match(boardHtml, /工作流模板/);
 assert.match(boardHtml, /Scorecard 验票/);
+assert.match(boardHtml, /Workflow 进化/);
+assert.match(boardHtml, /交付节点应记录进化候选/);
+assert.match(boardHtml, /codex-workflow-evolution/);
 assert.match(boardHtml, /技术数据/);
 assert.match(boardHtml, /data-filter-status="blocked"/);
 assert.match(boardHtml, /aria-pressed="false"/);

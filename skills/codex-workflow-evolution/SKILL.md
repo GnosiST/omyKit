@@ -20,6 +20,7 @@ Use this at learning boundaries: after delivery, retrospectives, repeated fricti
 1. Apply `codex-context-budget`; start in `scan`.
 2. Gather evidence: user feedback, repeated failure, missed gate, stale docs, upstream watch output, validation output, or a concrete workflow gap.
    - For controller workflows, include repeated invalid handoffs, retry loops, missing node types, unclear reject targets, or durable state that failed to support continuation.
+   - For tracked workflows, read delivery-node `evolution_candidates`; an empty array means the delivery was reviewed and no durable lesson was found.
 3. Classify the lesson:
    - project-local -> target project `AGENTS.md`, docs, or repo-local skills
    - generic omyKit -> omyKit skills, docs, validators, or tool registry
@@ -32,8 +33,11 @@ Use this at learning boundaries: after delivery, retrospectives, repeated fricti
    - `references/` for conditional detail
    - script/CI for repeatable validation
    - `CHANGELOG.md` for user-visible kit changes
-6. Verify with `validate-skills`, docs link checks, diff hygiene, and targeted forward tests when the rule is substantial.
-7. Install global omyKit after skill or prompt changes.
+6. Close the candidate loop:
+   - `generic_omykit` + passes abstraction test -> update the smallest owner surface, then mark the outcome as promoted in the delivery/evolution evidence.
+   - `project_local`, `one_off`, `volatile_ecosystem`, or failed abstraction test -> record why it was not promoted.
+7. Verify with `validate-skills`, docs link checks, diff hygiene, and targeted forward tests when the rule is substantial.
+8. Install global omyKit after skill or prompt changes.
 
 For referenced external skill repositories, read [upstream-watch.md](../../docs/workflow/upstream-watch.md) and use `node ./scripts/check-upstream-refs.mjs`. Treat upstream changes as review signals, not automatic doctrine.
 
@@ -55,6 +59,7 @@ Owner:
 Update surface:
 Why generic:
 Verification:
+Promotion status:
 Not promoted:
 ```
 
