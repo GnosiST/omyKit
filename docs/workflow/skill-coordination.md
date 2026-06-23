@@ -25,6 +25,9 @@ flowchart TD
     B -. supports .-> C
     U["codex-runtime-readiness<br/>local services"] -. when needed .-> C
     V["codex-version-readiness<br/>history/rollback"] -. when needed .-> C
+    K["workflow controller<br/>task graph / handoffs"] -. for long tracked work .-> C
+    C -. state/evidence .-> K
+    K -. status .-> D
     U -. evidence .-> D
     V -. evidence .-> D
     C --> D
@@ -41,6 +44,7 @@ flowchart TD
 | `codex-project-init` | New-project workflow layer. | A repository or artifact workspace lacks durable Codex rules and workflow docs. | Router, change workflow, runtime readiness, or delivery gate as needed. | It applies to new projects; existing projects use retrofit instead. |
 | `codex-project-retrofit` | Existing-project workflow layer. | A maintained repository needs omyKit without disrupting current conventions. | Router, change workflow, runtime readiness, or delivery gate as needed. | It preserves existing structure; it does not reinitialize a project from scratch. |
 | `codex-change-workflow` | Scoped execution from brief/spec through focused verification. | A concrete feature, fix, refactor, design pass, deck/video edit, research task, or data task starts. | Runtime readiness, version readiness, and delivery gate when relevant. | It owns the execution phase and delegates only narrow checks. |
+| `workflow controller` | Repo-local task graph, node state, handoff validation, retry visibility, and continuation state. | Standard work is multi-node, compact-prone, parallel, rejected, resumable, or explicitly tracked; Strict work uses it by default. | The active change workflow and delivery gate. | It stores state and validates handoffs; it does not route, call models, or replace implementation skills. |
 | `codex-runtime-readiness` | Local middleware and verification dependencies. | Tests, dev servers, migrations, browser checks, or smoke tests need services such as databases, caches, queues, object storage, browsers, or emulators. | The active change or delivery workflow. | It prepares dependencies; it does not change app behavior or release policy. |
 | `codex-version-readiness` | Branch, release, rollback, history, and customization readiness. | Work is durable, risky, release-bound, migration-related, dependency-related, or needs rollback/history lookup. | The active change or delivery workflow. | It reports readiness and gaps; it does not force heavyweight release machinery onto every task. |
 | `codex-delivery-gate` | Final evidence before handoff, export, commit, PR, or release. | The agent is about to claim work is complete or ready. | Final response, commit, PR, export, or release action. | It runs at handoff boundaries; it does not interrupt every intermediate command. |
@@ -53,6 +57,7 @@ flowchart TD
 | New app project | `codex-project-init` | `codex-context-budget`, `codex-runtime-readiness`, `codex-version-readiness`, `codex-delivery-gate` as needed. |
 | Existing repo upgrade | `codex-project-retrofit` | `codex-context-budget`, `codex-version-readiness`, `codex-delivery-gate`. |
 | Feature or bug fix | `codex-change-workflow` | `codex-context-budget`, `codex-runtime-readiness` for middleware, `codex-version-readiness` for rollback, `codex-delivery-gate` before handoff. |
+| Long tracked task | `codex-change-workflow` | Workflow controller for task graph, handoffs, rejects, blockers, and compact recovery. |
 | Documentation or research artifact | `codex-change-workflow` | `codex-context-budget`, `codex-delivery-gate`; version readiness only when the work is durable or release-bound. |
 | Release preparation | `codex-delivery-gate` | `codex-version-readiness`, runtime checks, artifact-specific gates. |
 | Repeated workflow friction | `codex-workflow-evolution` | `codex-context-budget`, relevant owner skill, validation scripts. |
@@ -62,6 +67,7 @@ flowchart TD
 - **Init vs retrofit:** choose by project state. New project uses init; existing project uses retrofit.
 - **Router vs change workflow:** router classifies; change workflow executes.
 - **Runtime vs versioning:** runtime prepares services; versioning checks rollback and history.
+- **Change workflow vs controller:** change workflow decides and executes; controller persists task graph state and validates structured handoffs.
 - **Change workflow vs delivery gate:** change workflow builds the deliverable; delivery gate verifies evidence before completion.
 - **Delivery gate vs workflow evolution:** delivery gate captures evidence; workflow evolution decides whether that evidence becomes a generic omyKit change.
 - **Context budget vs every other skill:** context budget limits reading and tool output; it never overrides the specialist workflow.

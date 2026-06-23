@@ -28,13 +28,18 @@ Run this workflow once to frame the change, then execute directly. Re-enter the 
    - existing plan -> `superpowers:executing-plans`
    - bug -> `superpowers:systematic-debugging`
    - risky logic -> `superpowers:test-driven-development`
-4. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
-5. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
-6. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a narrower secondary only for a separate gap such as responsive adaptation, accessibility, copy, hardening, metadata, icons, motion, performance, or current shadcn/ecosystem discovery.
-7. Load only the current project-type reference.
-8. Execute surgically.
-9. Run focused verification as soon as something is testable.
-10. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence appears, route it to `codex-workflow-evolution` after delivery.
+4. Decide whether to enable the omyKit workflow controller:
+   - Lite: do not enable by default.
+   - Standard: enable only for multi-node, compact-prone, parallel, rejected, resumable, or user-requested tracked work.
+   - Strict: enable by default.
+5. If enabled, use the first available controller script: project `scripts/omykit-workflow.mjs`, then `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`. Keep node handoffs structured; failed gates must reject to a named upstream node with evidence and required fix.
+6. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
+7. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
+8. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a narrower secondary only for a separate gap such as responsive adaptation, accessibility, copy, hardening, metadata, icons, motion, performance, or current shadcn/ecosystem discovery.
+9. Load only the current project-type reference.
+10. Execute surgically.
+11. Run focused verification as soon as something is testable.
+12. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence appears, route it to `codex-workflow-evolution` after delivery.
 
 ## App-Code Rules
 

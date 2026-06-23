@@ -12,6 +12,7 @@ The default registry is intentionally conservative. Admit only omyKit-owned rout
 | --- | --- | --- | --- | --- | --- |
 | Codex | Core control plane | [openai/codex](https://github.com/openai/codex) (92,647 stars) | Control plane | Always. It routes, plans, edits, verifies, and summarizes. | Do not bypass with separate uncoordinated tools. |
 | AGENTS.md | Repo-local rule file | This repository | Durable repo rules | Stable conventions, commands, boundaries, and definition of done. | One-off notes, history, or long mechanisms better suited to docs. |
+| Workflow Controller | Repo-local mechanism | [scripts/omykit-workflow.mjs](../../scripts/omykit-workflow.mjs) plus [schemas](../../schemas/workflow-graph.schema.json) | Durable task graph state | Multi-node, resumable, compact-prone, rejected, parallel, or Strict workflow work. | Lite work, one-off tasks, or as a replacement for Codex execution. |
 | [Superpowers](https://github.com/obra/Superpowers) | Tracked upstream reference | [obra/Superpowers](https://github.com/obra/Superpowers) (235,582 stars) | Execution discipline | Brainstorming, planning, debugging, TDD, verification, review. | As a spec source or project fact source. |
 | [Spec-Kit](https://github.com/github/spec-kit) | Official upstream reference | [github/spec-kit](https://github.com/github/spec-kit) (114,714 stars) | Project constitution and strict SDD | New durable projects or major product foundations. | Small changes or existing projects with lighter spec systems. |
 | [OpenSpec](https://github.com/Fission-AI/openspec) | Tracked upstream reference | [Fission-AI/openspec](https://github.com/Fission-AI/openspec) (55,971 stars) | Change management | Standard feature/bug/refactor proposals and archived deltas. | One-off throwaway artifacts. |
@@ -60,6 +61,7 @@ Apply them only when the active omyKit route sees the matching signal:
 - Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active brief/change workflow, using omyKit's own patterns unless the user explicitly requests a specific external PM skill.
 - Visual frontend work: add checks for hierarchy, brand fit, layout resilience, responsive behavior, accessibility basics, and visual QA.
 - shadcn/ui ecosystem work: consult current project dependencies and official/current source material only when examples, component options, or ecosystem research are needed; do not route to community catalog skills by default.
+- Workflow controller work: use the controller inside the active change route only when durable task graph state, structured handoffs, reject loops, blockers, or compact recovery materially improve reliability; do not create a separate route or force it onto Lite tasks.
 - Context compression work: first narrow source context with indexes, outlines, focused commands, and evidence notes; use an explicitly installed, trusted local compression layer only when large retrievable outputs still exceed the useful budget.
 - Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson, and prefer the exact linked official source over forks or mirrors.
 
@@ -93,6 +95,7 @@ Do not stack same-lane skills by default. Choose one primary capability for the 
 | GSAP implementation | The matching `gsap-*` skill for the concrete API or integration concern. | Add `motion-ai-kit` only when the intended choreography is unclear; add `fixing-motion-performance` only for confirmed performance risk. |
 | shadcn/ui resources | Project dependencies and current official/source material first. | The task needs current examples, component options, or library discovery; do not persist community catalog contents into omyKit. |
 | Context compression | `codex-context-budget` first: avoid, index, focus, compact, then summarize. | Use optional local compression only when large repetitive content remains useful, originals can be retrieved, and the path is local and trusted. |
+| Durable workflow state | Active `codex-change-workflow` plus Workflow Controller. | Use only for multi-node, resumable, compact-prone, rejected, parallel, or Strict work; do not use it as a separate route. |
 | Workflow evolution | `codex-workflow-evolution`. | Add owner skills only after evidence shows the generic kit should change. |
 
 ## Versioning Readiness

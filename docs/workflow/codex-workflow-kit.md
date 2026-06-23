@@ -12,6 +12,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Project-type routing before tool use.
 - Progressive context loading: `scan -> focus -> deep`.
 - Compression-aware context management: avoid and narrow first, summarize next, then use optional local compression only when originals can be retrieved.
+- Optional C-lite workflow controller for long, resumable, multi-node tasks.
 - Repeatable workflows encoded as Codex repo skills.
 - Runtime readiness, including Docker-backed middleware, before local verification.
 - Versioning readiness for history lookup, rollback, releases, and project-specific customization.
@@ -58,8 +59,20 @@ For ownership boundaries and conflict-prevention rules, see [skill-coordination.
 | Mode | Use when | Shape |
 | --- | --- | --- |
 | Lite | Small, reversible, one-off work | brief -> execute -> minimum verification |
-| Standard | Default project work | brief/spec -> plan -> execute -> focused gates |
-| Strict | Durable, high-risk, client, architecture, security, migration | constitution/spec -> impact -> TDD/debug/plan -> full gates |
+| Standard | Default project work | brief/spec -> plan -> execute -> focused gates; enable controller only for multi-node, resumable, rejected, or compact-prone work |
+| Strict | Durable, high-risk, client, architecture, security, migration | constitution/spec -> task graph -> impact -> TDD/debug/plan -> full gates |
+
+## Workflow Controller
+
+For long or high-observability work, omyKit can use a local controller:
+
+```text
+skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
+```
+
+The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, recommends ready nodes, and keeps compact recovery cheap. It does not call models, replace Codex, or make Lite tasks heavy by default.
+
+See [controller.md](controller.md), [task-graph.md](task-graph.md), and [handoff-protocol.md](handoff-protocol.md).
 
 ## Tool Philosophy
 
@@ -100,4 +113,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional workflow, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, and [evolution.md](evolution.md) for evidence-based workflow improvement.
+See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional workflow, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, [controller.md](controller.md) for durable task graphs, and [evolution.md](evolution.md) for evidence-based workflow improvement.

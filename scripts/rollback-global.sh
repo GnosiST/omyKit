@@ -35,7 +35,7 @@ fi
 
 "$repo_root/scripts/validate-skills.sh" "$backup_dir"
 
-mkdir -p "$codex_home/skills" "$codex_home/prompts"
+mkdir -p "$codex_home/skills" "$codex_home/prompts" "$codex_home/omykit/scripts" "$codex_home/omykit/schemas"
 
 for skill_dir in "$backup_dir"/skills/*; do
   [ -d "$skill_dir" ] || continue
@@ -51,6 +51,26 @@ if [ -f "$backup_dir/prompts/omykit.md" ]; then
   tmp_prompt="$codex_home/prompts/.omykit.md.rollback.$$"
   cp "$backup_dir/prompts/omykit.md" "$tmp_prompt"
   mv "$tmp_prompt" "$codex_home/prompts/omykit.md"
+fi
+
+if [ -f "$backup_dir/scripts/omykit-workflow.mjs" ]; then
+  tmp_controller="$codex_home/omykit/scripts/.omykit-workflow.mjs.rollback.$$"
+  cp "$backup_dir/scripts/omykit-workflow.mjs" "$tmp_controller"
+  mv "$tmp_controller" "$codex_home/omykit/scripts/omykit-workflow.mjs"
+  chmod +x "$codex_home/omykit/scripts/omykit-workflow.mjs"
+fi
+
+if [ -d "$backup_dir/schemas" ]; then
+  tmp_schema_dir="$codex_home/omykit/.schemas.rollback.$$"
+  rm -rf "$tmp_schema_dir"
+  mkdir -p "$tmp_schema_dir"
+  if find "$backup_dir/schemas" -maxdepth 1 -name '*.schema.json' -type f | grep -q .; then
+    cp "$backup_dir/schemas"/*.schema.json "$tmp_schema_dir/"
+    rm -rf "$codex_home/omykit/schemas"
+    mv "$tmp_schema_dir" "$codex_home/omykit/schemas"
+  else
+    rm -rf "$tmp_schema_dir"
+  fi
 fi
 
 restored_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

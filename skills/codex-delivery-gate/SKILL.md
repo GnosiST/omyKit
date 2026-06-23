@@ -27,6 +27,7 @@ Use this gate at handoff, export, commit, PR, release, or when making a completi
    - skipped checks and residual risk
    - version/changelog/tag status, if applicable
    - rollback path or missing rollback gap
+   - controller workflow status, failed/blocked nodes, handoff evidence, and skipped required gates, if `.omykit/workflows/` is active
 7. Review whether stable lessons should trigger `codex-workflow-evolution`; do not promote one-off project facts into omyKit.
 
 ## Do Not

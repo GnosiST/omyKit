@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added a C-lite workflow controller with task-graph, node-card, state, and handoff schemas; a local `omykit-workflow.mjs` CLI; smoke tests; global install/rollback support; and English/Chinese controller, task-graph, and handoff docs.
+- Refreshed upstream baselines for Spec-Kit, CodeGraph, Codex, Impeccable, Remotion, FFmpeg, Moby, Playwright, Linear, Sentry, and SonarQube after reviewing drift; no third-party content was copied, and no additional omyKit doctrine was promoted.
 - Added dirty-working-tree warnings and documentation for clean global install manifests during release or handoff.
 - Removed community PM/taste/catalog/meta-UX skill references and low-signal platform sample repos from default tool routing and upstream tracking to keep omyKit conservative, reliable, and non-fusionary.
 - Tightened source admission rules so stars are supporting evidence, not sufficient proof for default routing.

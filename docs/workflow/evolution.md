@@ -22,6 +22,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 - validation failure or recurring broken links
 - delivery gate miss
 - repeated manual command that should become a script
+- repeated controller friction such as invalid handoffs, retry loops, missing node types, unclear reject targets, or state that failed to support continuation
 - upstream reference changed and may contain reusable workflow lessons
 
 ## Classification

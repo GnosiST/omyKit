@@ -19,6 +19,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
+- **Durable task graph:** use a local C-lite controller for long, resumable, multi-node work.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -35,8 +36,10 @@ flowchart LR
     Intake["Intake<br/>user goal"] --> Route["Route<br/>entry, type, risk"]
     Route --> Budget["Context budget<br/>scan -> focus -> deep"]
     Budget --> Work["Execute<br/>project-native work"]
+    Work --> Controller["Controller<br/>task graph, handoffs"]
     Work --> Runtime["Runtime readiness<br/>only when needed"]
     Work --> Version["Version readiness<br/>history and rollback"]
+    Controller --> Verify["Verify<br/>focused checks"]
     Runtime --> Verify["Verify<br/>focused checks"]
     Version --> Verify
     Verify --> Deliver["Deliver<br/>evidence and risks"]
@@ -77,8 +80,9 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 | --- | --- |
 | `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
-| `docs/workflow/` | Workflow notes for setup, routing, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
-| `scripts/` | Validation, global installation, install-from-ref, and rollback helpers. |
+| `docs/workflow/` | Workflow notes for setup, routing, controller, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
+| `schemas/` | JSON schemas for controller graphs, node cards, state, and handoffs. |
+| `scripts/` | Validation, workflow controller, global installation, install-from-ref, and rollback helpers. |
 | `upstream-sources.json` | Tracked external reference baselines plus source-integrity snapshots for official workflow, spec, local-skill, platform-tool, design, motion, ecosystem, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
 
@@ -99,6 +103,12 @@ Do not assume `/omykit` is available unless your local Codex client explicitly m
 
 See [Skill coordination](docs/workflow/skill-coordination.md) for what each integrated skill owns, when it hands off, and why the skills do not conflict.
 
+## Controller Layer
+
+For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, and support compact recovery.
+
+The controller is local and deterministic. It does not call models, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+
 ## Workflow Model
 
 ```text
@@ -109,6 +119,7 @@ Operational rules:
 
 - Route once at task intake, when scope or risk changes, or before delivery.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
+- Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
 - For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.
@@ -123,6 +134,9 @@ Operational rules:
 - [Setup guide](docs/workflow/setup.md)
 - [Workflow overview](docs/workflow/codex-workflow-kit.md)
 - [Skill coordination](docs/workflow/skill-coordination.md)
+- [Workflow controller](docs/workflow/controller.md)
+- [Task graph](docs/workflow/task-graph.md)
+- [Handoff protocol](docs/workflow/handoff-protocol.md)
 - [Language policy](docs/workflow/language-policy.md)
 - [Versioning readiness](docs/workflow/versioning.md)
 - [Tool registry](docs/workflow/tool-registry.md)
@@ -146,6 +160,7 @@ Recommended pre-handoff checks:
 
 ```bash
 ./scripts/validate-skills.sh
+node scripts/test-omykit-workflow.mjs
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs
 git diff --check
@@ -171,12 +186,13 @@ For this repository itself:
 After changing skill files:
 
 1. Run `./scripts/validate-skills.sh`.
-2. Run `node ./scripts/validate-docs.mjs`.
-3. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
-4. Run `./scripts/install-global.sh` to update the global Codex skill copy.
-5. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`.
-6. Review `git diff --check`.
-7. Commit and push only after the local and global copies are verified.
+2. Run `node scripts/test-omykit-workflow.mjs` when controller scripts or schemas changed.
+3. Run `node ./scripts/validate-docs.mjs`.
+4. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
+5. Run `./scripts/install-global.sh` to update the global Codex skill copy and controller files.
+6. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`.
+7. Review `git diff --check`.
+8. Commit and push only after the local and global copies are verified.
 
 ## Copyright And Third-Party References
 

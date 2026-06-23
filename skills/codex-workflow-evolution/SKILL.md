@@ -19,6 +19,7 @@ Use this at learning boundaries: after delivery, retrospectives, repeated fricti
 
 1. Apply `codex-context-budget`; start in `scan`.
 2. Gather evidence: user feedback, repeated failure, missed gate, stale docs, upstream watch output, validation output, or a concrete workflow gap.
+   - For controller workflows, include repeated invalid handoffs, retry loops, missing node types, unclear reject targets, or durable state that failed to support continuation.
 3. Classify the lesson:
    - project-local -> target project `AGENTS.md`, docs, or repo-local skills
    - generic omyKit -> omyKit skills, docs, validators, or tool registry

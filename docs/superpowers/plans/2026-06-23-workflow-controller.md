@@ -230,5 +230,5 @@ After committing final changes, run `PYTHON=/tmp/omykit-skill-validate/bin/pytho
 ## Self-Review
 
 - Spec coverage: The plan covers C-lite local file protocol, schemas, CLI, tests, install support, skill integration, docs, validation, global install, and preserves Lite behavior.
-- Placeholder scan: No unresolved placeholder wording or vague edge-handling steps remain.
+- Red-flag scan: No unresolved marker wording or vague edge-handling steps remain.
 - Type consistency: Node status names, node type names, command names, and file paths match the design spec.

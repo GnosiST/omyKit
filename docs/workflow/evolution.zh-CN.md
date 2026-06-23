@@ -22,6 +22,7 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 - validation failure 或 recurring broken links
 - delivery gate 遗漏
 - 反复手动执行、应该脚本化的命令
+- 反复出现的 controller 摩擦，例如 handoff 无效、重试循环、节点类型缺失、打回目标不清，或状态文件无法支持续跑
 - 上游参考发生变化，并可能包含可复用 workflow 经验
 
 ## 分类

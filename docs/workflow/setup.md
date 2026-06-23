@@ -30,6 +30,8 @@ The leading `$` is part of the skill trigger, not a shell prompt.
 
 The global install is the normal path. It keeps the reusable workflow outside individual projects and avoids copying generic skill files into every repository.
 
+Global install also copies the optional workflow controller into `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/` and controller schemas into `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+
 ## New Project
 
 1. Install omyKit globally.
@@ -141,6 +143,7 @@ Check:
 - docs are generic until a project profile specializes them
 - versioning and rollback expectations are documented for durable projects
 - `./scripts/validate-skills.sh` passes
+- `node scripts/test-omykit-workflow.mjs` passes when controller scripts or schemas changed
 - `node ./scripts/validate-docs.mjs` passes
 - `git diff --check` passes
 

@@ -17,6 +17,7 @@ This repository packages omyKit as global Codex skills plus human-readable workf
 
 ```bash
 ./scripts/validate-skills.sh
+node scripts/test-omykit-workflow.mjs
 node ./scripts/validate-docs.mjs
 git diff --check
 ```

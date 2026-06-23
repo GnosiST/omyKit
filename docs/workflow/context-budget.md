@@ -59,6 +59,18 @@ Compression is useful only after narrowing fails. Use this order:
 5. Use optional local compression only for large, repetitive, retrievable, trusted content.
 6. Retrieve the original before exact code edits, quotes, citations, security/legal/privacy claims, or any decision where lossiness can hide a failure.
 
+## Controller Continuation
+
+For controller-backed workflows, resume after compact or interruption from durable state before reading broad context:
+
+1. `.omykit/workflows/<id>/state.json`
+2. `.omykit/workflows/<id>/graph.json`
+3. the latest relevant `ledger.jsonl` events
+4. active, ready, failed, or blocked node cards
+5. related handoff and evidence summaries
+
+Return to full source files, full logs, or original artifacts only when the next action depends on exact edits, citations, security/legal/privacy judgment, or failure root cause.
+
 ## Optional Local Compression Fit
 
 Optional local compression is useful only for large tool outputs, JSON arrays, search results, logs, diffs, RAG chunks, long docs, conversation handoffs, and output shaping after narrowing fails. It should not become a default omyKit dependency.

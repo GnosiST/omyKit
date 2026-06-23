@@ -33,6 +33,18 @@ Apply the budget when choosing context or crossing a task phase. Do not restart 
 6. Retrieve the original source before exact code edits, quotes, citations, legal/security/privacy claims, or decisions where lossy compression could hide a failure.
 7. Stop reading once the next safe decision is possible.
 
+## Controller Continuation
+
+For omyKit controller workflows after compact, interruption, or handoff, resume with the smallest durable state:
+
+1. `.omykit/workflows/<id>/state.json`
+2. `.omykit/workflows/<id>/graph.json`
+3. latest relevant `ledger.jsonl` events
+4. active, failed, blocked, or ready node cards
+5. related handoff and evidence summaries
+
+Return to original files or full evidence only when the next action needs exact edits, quotes, security/legal/privacy judgment, or failure root cause.
+
 ## Hard Limits
 
 - Do not read all docs for a narrow change.

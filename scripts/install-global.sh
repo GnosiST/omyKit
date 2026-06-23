@@ -22,6 +22,16 @@ if [ ! -f "$source_root/prompts/omykit.md" ]; then
   exit 1
 fi
 
+if [ ! -f "$source_root/scripts/omykit-workflow.mjs" ]; then
+  echo "Cannot find workflow controller: $source_root/scripts/omykit-workflow.mjs" >&2
+  exit 1
+fi
+
+if [ ! -d "$source_root/schemas" ]; then
+  echo "Cannot find schemas directory: $source_root/schemas" >&2
+  exit 1
+fi
+
 "$repo_root/scripts/validate-skills.sh" "$source_root"
 
 installed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -51,7 +61,8 @@ backup_dir="none"
 backup_any="false"
 
 mkdir -p "$codex_home/skills" "$codex_home/prompts" "$codex_home/omykit/backups"
-mkdir -p "$backup_candidate/skills" "$backup_candidate/prompts"
+mkdir -p "$codex_home/omykit/scripts" "$codex_home/omykit/schemas"
+mkdir -p "$backup_candidate/skills" "$backup_candidate/prompts" "$backup_candidate/scripts" "$backup_candidate/schemas"
 
 for skill_dir in "$source_root"/skills/*; do
   [ -d "$skill_dir" ] || continue
@@ -66,6 +77,17 @@ done
 target_prompt="$codex_home/prompts/omykit.md"
 if [ -e "$target_prompt" ]; then
   cp "$target_prompt" "$backup_candidate/prompts/omykit.md"
+  backup_any="true"
+fi
+
+target_controller="$codex_home/omykit/scripts/omykit-workflow.mjs"
+if [ -e "$target_controller" ]; then
+  cp "$target_controller" "$backup_candidate/scripts/omykit-workflow.mjs"
+  backup_any="true"
+fi
+
+if find "$codex_home/omykit/schemas" -maxdepth 1 -name '*.schema.json' -type f | grep -q .; then
+  cp "$codex_home/omykit/schemas"/*.schema.json "$backup_candidate/schemas/"
   backup_any="true"
 fi
 
@@ -120,6 +142,40 @@ if mv "$tmp_prompt" "$target_prompt"; then
 else
   if [ -e "$backup_prompt" ]; then
     mv "$backup_prompt" "$target_prompt"
+  fi
+  exit 1
+fi
+
+tmp_controller="$codex_home/omykit/scripts/.omykit-workflow.mjs.tmp.$$"
+backup_controller="$codex_home/omykit/scripts/.omykit-workflow.mjs.backup.$$"
+rm -f "$backup_controller"
+cp "$source_root/scripts/omykit-workflow.mjs" "$tmp_controller"
+if [ -e "$target_controller" ]; then
+  mv "$target_controller" "$backup_controller"
+fi
+if mv "$tmp_controller" "$target_controller"; then
+  chmod +x "$target_controller"
+  rm -f "$backup_controller"
+else
+  if [ -e "$backup_controller" ]; then
+    mv "$backup_controller" "$target_controller"
+  fi
+  exit 1
+fi
+
+tmp_schema_dir="$codex_home/omykit/.schemas.tmp.$$"
+backup_schema_dir="$codex_home/omykit/.schemas.backup.$$"
+rm -rf "$tmp_schema_dir" "$backup_schema_dir"
+mkdir -p "$tmp_schema_dir"
+cp "$source_root/schemas"/*.schema.json "$tmp_schema_dir/"
+if [ -d "$codex_home/omykit/schemas" ]; then
+  mv "$codex_home/omykit/schemas" "$backup_schema_dir"
+fi
+if mv "$tmp_schema_dir" "$codex_home/omykit/schemas"; then
+  rm -rf "$backup_schema_dir"
+else
+  if [ -d "$backup_schema_dir" ]; then
+    mv "$backup_schema_dir" "$codex_home/omykit/schemas"
   fi
   exit 1
 fi

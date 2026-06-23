@@ -56,4 +56,5 @@ Final handoff should include:
 - verification run
 - skipped checks
 - residual risk
+- controller workflow status, failed/blocked nodes, handoff evidence, and skipped required gates when `.omykit/workflows/` is active
 - suggested next step when useful
