@@ -2,7 +2,7 @@ name: Upstream Watch
 
 on:
   schedule:
-    - cron: "0 9 1 * *"
+    - cron: "17 4 1 * *"
   workflow_dispatch:
 
 jobs:
@@ -16,5 +16,5 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Check referenced upstream sources
+      - name: Check tracked upstream references
         run: node ./scripts/check-upstream-refs.mjs --strict

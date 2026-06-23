@@ -73,6 +73,16 @@ if [ -d "$backup_dir/schemas" ]; then
   fi
 fi
 
+if [ -d "$backup_dir/workflow-templates/current" ]; then
+  tmp_template_dir="$codex_home/omykit/.workflow-templates.rollback.$$"
+  rm -rf "$tmp_template_dir"
+  cp -R "$backup_dir/workflow-templates/current" "$tmp_template_dir"
+  rm -rf "$codex_home/omykit/workflow-templates"
+  mv "$tmp_template_dir" "$codex_home/omykit/workflow-templates"
+elif [ -d "$backup_dir/workflow-templates" ]; then
+  rm -rf "$codex_home/omykit/workflow-templates"
+fi
+
 restored_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 {
   echo "restored_at=$restored_at"

@@ -109,6 +109,7 @@ For this repository itself:
 - Git tags mark released versions. Use `vMAJOR.MINOR.PATCH`.
 - Global installs write a manifest under `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
 - Global installs keep backups under `${CODEX_HOME:-$HOME/.codex}/omykit/backups/`.
+- Rollback restores the backed-up skills, prompt, controller, schemas, and workflow templates.
 - Release and handoff installs should be run from the final clean commit so the manifest records the current commit and `git_dirty=false`.
 
 Install current working tree:

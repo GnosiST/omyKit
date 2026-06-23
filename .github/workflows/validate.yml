@@ -28,5 +28,11 @@ jobs:
       - name: Validate docs
         run: node ./scripts/validate-docs.mjs
 
+      - name: Validate workflow templates
+        run: node ./scripts/omykit-workflow.mjs templates validate
+
+      - name: Test workflow controller
+        run: node ./scripts/test-omykit-workflow.mjs
+
       - name: Check whitespace
         run: git diff --check
