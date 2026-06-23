@@ -48,7 +48,17 @@ flowchart LR
 
 ## Quick Start
 
-Install from GitHub:
+### Install From Codex
+
+For first-time install, you do not have `$omykit` yet. Ask Codex in plain language:
+
+```text
+Install omyKit from https://github.com/GnosiST/omyKit
+```
+
+Codex can clone the repository, run the installer, and report the install manifest. After installation, open a fresh Codex thread so the skill list refreshes.
+
+Manual fallback:
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
@@ -56,16 +66,21 @@ cd omyKit
 ./scripts/install-global.sh
 ```
 
-Open a fresh Codex thread so the skill list refreshes, then type one of these in Codex chat:
+### Use From Codex
+
+Open a fresh Codex thread and type one of these in Codex chat:
 
 ```text
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
+$omykit 生成看板并打开
+$omykit 查看工作流状态
 $omykit 交付检查
+$omykit 更新自己
 ```
 
-The leading `$` is part of the skill trigger, not a shell prompt.
+Codex should run any required controller or install commands internally and return the result, paths, and residual risks. The leading `$` is part of the skill trigger, not a shell prompt.
 
 If your Codex client supports prompt files, this is also a Codex chat input:
 
@@ -75,7 +90,13 @@ If your Codex client supports prompt files, this is also a Codex chat input:
 
 Do not assume `/omykit` is available unless your local Codex client explicitly maps custom prompt files to that command form.
 
-For tracked controller workflows, generate the local collaboration board from a project shell:
+For tracked controller workflows, prefer the Codex chat form:
+
+```text
+$omykit 生成看板并打开
+```
+
+Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
 
 ```bash
 node scripts/omykit-workflow.mjs board --open

@@ -22,6 +22,23 @@ Signals that justify the controller:
 - long tasks likely to cross context compaction or sessions
 - user asks for autonomous progress with clear blocker handling
 
+## Codex-First Use
+
+Prefer operating the controller through Codex chat:
+
+```text
+$omykit 创建工作流：重构登录模块
+$omykit 查看工作流状态
+$omykit 继续工作流
+$omykit 下一步
+$omykit 生成看板并打开
+$omykit 校验工作流
+```
+
+Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, failed/blocked nodes, and residual risk.
+
+Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
+
 ## Runtime Location
 
 When installed globally, omyKit places the controller here:

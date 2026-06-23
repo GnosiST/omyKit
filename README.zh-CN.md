@@ -48,7 +48,17 @@ flowchart LR
 
 ## 快速开始
 
-从 GitHub 安装：
+### 在 Codex 中安装
+
+首次安装时还没有 `$omykit`，所以直接用普通对话告诉 Codex：
+
+```text
+帮我安装 omyKit：https://github.com/GnosiST/omyKit
+```
+
+Codex 可以替你 clone 仓库、运行安装脚本，并返回 install manifest。安装完成后，打开新的 Codex 线程让 skill 列表刷新。
+
+手动 fallback：
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
@@ -56,16 +66,21 @@ cd omyKit
 ./scripts/install-global.sh
 ```
 
-打开新的 Codex 线程让 skill 列表刷新，然后在 Codex 对话里输入：
+### 在 Codex 中使用
+
+打开新的 Codex 线程，然后在 Codex 对话里输入：
 
 ```text
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
+$omykit 生成看板并打开
+$omykit 查看工作流状态
 $omykit 交付检查
+$omykit 更新自己
 ```
 
-开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
+Codex 应该在内部运行需要的 controller 或安装命令，并把结果、路径和剩余风险返回给你。开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
 
 如果你的 Codex 客户端支持 prompt 文件，这也是 Codex 对话输入，不是终端命令：
 
@@ -75,7 +90,13 @@ $omykit 交付检查
 
 不要默认假设 `/omykit` 可用，除非本地 Codex 客户端明确把自定义 prompt 映射成这种命令形式。
 
-对于已启用 controller 的追踪型 workflow，可在项目终端生成本地协作看板：
+对于已启用 controller 的追踪型 workflow，优先使用 Codex 对话：
+
+```text
+$omykit 生成看板并打开
+```
+
+Codex 会在内部运行 controller，并返回生成路径。项目终端中的手动 fallback：
 
 ```bash
 node scripts/omykit-workflow.mjs board --open

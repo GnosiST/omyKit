@@ -4,9 +4,33 @@ Language: [English](setup.md) | [简体中文](setup.zh-CN.md)
 
 Use this guide to install the kit into any project.
 
-## Global Install
+## Codex-First Install
 
-From GitHub:
+For first-time install, `$omykit` is not available yet. Ask Codex in plain language:
+
+```text
+Install omyKit from https://github.com/GnosiST/omyKit
+```
+
+Codex should clone the repository, run `./scripts/install-global.sh`, report the install manifest, and tell you to open a fresh Codex thread so the skill list refreshes.
+
+After install, use `$omykit` for normal operation:
+
+```text
+$omykit 初始化项目
+$omykit 改造旧项目
+$omykit 开始一个需求
+$omykit 生成看板并打开
+$omykit 查看工作流状态
+$omykit 交付检查
+$omykit 更新自己
+```
+
+The leading `$` is part of the skill trigger, not a shell prompt.
+
+## Manual Global Install
+
+Use this fallback when Codex cannot operate the local shell or when you want to inspect each step:
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
@@ -26,15 +50,13 @@ Then open a fresh Codex thread and type this in Codex chat:
 $omykit 初始化项目
 ```
 
-The leading `$` is part of the skill trigger, not a shell prompt.
-
 The global install is the normal path. It keeps the reusable workflow outside individual projects and avoids copying generic skill files into every repository.
 
 Global install also copies the optional workflow controller into `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/` and controller schemas into `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
 ## New Project
 
-1. Install omyKit globally.
+1. Install omyKit globally through Codex, or use the manual fallback.
 2. Create or open the target repository.
 3. Ask Codex:
 
@@ -47,7 +69,7 @@ $omykit 初始化项目
 
 ## Existing Project
 
-1. Install omyKit globally.
+1. Install omyKit globally through Codex, or use the manual fallback.
 2. Open the existing repository.
 3. Ask Codex:
 
@@ -107,6 +129,13 @@ For completion:
 
 ```text
 $omykit 交付检查
+```
+
+For tracked workflow visibility:
+
+```text
+$omykit 生成看板并打开
+$omykit 查看工作流状态
 ```
 
 ## Optional MCP / Plugins

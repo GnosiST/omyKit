@@ -22,6 +22,23 @@ omyKit workflow controller 是一个本地 C-lite 状态机，用于长任务、
 - 长任务可能跨 context compact 或多个会话
 - 用户希望任务自主推进，同时清楚记录阻塞项
 
+## Codex-first 使用
+
+优先通过 Codex 对话操作 controller：
+
+```text
+$omykit 创建工作流：重构登录模块
+$omykit 查看工作流状态
+$omykit 继续工作流
+$omykit 下一步
+$omykit 生成看板并打开
+$omykit 校验工作流
+```
+
+Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、failed/blocked 节点和剩余风险报告给用户。
+
+只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
+
 ## 运行位置
 
 全局安装后，omyKit 会把 controller 放到：

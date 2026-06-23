@@ -4,9 +4,33 @@
 
 使用本指南把套件安装到任何项目中。
 
-## 全局安装
+## Codex-first 安装
 
-从 GitHub 安装：
+首次安装时还没有 `$omykit`，所以直接用普通对话告诉 Codex：
+
+```text
+帮我安装 omyKit：https://github.com/GnosiST/omyKit
+```
+
+Codex 应该 clone 仓库、运行 `./scripts/install-global.sh`、返回 install manifest，并提醒你打开新的 Codex 线程刷新 skill 列表。
+
+安装后，日常使用 `$omykit`：
+
+```text
+$omykit 初始化项目
+$omykit 改造旧项目
+$omykit 开始一个需求
+$omykit 生成看板并打开
+$omykit 查看工作流状态
+$omykit 交付检查
+$omykit 更新自己
+```
+
+开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
+
+## 手动全局安装
+
+当 Codex 无法操作本地 shell，或你想逐步检查时，使用这个 fallback：
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
@@ -26,15 +50,13 @@ cd omyKit
 $omykit 初始化项目
 ```
 
-开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
-
 全局安装是正常路径。它让可复用 workflow 留在单个项目之外，避免把通用 skill 文件复制进每个仓库。
 
 全局安装也会把可选 workflow controller 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`，并把 controller schemas 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`。
 
 ## 新项目
 
-1. 全局安装 omyKit。
+1. 通过 Codex 全局安装 omyKit，或使用手动 fallback。
 2. 创建或打开目标仓库。
 3. 询问 Codex：
 
@@ -47,7 +69,7 @@ $omykit 初始化项目
 
 ## 现有项目
 
-1. 全局安装 omyKit。
+1. 通过 Codex 全局安装 omyKit，或使用手动 fallback。
 2. 打开现有仓库。
 3. 询问 Codex：
 
@@ -107,6 +129,13 @@ Before running middleware-dependent checks, use codex-runtime-readiness. Prefer 
 
 ```text
 $omykit 交付检查
+```
+
+查看追踪型 workflow：
+
+```text
+$omykit 生成看板并打开
+$omykit 查看工作流状态
 ```
 
 ## 可选 MCP / Plugins

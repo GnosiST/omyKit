@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Refreshed the `openai/codex` upstream baseline after reviewing compact-remote style/test and Codex Apps manager flag cleanup changes; no omyKit workflow rule was promoted.
+- Refreshed the `getsentry/sentry` upstream baseline after reviewing a Sentry app external-form rename; no omyKit workflow rule was promoted.
+- Added Codex-first install/update/controller usage guidance so users can ask Codex to install omyKit, update itself, inspect workflow status, resume workflows, and generate/open boards without manually running shell commands unless needed for fallback or automation.
 - Added a static workflow visual board: `omykit-workflow.mjs board` now writes `board.json` and `board.html` with command-center metrics, status columns, dependency/reject edges, worker lanes, node details, risk panels, recent events, optional collaboration metadata, schema coverage, tests, and English/Chinese docs.
 - Added a C-lite workflow controller with task-graph, node-card, state, and handoff schemas; a local `omykit-workflow.mjs` CLI; smoke tests; global install/rollback support; and English/Chinese controller, task-graph, and handoff docs.
 - Refreshed upstream baselines for Spec-Kit, CodeGraph, Codex, Impeccable, Remotion, FFmpeg, Moby, Playwright, Linear, Sentry, and SonarQube after reviewing drift; no third-party content was copied, and no additional omyKit doctrine was promoted.
