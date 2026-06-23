@@ -110,6 +110,7 @@ $omykit 开始执行：测试 MVP1 角色权限
 $omykit 继续执行
 $omykit 查看工作流列表
 $omykit 交接包：03-implement
+$omykit 记录分工
 $omykit 生成看板并打开
 ```
 
@@ -119,11 +120,13 @@ $omykit 生成看板并打开
 node scripts/omykit-workflow.mjs workflows
 node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs context-pack 03-implement
+node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json
+node scripts/omykit-workflow.mjs assign 03-implement --agent coder-thread-01 --surface worktree --status running --scope "src/**,tests/**" --context-pack context-packs/03-implement.json --handoff handoffs/03-implement.json
 node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以选择 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 等可复用模板；未指定时使用 `change.standard`。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、推荐模型、实际模型记录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
+`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以选择 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 等可复用模板；未指定时使用 `change.standard`。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、推荐模型、实际模型记录、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 
@@ -132,7 +135,7 @@ node scripts/omykit-workflow.mjs board --open --lang zh-CN
 | `skills/` | 安装到 `${CODEX_HOME:-$HOME/.codex}/skills/` 的 Codex skills。 |
 | `prompts/` | 可选 prompt 别名，用于从支持 prompt 文件的客户端启动 omyKit。 |
 | `docs/workflow/` | 设置、路由、controller、上下文预算、运行时准备、版本管理、工具注册表和交付门禁文档。 |
-| `schemas/` | controller graph、节点卡、state 和 handoff 的 JSON schemas。 |
+| `schemas/` | controller graph、节点卡、state、assignment 和 handoff 的 JSON schemas。 |
 | `scripts/` | 校验、workflow controller、全局安装、按 git ref 安装、回滚等脚本。 |
 | `workflow-templates/` | Controller 使用的分层 YAML workflow 模板、agent/model/runtime/safety profiles 和 scorecards。 |
 | `upstream-sources.json` | 官方 workflow、spec、本地 skill、平台工具、设计、动效、生态和上下文压缩外部参考来源的 baseline 与来源完整性快照。 |

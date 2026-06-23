@@ -18,6 +18,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `交接包`, `上下文包`, `给子智能体的包`, `context pack`, `handoff packet` | `controller` |
 | `记录后台命令`, `记录日志`, `record run`, `background command` | `controller` |
 | `派发计划`, `子智能体执行计划`, `并行执行计划`, `dispatch plan`, `subagent plan` | `controller` |
+| `记录分工`, `记录 agent`, `Agent 通讯录`, `thread assignment`, `assign agent` | `controller` |
 | `scorecard`, `验票`, `审计工作流证据`, `检查证据` | `controller` |
 | `生成看板`, `打开看板`, `workflow board`, `visual board` | `controller` |
 | `初始化项目`, `新项目`, `从零开始`, `start new project` | `init` |
@@ -43,6 +44,7 @@ $omykit 继续工作流
 $omykit 推进下一步
 $omykit 派发计划
 $omykit 子智能体执行计划
+$omykit 记录分工
 $omykit 交接包
 $omykit 查看工作流列表
 $omykit 切换工作流：<workflow-id>
@@ -84,7 +86,8 @@ Use this table as the single command taxonomy; other docs may list aliases, but 
 | Resume accurately after interruption | `$omykit 继续工作流` | `node scripts/omykit-workflow.mjs resume` |
 | Pick among multiple workflows | `$omykit 查看工作流列表` / `$omykit 切换工作流：<id>` | `node scripts/omykit-workflow.mjs workflows` / `workflows use <id>` |
 | Generate bounded worker context | `$omykit 交接包` | `node scripts/omykit-workflow.mjs context-pack <node-id>` |
-| Plan subagent dispatch | `$omykit 派发计划` | `node scripts/omykit-workflow.mjs dispatch-plan --json` |
+| Plan subagent/thread dispatch | `$omykit 派发计划` | `node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json` |
+| Record worker/thread assignment | `$omykit 记录分工` | `node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status running --context-pack <path> --handoff <path>` |
 | Record a long-running command | `$omykit 记录后台命令` | `node scripts/omykit-workflow.mjs record-run <node-id> --id <id> --command "<cmd>" --status running --log <path> --resume "<cmd>"` |
 | View evidence board | `$omykit 生成看板并打开` | `node scripts/omykit-workflow.mjs board --open` |
 

@@ -44,6 +44,7 @@ $omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
 $omykit 派发计划
+$omykit 记录分工
 $omykit 交接包
 $omykit 查看工作流列表
 $omykit 切换工作流：<workflow-id>
@@ -83,13 +84,17 @@ Use:
 ```bash
 node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id>
 node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
+node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --surface auto --json
+node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, context pack, and handoff contract. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
+The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, execution surface, context pack, and handoff contract. Plain `dispatch-plan` keeps the legacy subagent view; pass `--surface auto|subagent|thread|worktree|main` to emit `execution_surface`. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
+
+`assign` appends the real runtime assignment to `assignments.jsonl`: node, agent id, role, execution surface, thread id, worktree, model tier, write scope, context pack, handoff path, and status. It is a runtime roster, not a template field. The board projects the Agent Roster, and scorecards warn when assignments lack readable handoffs or active agents have overlapping write scopes.
 
 ## Thread-Native Multi-Agent Coordination
 
-The Codex app can also run background work in separate threads or worktrees. The current omyKit controller records coordination plans and handoffs, but it does not yet create threads, manage worktrees, or maintain a runtime thread roster. The next stage should treat this as a second `dispatch-plan` execution backend, not as a replacement for existing subagents:
+The Codex app can also run background work in separate threads or worktrees. The omyKit controller can now record thread/worktree assignments, generate matching context packs, show an Agent Roster on the board, and scorecard handoff return plus write-scope conflicts. It still does not create Codex threads, create worktrees, or send cross-thread messages by itself. Thread creation and handoff remain actions the Codex orchestrator performs through the active runtime tools.
 
 | Surface | Good for | Constraint |
 | --- | --- | --- |
@@ -97,7 +102,7 @@ The Codex app can also run background work in separate threads or worktrees. The
 | `background_thread` | Long tasks, independent research, or work the user may inspect or continue later. | Record thread id, handoff, and returned summary in the workflow. |
 | `thread_worktree` | Heavier write tasks that need branch isolation or should not disturb the local checkout. | Do not let multiple workers edit the same file set by default; define worktree handoff strategy. |
 
-See [multi-agent-coordination.md](multi-agent-coordination.md) for feasibility and design details. Until this is implemented formally, independent threads must still follow three constraints: each thread has a clear role and write scope, receives only the node `context-pack`, and writes a structured handoff back to the active workflow.
+See [multi-agent-coordination.md](multi-agent-coordination.md) for feasibility and design details. Independent threads must still follow three constraints: each thread has a clear role and write scope, receives only the node `context-pack`, and writes a structured handoff back to the active workflow.
 
 ## Context Packs
 
@@ -164,8 +169,9 @@ node scripts/omykit-workflow.mjs status
 node scripts/omykit-workflow.mjs next
 node scripts/omykit-workflow.mjs validate
 node scripts/omykit-workflow.mjs scorecard
-node scripts/omykit-workflow.mjs dispatch-plan --json
+node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json
 node scripts/omykit-workflow.mjs context-pack 03-implement
+node scripts/omykit-workflow.mjs assign 03-implement --agent coder-thread-01 --surface worktree --status running --scope "src/**,tests/**" --context-pack context-packs/03-implement.json --handoff handoffs/03-implement.json
 node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs start 03-implement
 node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-implement-to-04-verify.json
@@ -219,7 +225,7 @@ It writes:
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, intake decisions, a task tracker, actual node work items, downstream handoff context, handoff packets, command run records, changed-file summaries, skill usage, verification results, evidence availability, workflow evolution candidates, agent activity, model-tier policy, recommended concrete models, actual model records, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, intake decisions, a task tracker, actual node work items, downstream handoff context, handoff packets, an Agent Roster, command run records, changed-file summaries, skill usage, verification results, evidence availability, workflow evolution candidates, agent activity, model-tier policy, recommended concrete models, actual model records, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
 
 Token, context, skill, and actual-model totals are source-aware. The controller aggregates recorded node or agent usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost. Recommended models come from the selected `model_profile` and node policy; actual models come from `handoff.model`, `handoff.token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`.
 
@@ -237,6 +243,7 @@ The board is intentionally static. It does not automatically start agents, enfor
     <workflow-id>/
       graph.json
       state.json
+      assignments.jsonl
       ledger.jsonl
       decisions.md
       blockers.md
@@ -249,7 +256,7 @@ The board is intentionally static. It does not automatically start agents, enfor
       board.html
 ```
 
-`graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
+`graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `assignments.jsonl` is the runtime Agent Roster and assignment ledger. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
 
 ## Compact Recovery
 
@@ -258,17 +265,18 @@ After compact or interruption, read in this order:
 1. `.omykit/active-workflow` or explicit `--workflow <id>`
 2. `state.json`
 3. `graph.json`
-4. `context-packs/<node-id>.json` for the running or ready node; generate it first when missing
-5. latest relevant `ledger.jsonl` events
-6. active, ready, failed, or blocked node cards
-7. related handoff, command run, and evidence summaries
+4. `assignments.jsonl`
+5. `context-packs/<node-id>.json` for the running or ready node; generate it first when missing
+6. latest relevant `ledger.jsonl` events
+7. active, ready, failed, or blocked node cards
+8. related handoff, command run, and evidence summaries
 
 Only return to full source files or full evidence when exact edits, quotes, security/legal/privacy judgment, or failure root cause requires it.
 
 ## What It Does Not Do
 
 - It does not automatically spawn agents.
-- It does not treat `parallel_group` as proof of physical concurrency; actual worker activity should be recorded in handoffs or ledger events.
+- It does not treat `parallel_group` as proof of physical concurrency; actual worker activity should be recorded in `assignments.jsonl`, handoffs, or ledger events.
 - It does not call an LLM.
 - It does not run tests automatically unless Codex or a user runs commands.
 - It does not replace local project conventions.

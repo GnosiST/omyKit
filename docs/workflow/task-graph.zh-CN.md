@@ -79,7 +79,7 @@ pending -> ready -> running -> passed
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
 - handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据、skill 使用记录，以及可用时的 token 消耗、上下文用量和时间戳。
-- `dispatch-plan` 是两者之间的桥：它读取就绪节点和模型策略，返回一个有边界的子智能体派发计划，供 Codex 在子智能体工具可用时执行。
+- `dispatch-plan` 是两者之间的桥：它读取就绪节点和模型策略，返回有边界的 subagent/thread/worktree 派发计划；显式 `--surface auto` 时会为就绪节点给出执行面建议。
 - `downstream_context` 是节点交给下游的压缩事实包：保留目标、输入、证据、风险和上下文预算，避免下游重新加载整段对话。
 - `context-pack` 是 controller 生成给单个节点或子智能体的最小可执行上下文，来源于 state、graph、节点卡、依赖 handoff、`downstream_context`、最近事件和后台命令记录。
 - `commands/commands.jsonl` 只记录长命令运行事实，例如 dev server、测试 watcher、长构建和截图服务；它不代表节点通过，也不替代 handoff。

@@ -64,7 +64,7 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, with topology, agent, model, runtime, safety, and scorecard layers. | Direction is right; template set is still small. |
 | Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
 | Subagent parallelism | `dispatch-plan` emits ready nodes, worker profile, model recommendation, and context pack. | Planning and recording exist; automatic dispatch is not owned by the controller. |
-| Multi-thread / worktree agents | No built-in roster, thread id tracking, or worktree backend yet. | Main gap. |
+| Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, handoff coverage scorecard, and write-scope scorecard exist. | Recording and audit exist; the controller still does not create threads/worktrees by itself. |
 | Low-context continuation | `active-workflow`, `context-pack`, `downstream_context`, and `commands/commands.jsonl`. | Solid base; missing thread-aware resume packets. |
 | Board | Shows tasks, evidence, skills, models, token/context, timing, commands, handoff packets, and improvement actions. | Upgraded into a task tracker, but not a realtime scheduler. |
 | Task-fit model choice | Model profiles recommend `fast`, `standard`, `frontier`, and concrete models. | Recommendations and records exist; actual switching depends on Codex runtime support. |
@@ -103,10 +103,10 @@ The "contact list" should be split into template and runtime layers:
 | --- | --- | --- |
 | Template layer | `workflow-templates/common/agents.yaml` | Stable roles such as planner, researcher, coder, tester, reviewer, delivery, UX designer, and visual QA. |
 | Node layer | graph / node card | Suggested role, model tier, execution surface, write scope, and handoff target for the node. |
-| Runtime layer | `state.json` / `ledger.jsonl` / future `assignments.jsonl` | Actual Codex thread, subagent, worktree, model, start/end time, and evidence path. |
+| Runtime layer | `state.json` / `ledger.jsonl` / `assignments.jsonl` | Actual Codex thread, subagent, worktree, model, start/end time, and evidence path. |
 | Handoff layer | `handoffs/*.json` | Real outputs, `downstream_context`, evidence, usage, skill/model records. |
 
-Suggested future `agent_roster` or `assignments` record:
+Runtime `assignments.jsonl` record shape:
 
 ```json
 {
@@ -123,15 +123,21 @@ Suggested future `agent_roster` or `assignments` record:
 }
 ```
 
-## Optimization Roadmap
+## Implemented First Slice
 
-1. Add thread-native semantics to skills and docs: distinguish `subagent`, `background_thread`, and `thread_worktree`.
-2. Add `dispatch-plan --surface subagent|thread|worktree|auto` so dispatch plans can produce prompts suitable for creating background threads.
-3. Add a runtime assignment ledger such as `.omykit/workflows/<id>/assignments.jsonl` to record `thread_id`, worktree, worker, model, scope, status, and handoff path.
-4. Extend the board with "Agent Roster / Thread Map": role, surface, thread status, work scope, upstream/downstream links, latest event, and human blockers.
-5. Add thread-aware scorecard checks: overlapping write scopes, missing background-thread handoff, and missing thread summary in the main workflow.
-6. Keep write-heavy parallelism conservative: by default, do not let two background threads edit the same file set unless write scopes are disjoint or worktrees isolate them.
-7. Strengthen resume: after compact, the main controller reads active workflow, assignments, context pack, thread summaries, and only then decides which thread to continue or hand off locally.
+1. `dispatch-plan --surface auto|subagent|thread|worktree|main` emits a recommended execution surface for ready nodes.
+2. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, and handoff path.
+3. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
+4. Scorecards check assignment handoff coverage and active write-scope conflicts.
+5. Compact recovery now includes `assignments.jsonl` before context packs, so the orchestrator can recover the roster first.
+
+## Remaining Optimization Roadmap
+
+1. Integrate Codex app thread tools so explicit background/thread requests can create bounded threads or worktrees.
+2. Add helpers that pull thread summaries and write them back into structured handoffs without loading full worker history into the main thread.
+3. Extend the board into a richer Thread Map with thread status, last message, handoff return, and human-intervention nodes.
+4. Keep write-heavy parallelism conservative: by default, do not let two background threads edit the same file set unless write scopes are disjoint or worktrees isolate them.
+5. Strengthen resume: after compact, the main controller reads active workflow, assignments, context pack, thread summaries, and only then decides which thread to continue or hand off locally.
 
 ## What Not To Do
 
@@ -143,10 +149,4 @@ Suggested future `agent_roster` or `assignments` record:
 
 ## Next Step
 
-The next useful implementation is a small formal thread-native version:
-
-1. Add `dispatch-plan --surface auto`, recommending `main-thread`, `subagent`, `background_thread`, or `thread_worktree` per ready node.
-2. Add `assign` / `assignment-record` commands for the runtime roster.
-3. Extend the board with "Agent Roster" and "Thread Map".
-4. Extend scorecards to verify background workers submit structured handoffs.
-5. Dogfood on omyKit itself by splitting docs and tests into independent threads, while avoiding concurrent edits to the same core script.
+The next useful implementation is the actual Codex app thread backend: when the user explicitly authorizes background/independent threads, the orchestrator creates a thread/worktree, sends the node context pack as the start message, records the returned summary as a handoff, and writes thread id, worktree path, and final status back into `assignments.jsonl`.

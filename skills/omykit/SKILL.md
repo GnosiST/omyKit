@@ -38,8 +38,9 @@ Map user intent to commands:
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
 - progress/status -> `status`
 - next work -> `next`
-- subagent dispatch planning -> `dispatch-plan --lang <user-language>`; use `--json` when you need a machine-readable plan for spawning agents
+- subagent/thread dispatch planning -> `dispatch-plan --surface auto --lang <user-language>`; use `--json` when you need a machine-readable plan for spawning agents or threads
 - generate a bounded handoff/context packet -> `context-pack <node-id> --lang <user-language>`
+- record a worker/thread assignment -> `assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status running --context-pack <path> --handoff <path>`
 - list or switch tracked workflows -> `workflows` or `workflows use <workflow-id>`
 - record long-running command metadata -> `record-run <node-id> --id <run-id> --command <cmd> --status <status> --log <path> --resume <cmd>`
 - continue after interruption -> `resume`
@@ -74,7 +75,7 @@ Include these concise groups:
 - execute long work: `$omykit 开始执行：<任务>`, `$omykit 创建并执行工作流：<任务>`, `$omykit 继续工作流`, `$omykit 推进下一步`
 - skeleton only: `$omykit 只创建工作流：<任务>`, `$omykit 只初始化 workflow：<任务>`
 - tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`
-- coordination: `$omykit 派发计划`, `$omykit 交接包`, `$omykit 查看工作流列表`, `$omykit 切换工作流：<id>`
+- coordination: `$omykit 派发计划`, `$omykit 记录分工`, `$omykit 交接包`, `$omykit 查看工作流列表`, `$omykit 切换工作流：<id>`
 - subagents: `$omykit 子智能体执行计划`, `$omykit 并行执行计划`
 - task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
@@ -158,7 +159,7 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 
 Use subagents only when work can be split into independent, bounded scopes. For tracked long work, keep the main Codex thread as an orchestrator-observer: it reads workflow state, creates or reads a dispatch plan, generates context packs, starts/blocks/completes nodes, integrates handoffs, audits scorecards, and escalates only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main context. Spawn subagents with bounded node context instead.
 
-When the Codex app exposes thread-management tools and the user explicitly asks for separate/background threads, prefer thread or worktree execution for long-running, write-heavy, independently reviewable work. Keep same-turn subagents for short exploration, review, test analysis, and other read-heavy tasks. Independent threads must still receive the node `context-pack`, have a disjoint or clearly bounded write scope, and write a structured handoff back to the active workflow. Until omyKit has a formal assignment ledger, record thread/worktree facts in `agent_activity`, `non_blocking_notes`, or workflow evidence rather than pretending the controller created them.
+When the Codex app exposes thread-management tools and the user explicitly asks for separate/background threads, prefer thread or worktree execution for long-running, write-heavy, independently reviewable work. Keep same-turn subagents for short exploration, review, test analysis, and other read-heavy tasks. Independent threads must still receive the node `context-pack`, have a disjoint or clearly bounded write scope, and write a structured handoff back to the active workflow. Record the runtime assignment with `assign` so `assignments.jsonl`, the board Agent Roster, and scorecard checks can audit the thread/worktree facts. Do not imply the controller itself created a Codex thread unless the current runtime tool actually did it.
 
 Subagents must hand off through the controller, not through informal chat alone. Before delegation or recovery, generate a context pack for the node. The worker receives that pack, exact files only when needed, and a handoff contract. The completed handoff must include `downstream_context` when later nodes need a compact, accurate carry-forward summary.
 

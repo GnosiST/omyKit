@@ -31,6 +31,8 @@ const TASK_COMPLEXITIES = new Set(["simple", "standard", "complex", "expert"]);
 const MODEL_TIERS = new Set(["fast", "standard", "frontier"]);
 const EVOLUTION_SCOPES = new Set(["generic_omykit", "project_local", "one_off", "volatile_ecosystem"]);
 const EVOLUTION_PROMOTION_STATUSES = new Set(["candidate", "promoted", "not_promoted", "needs_review"]);
+const EXECUTION_SURFACES = new Set(["main-thread", "subagent", "background_thread", "thread_worktree"]);
+const ASSIGNMENT_STATUSES = new Set(["planned", "running", "handoff_received", "passed", "failed", "blocked", "cancelled"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
@@ -82,6 +84,12 @@ const BOARD_LABELS = {
     noEdges: "No edges",
     noRejectEdges: "No reject edges",
     collaborationLanes: "Collaboration Lanes",
+    agentRoster: "Agent Roster",
+    assignments: "Assignments",
+    executionSurface: "Execution surface",
+    threadId: "Thread ID",
+    worktreePath: "Worktree",
+    writeScope: "Write scope",
     nodes: "Nodes",
     counts: "Counts",
     unclaimedReady: "Unclaimed ready",
@@ -290,6 +298,12 @@ const BOARD_LABELS = {
     noEdges: "无边",
     noRejectEdges: "无打回边",
     collaborationLanes: "协作泳道",
+    agentRoster: "Agent 通讯录",
+    assignments: "任务分配",
+    executionSurface: "执行面",
+    threadId: "Thread ID",
+    worktreePath: "Worktree",
+    writeScope: "写入范围",
     nodes: "节点",
     counts: "计数",
     unclaimedReady: "未认领就绪节点",
@@ -1077,8 +1091,9 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
-  node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--json]
+  node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
   node scripts/omykit-workflow.mjs validate [--workflow workflow-id]
   node scripts/omykit-workflow.mjs scorecard [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs record-run <node-id> --id <run-id> --command <cmd> --status running|passed|failed|stopped [--log <path>] [--pid <pid>] [--resume <cmd>] [--workflow workflow-id]
@@ -1096,6 +1111,7 @@ Codex chat intents:
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
   $omykit 继续工作流             resume, start the next ready node, and write handoffs as work completes
   $omykit 派发计划               show which ready nodes can be delegated and which model to recommend
+  $omykit 记录分工               record a subagent/thread/worktree assignment in the workflow ledger
   $omykit 交接包                 generate the smallest context pack for the next node or worker
   $omykit 查看工作流列表         list workflows and switch the active workflow when needed
   $omykit 解除阻塞               unblock a blocked node after the blocker is resolved
@@ -2005,6 +2021,7 @@ function validateWorkflow(workflowDir) {
     errors.push(...validateState(graph, state));
     errors.push(...validateNodeCards(workflowDir, graph));
     errors.push(...validateHandoffFiles(workflowDir, graph));
+    errors.push(...validateAssignments(workflowDir, graph));
   }
   return errors;
 }
@@ -2381,6 +2398,95 @@ function loadHandoffs(workflowDir) {
     }
   }
   return { records, byPath, byNode };
+}
+
+function assignmentsFile(workflowDir) {
+  return path.join(workflowDir, "assignments.jsonl");
+}
+
+function splitCsv(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeExecutionSurface(value, fallback = "subagent") {
+  const normalized = String(value || fallback).trim().toLowerCase().replace(/-/g, "_");
+  if (["main", "main_thread", "mainthread", "orchestrator"].includes(normalized)) return "main-thread";
+  if (["thread", "background", "background_thread"].includes(normalized)) return "background_thread";
+  if (["worktree", "thread_worktree", "background_worktree"].includes(normalized)) return "thread_worktree";
+  if (normalized === "subagent") return "subagent";
+  return value || fallback;
+}
+
+function loadAssignments(workflowDir) {
+  const file = assignmentsFile(workflowDir);
+  const records = [];
+  const invalid = [];
+  if (!fs.existsSync(file)) return { file, records, invalid };
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter((line) => line.trim());
+  lines.forEach((line, index) => {
+    try {
+      records.push({ ...JSON.parse(line), line: index + 1 });
+    } catch (error) {
+      invalid.push({ line: index + 1, error: error.message });
+    }
+  });
+  return { file, records, invalid };
+}
+
+function latestAssignmentForNode(assignments, nodeId) {
+  const records = assignments?.records || [];
+  return [...records].reverse().find((record) => record.node_id === nodeId) || null;
+}
+
+function assignmentHandoffExists(workflowDir, assignment) {
+  if (!assignment?.handoff_path) return false;
+  const workflowPath = path.join(workflowDir, assignment.handoff_path);
+  const projectPath = path.join(projectRootFromWorkflow(workflowDir), assignment.handoff_path);
+  return fs.existsSync(workflowPath) || fs.existsSync(projectPath);
+}
+
+function validateAssignmentRecord(graph, record, index) {
+  const label = `assignments.jsonl:${record.line || index + 1}`;
+  const errors = [];
+  const map = nodeMap(graph);
+  if (record.schema_version !== SCHEMA_VERSION) errors.push(`${label}: schema_version must be 1`);
+  if (record.workflow_id !== graph.workflow_id) errors.push(`${label}: workflow_id must match graph.workflow_id`);
+  if (!record.node_id || !map.has(record.node_id)) errors.push(`${label}: node_id must reference an existing node`);
+  if (!record.agent_id) errors.push(`${label}: agent_id is required`);
+  if (record.agent_id && !AGENT_ID_PATTERN.test(record.agent_id)) {
+    errors.push(`${label}: agent_id must use lowercase letters, digits, dot, colon, underscore, or hyphen`);
+  }
+  if (!record.role || typeof record.role !== "string") errors.push(`${label}: role is required`);
+  if (!EXECUTION_SURFACES.has(record.execution_surface)) {
+    errors.push(`${label}: execution_surface must be one of ${[...EXECUTION_SURFACES].join(", ")}`);
+  }
+  if (!ASSIGNMENT_STATUSES.has(record.status)) {
+    errors.push(`${label}: status must be one of ${[...ASSIGNMENT_STATUSES].join(", ")}`);
+  }
+  if (record.model_tier !== undefined && record.model_tier !== null && !MODEL_TIERS.has(record.model_tier)) {
+    errors.push(`${label}: model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
+  }
+  if (record.write_scope !== undefined && (!Array.isArray(record.write_scope) || record.write_scope.some((item) => typeof item !== "string" || !item))) {
+    errors.push(`${label}: write_scope must be an array of non-empty strings`);
+  }
+  for (const field of ["thread_id", "worktree_path", "context_pack", "handoff_path", "model", "notes"]) {
+    if (record[field] !== undefined && record[field] !== null && typeof record[field] !== "string") {
+      errors.push(`${label}: ${field} must be a string or null`);
+    }
+  }
+  return errors;
+}
+
+function validateAssignments(workflowDir, graph) {
+  const assignments = loadAssignments(workflowDir);
+  const errors = assignments.invalid.map((item) => `assignments.jsonl:${item.line}: invalid JSON: ${item.error}`);
+  assignments.records.forEach((record, index) => {
+    errors.push(...validateAssignmentRecord(graph, record, index));
+  });
+  return errors;
 }
 
 function latestHandoffForNode(entry, handoffs, nodeId) {
@@ -3147,7 +3253,129 @@ function buildParallelGroups(projectedNodes) {
   }));
 }
 
-function buildCollaboration(projectedNodes) {
+function activeAssignment(record) {
+  return !["passed", "failed", "blocked", "cancelled"].includes(record.status);
+}
+
+function scopeOverlaps(left, right) {
+  if (!left || !right) return false;
+  if (left === right || left === "**" || right === "**") return true;
+  const leftPrefix = left.endsWith("/**") ? left.slice(0, -3) : null;
+  const rightPrefix = right.endsWith("/**") ? right.slice(0, -3) : null;
+  if (leftPrefix && right.startsWith(leftPrefix)) return true;
+  if (rightPrefix && left.startsWith(rightPrefix)) return true;
+  return false;
+}
+
+function buildAssignmentProjection(workflowDir, assignmentData, projectedNodes) {
+  const records = assignmentData.records.map((record) => ({
+    assignment_id: record.assignment_id || `${record.node_id}:${record.agent_id}:${record.line || "record"}`,
+    workflow_id: record.workflow_id,
+    node_id: record.node_id,
+    agent_id: record.agent_id,
+    role: record.role,
+    execution_surface: record.execution_surface,
+    status: record.status,
+    thread_id: record.thread_id || null,
+    worktree_path: record.worktree_path || null,
+    model_tier: record.model_tier || null,
+    model: record.model || null,
+    write_scope: Array.isArray(record.write_scope) ? record.write_scope : [],
+    context_pack: record.context_pack || null,
+    handoff_path: record.handoff_path || null,
+    handoff_exists: assignmentHandoffExists(workflowDir, record),
+    notes: record.notes || null,
+    at: record.at || null,
+    line: record.line || null,
+  }));
+  const nodes = new Set(projectedNodes.map((node) => node.id));
+  const byNode = [...nodes].map((nodeId) => ({
+    node_id: nodeId,
+    assignments: records.filter((record) => record.node_id === nodeId),
+  })).filter((item) => item.assignments.length > 0);
+  const byAgentMap = new Map();
+  const bySurfaceMap = new Map();
+  for (const record of records) {
+    if (!byAgentMap.has(record.agent_id)) {
+      byAgentMap.set(record.agent_id, {
+        agent_id: record.agent_id,
+        role: record.role,
+        execution_surface: record.execution_surface,
+        nodes: [],
+        statuses: {},
+        thread_ids: new Set(),
+        worktrees: new Set(),
+      });
+    }
+    const agent = byAgentMap.get(record.agent_id);
+    agent.nodes.push(record.node_id);
+    agent.statuses[record.status] = (agent.statuses[record.status] || 0) + 1;
+    if (record.thread_id) agent.thread_ids.add(record.thread_id);
+    if (record.worktree_path) agent.worktrees.add(record.worktree_path);
+
+    if (!bySurfaceMap.has(record.execution_surface)) {
+      bySurfaceMap.set(record.execution_surface, { execution_surface: record.execution_surface, count: 0, nodes: [] });
+    }
+    const surface = bySurfaceMap.get(record.execution_surface);
+    surface.count += 1;
+    surface.nodes.push(record.node_id);
+  }
+  const activeRecords = records.filter(activeAssignment);
+  const missingHandoffs = records
+    .filter((record) => record.status !== "cancelled")
+    .filter((record) => !record.handoff_exists)
+    .map((record) => ({
+      node_id: record.node_id,
+      agent_id: record.agent_id,
+      status: record.status,
+      handoff_path: record.handoff_path || null,
+    }));
+  const conflicts = [];
+  for (let i = 0; i < activeRecords.length; i += 1) {
+    for (let j = i + 1; j < activeRecords.length; j += 1) {
+      const left = activeRecords[i];
+      const right = activeRecords[j];
+      if (left.agent_id === right.agent_id) continue;
+      for (const leftScope of left.write_scope) {
+        for (const rightScope of right.write_scope) {
+          if (scopeOverlaps(leftScope, rightScope)) {
+            conflicts.push({
+              left_agent_id: left.agent_id,
+              left_node_id: left.node_id,
+              right_agent_id: right.agent_id,
+              right_node_id: right.node_id,
+              scope: leftScope === rightScope ? leftScope : `${leftScope} <> ${rightScope}`,
+            });
+          }
+        }
+      }
+    }
+  }
+  return {
+    file: path.basename(assignmentData.file),
+    records,
+    active: activeRecords,
+    by_node: byNode,
+    by_agent: [...byAgentMap.values()].map((agent) => ({
+      agent_id: agent.agent_id,
+      role: agent.role,
+      execution_surface: agent.execution_surface,
+      nodes: [...new Set(agent.nodes)],
+      statuses: agent.statuses,
+      thread_ids: [...agent.thread_ids],
+      worktrees: [...agent.worktrees],
+    })),
+    by_surface: [...bySurfaceMap.values()].map((surface) => ({
+      execution_surface: surface.execution_surface,
+      count: surface.count,
+      nodes: [...new Set(surface.nodes)],
+    })),
+    missing_handoffs: missingHandoffs,
+    write_scope_conflicts: conflicts,
+  };
+}
+
+function buildCollaboration(projectedNodes, assignments = null) {
   const profiles = new Map();
   for (const node of projectedNodes) {
     const profile = node.worker_profile || "unassigned";
@@ -3174,6 +3402,7 @@ function buildCollaboration(projectedNodes) {
     }));
   return {
     worker_profiles: workerProfiles,
+    agent_roster: assignments?.by_agent || [],
     unclaimed_ready: projectedNodes
       .filter((node) => node.status === "ready" && !node.claimed_by)
       .map((node) => node.id),
@@ -3542,6 +3771,7 @@ function buildContextPackPayload(board, nodeId) {
     next_action: board.summary.next_recommended_action,
     dependency_handoffs: dependencyHandoffSummaries(node, nodes),
     downstream_contexts: downstreamContextsForNode(nodes, node.id),
+    assignments: board.assignments?.by_node.find((item) => item.node_id === node.id)?.assignments || [],
     handoff_contract: {
       required: true,
       output_path: `handoffs/${node.id}.json`,
@@ -3612,7 +3842,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands = null, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -3714,6 +3944,26 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
         ? `查看日志或续接命令：${commands.active.map((item) => item.run_id).join(", ")}。`
         : `Inspect logs or resume commands for: ${commands.active.map((item) => item.run_id).join(", ")}.`,
       commands.active.map((item) => item.node_id),
+    ));
+  }
+  if (assignments?.missing_handoffs?.length > 0) {
+    items.push(recommendation(
+      "assignment-missing-handoff",
+      "medium",
+      isZh ? "Agent 分配缺少可读取交接" : "Agent assignments are missing readable handoffs",
+      isZh ? "有 assignment 已经记录到通讯录，但对应 handoff 文件尚不可读取，主控无法可靠汇聚结果。" : "Assignments are recorded, but their handoff files are not readable, so the orchestrator cannot reliably join results.",
+      isZh ? "让对应 worker 写入 handoff，或把 assignment 标记为 blocked/cancelled 并记录原因。" : "Ask the worker to write the handoff, or mark the assignment blocked/cancelled with a reason.",
+      assignments.missing_handoffs.map((item) => item.node_id),
+    ));
+  }
+  if (assignments?.write_scope_conflicts?.length > 0) {
+    items.push(recommendation(
+      "assignment-write-scope-conflict",
+      "high",
+      isZh ? "Agent 写入范围重叠" : "Agent write scopes overlap",
+      isZh ? "多个活跃 assignment 可能同时改同一范围，容易产生冲突或覆盖。" : "Multiple active assignments may edit the same scope, increasing conflict and overwrite risk.",
+      isZh ? "缩小 write_scope、串行化相关节点，或改用隔离 worktree。" : "Narrow write_scope, serialize related nodes, or isolate work with worktrees.",
+      assignments.write_scope_conflicts.flatMap((item) => [item.left_node_id, item.right_node_id]),
     ));
   }
   if (evolution.generic_candidates.length > 0) {
@@ -3853,7 +4103,7 @@ function scorecardResult(check, status, language, failingNodes = [], detail = nu
   };
 }
 
-function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) {
+function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignments, language) {
   const evidence = check.evidence || {};
   const terminalNodes = projectedNodes.filter((node) => TERMINAL_STATUSES.has(node.status));
   const passedNodes = projectedNodes.filter((node) => node.status === "passed");
@@ -3960,6 +4210,16 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
         .map(({ node }) => node.id);
       return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "子智能体活动需要记录实际模型，或说明运行时没有暴露模型。" : "Subagent activity must record the actual model or explain why the runtime did not expose it.");
     }
+    case "assignment_handoff_coverage": {
+      if (!assignments || assignments.records.length === 0) return pending();
+      const failing = assignments.missing_handoffs.map((item) => item.node_id);
+      return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "部分 agent assignment 尚未产生可读取的 handoff。" : "Some agent assignments do not yet have readable handoffs.");
+    }
+    case "assignment_write_scope_conflicts": {
+      if (!assignments || assignments.records.length === 0) return pending();
+      const failing = assignments.write_scope_conflicts.flatMap((item) => [item.left_node_id, item.right_node_id]);
+      return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "多个活跃 agent assignment 的写入范围重叠，需要收敛或隔离 worktree。" : "Multiple active agent assignments have overlapping write scopes; narrow scope or isolate worktrees.");
+    }
     case "skills_used_recorded": {
       if (terminalNodes.length === 0) return pending();
       const failing = terminalNodes.filter((node) => node.skills_used.length === 0).map((node) => node.id);
@@ -3985,7 +4245,7 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
   }
 }
 
-function evaluateScorecards(graph, projectedNodes, project, language) {
+function evaluateScorecards(graph, projectedNodes, project, assignments, language) {
   let definitions = [];
   try {
     definitions = loadScorecardsForGraph(graph);
@@ -4007,7 +4267,7 @@ function evaluateScorecards(graph, projectedNodes, project, language) {
   const checks = [];
   for (const definition of definitions) {
     for (const check of definition.checks || []) {
-      const result = evaluateEvidenceCheck(check, projectedNodes, graph, project, language);
+      const result = evaluateEvidenceCheck(check, projectedNodes, graph, project, assignments, language);
       checks.push({
         scorecard_id: definition.scorecard_id,
         scorecard_name: localizedValue(definition.name, language) || definition.scorecard_id,
@@ -4037,8 +4297,10 @@ function evaluateScorecards(graph, projectedNodes, project, language) {
 function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const cards = loadNodeCards(workflowDir, graph);
   const handoffs = loadHandoffs(workflowDir);
+  const assignmentData = loadAssignments(workflowDir);
   const allEvents = readLedgerEvents(workflowDir, 1000);
   const projectedNodes = graph.nodes.map((node) => projectNode(workflowDir, state, cards, handoffs, allEvents, node, language));
+  const assignments = buildAssignmentProjection(workflowDir, assignmentData, projectedNodes);
   const counts = statusCounts(projectedNodes);
   const columns = {};
   for (const status of COLUMN_STATUSES) {
@@ -4057,8 +4319,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
-  const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands, language);
+  const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands, assignments, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -4107,6 +4369,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
       agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
+      assignments: assignments.records.length,
       next_recommended_action: nextRecommendedAction(graph, state, language),
       critical_path: critical,
       latest_ledger_event: recentEvents[recentEvents.length - 1] || null,
@@ -4126,7 +4389,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       parallel_groups: buildParallelGroups(projectedNodes),
       critical_path: critical,
     },
-    collaboration: buildCollaboration(projectedNodes),
+    collaboration: buildCollaboration(projectedNodes, assignments),
+    assignments,
     usage,
     context,
     skills,
@@ -4157,6 +4421,28 @@ function codexModelOverrideName(model) {
 
 function dispatchAgentType(node) {
   return node.type === "research" ? "explorer" : "worker";
+}
+
+function normalizeDispatchSurfaceOption(value) {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase().replace(/-/g, "_");
+  if (normalized === "auto") return "auto";
+  return normalizeExecutionSurface(normalized);
+}
+
+function preferredAutoSurface(node) {
+  if (node.type === "implement") return "thread_worktree";
+  if (["verify", "review"].includes(node.type) && ["complex", "expert"].includes(node.task_complexity)) return "background_thread";
+  return "subagent";
+}
+
+function requestedExecutionSurface(node, requestedSurface, canStartNow, eligibility, assignment) {
+  if (assignment?.execution_surface) return assignment.execution_surface;
+  if (!eligibility.eligible) return "main-thread";
+  if (!canStartNow) return "wait_for_parallel_slot";
+  if (!requestedSurface) return "subagent";
+  if (requestedSurface === "auto") return preferredAutoSurface(node);
+  return requestedSurface;
 }
 
 function dispatchEligibility(node, language) {
@@ -4195,30 +4481,43 @@ function nodeContextPack(node) {
   return pack;
 }
 
-function buildDispatchPlan(board) {
+function buildDispatchPlan(board, options = {}) {
   const language = board.language || "en";
   const isZh = language === "zh-CN";
+  const requestedSurface = normalizeDispatchSurfaceOption(options.surface);
   const safetyId = board.template?.layers?.safety_limits || null;
   const safety = loadSafetyLimitDefinition(safetyId);
   const maxParallel = Number.isFinite(safety?.max_parallel_running_nodes) ? safety.max_parallel_running_nodes : null;
   const runningCount = board.columns.running.length;
   let availableSlots = maxParallel === null ? board.columns.ready.length : Math.max(0, maxParallel - runningCount);
   const ready = board.columns.ready.map((node) => {
+    const assignment = latestAssignmentForNode(board.assignments, node.id);
+    const hasActiveAssignment = Boolean(assignment && activeAssignment(assignment));
     const eligibility = dispatchEligibility(node, language);
-    const canStartNow = eligibility.eligible && availableSlots > 0;
+    const canStartNow = (eligibility.eligible || hasActiveAssignment) && availableSlots > 0;
     if (canStartNow) availableSlots -= 1;
     const modelOverride = codexModelOverrideName(node.recommended_model);
-    const executor = canStartNow ? "subagent" : eligibility.eligible ? "wait_for_parallel_slot" : "main-thread";
+    const executionSurface = requestedExecutionSurface(node, requestedSurface, canStartNow, eligibility, assignment);
+    const executor = requestedSurface ? executionSurface : canStartNow ? "subagent" : eligibility.eligible ? "wait_for_parallel_slot" : "main-thread";
     return {
       node_id: node.id,
       title: node.display_title || node.title,
       type: node.type,
       status: node.status,
       executor,
+      execution_surface: executionSurface,
       agent_type: canStartNow ? dispatchAgentType(node) : null,
       worker_profile: node.worker_profile || null,
       agent: node.agent || null,
       parallel_group: node.parallel_group || null,
+      assignment: assignment ? {
+        agent_id: assignment.agent_id,
+        role: assignment.role,
+        status: assignment.status,
+        execution_surface: assignment.execution_surface,
+        thread_id: assignment.thread_id || null,
+        worktree_path: assignment.worktree_path || null,
+      } : null,
       model_tier: node.model_tier,
       recommended_model: node.recommended_model || null,
       model_override: modelOverride,
@@ -4226,7 +4525,9 @@ function buildDispatchPlan(board) {
         ? "仅当 Codex 子智能体工具支持 model 参数时传入；否则继承主模型并在 handoff 记录实际模型缺口。"
         : "Pass only when the Codex subagent tool supports a model parameter; otherwise inherit the main model and record the actual-model gap in handoff.",
       dispatch_reason: canStartNow
-        ? eligibility.reason
+        ? hasActiveAssignment
+          ? (isZh ? "已有显式 assignment 记录，按通讯录执行面继续跟踪。" : "Explicit assignment exists; track by the recorded execution surface.")
+          : eligibility.reason
         : eligibility.eligible
           ? (isZh ? "已达到并行上限，等待运行中节点交付或解除占用。" : "Parallel limit reached; wait for a running node to hand off or free a slot.")
           : eligibility.reason,
@@ -4265,6 +4566,8 @@ function buildDispatchPlan(board) {
     runtime_capability: {
       controller_calls_models: false,
       controller_spawns_agents: false,
+      supported_surfaces: [...EXECUTION_SURFACES],
+      requested_surface: requestedSurface || "legacy-subagent",
       codex_subagent_model_override: "available_when_runtime_tool_supports_model_parameter",
       fallback: "inherit_parent_model_and_record_recommended_vs_actual_gap",
     },
@@ -4287,7 +4590,7 @@ function printDispatchPlan(plan) {
     console.log(isZh ? "无" : "none");
   } else {
     for (const item of plan.ready_dispatches) {
-      console.log(`- ${item.node_id} ${item.title} | executor=${item.executor} | agent_type=${item.agent_type || "none"} | worker=${item.worker_profile || "none"} | tier=${item.model_tier || "none"} | recommended=${item.recommended_model || "none"} | override=${item.model_override || "inherit"}`);
+      console.log(`- ${item.node_id} ${item.title} | executor=${item.executor} | surface=${item.execution_surface || "none"} | agent_type=${item.agent_type || "none"} | worker=${item.worker_profile || "none"} | tier=${item.model_tier || "none"} | recommended=${item.recommended_model || "none"} | override=${item.model_override || "inherit"}`);
       console.log(`  ${isZh ? "原因" : "Reason"}: ${item.dispatch_reason}`);
       console.log(`  ${isZh ? "上下文包" : "Context pack"}: ${item.context_pack.join(", ")}`);
     }
@@ -4580,6 +4883,15 @@ function renderAgentActivity(items, text) {
     const context = item.context_usage?.recorded ? `<p>${escapeHtml(text.contextUsage)}: ${escapeHtml(item.context_usage.estimated_tokens || item.context_usage.source_bytes || text.notRecorded)} (${escapeHtml(item.context_usage.source)})</p>` : "";
     const timing = [item.started_at, item.completed_at].filter(Boolean).join(" -> ");
     return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)} · ${escapeHtml(item.mode || "subagent")}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${skills}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
+  });
+}
+
+function renderAgentRoster(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    const nodes = item.nodes?.length ? renderNodeLinks(item.nodes, text) : `<span class="muted">${escapeHtml(text.none)}</span>`;
+    const threads = item.thread_ids?.length ? item.thread_ids.join(", ") : text.none;
+    const worktrees = item.worktrees?.length ? item.worktrees.join(", ") : text.none;
+    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role || "")}<dl><dt>${escapeHtml(text.executionSurface)}</dt><dd>${escapeHtml(item.execution_surface || text.none)}</dd><dt>${escapeHtml(text.nodes)}</dt><dd>${nodes}</dd><dt>${escapeHtml(text.counts)}</dt><dd>${escapeHtml(Object.entries(item.statuses || {}).map(([status, count]) => `${status}:${count}`).join(", ") || text.none)}</dd><dt>${escapeHtml(text.threadId)}</dt><dd>${escapeHtml(threads)}</dd><dt>${escapeHtml(text.worktreePath)}</dt><dd>${escapeHtml(worktrees)}</dd></dl>`;
   });
 }
 
@@ -4938,6 +5250,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.intakeDecision, board.summary.intake_decisions, "#node-details")}
         ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
+        ${renderMetric(text.assignments, board.summary.assignments, "#agent-roster")}
         ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates, "#workflow-evolution")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
@@ -5128,6 +5441,17 @@ function renderBoardHtml(board) {
         <p><strong>${escapeHtml(text.leases)}:</strong></p>
         ${renderLeaseItems(board.collaboration.leases, text)}
       </div>
+    </section>
+
+    <section class="panel" id="agent-roster">
+      <h2>${escapeHtml(text.agentRoster)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.assignments, board.assignments.records.length)}
+        ${renderMetric(text.running, board.assignments.active.length)}
+        ${renderMetric(text.handoff, board.assignments.missing_handoffs.length)}
+        ${renderMetric(text.writeScope, board.assignments.write_scope_conflicts.length)}
+      </div>
+      ${renderAgentRoster(board.collaboration.agent_roster, text)}
     </section>
 
     <section class="panel">
@@ -5434,12 +5758,75 @@ function cmdDispatchPlan(options) {
   const { graph, state } = loadWorkflow(workflowDir);
   const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
   const board = buildBoardProjection(workflowDir, graph, state, language);
-  const plan = buildDispatchPlan(board);
+  const requestedSurface = normalizeDispatchSurfaceOption(options.surface);
+  if (options.surface && !["auto", ...EXECUTION_SURFACES].includes(requestedSurface)) {
+    throw new Error(`--surface must be one of auto, ${[...EXECUTION_SURFACES].join(", ")}`);
+  }
+  const plan = buildDispatchPlan(board, { surface: requestedSurface });
   if (options.json) {
     console.log(JSON.stringify(plan, null, 2));
     return;
   }
   printDispatchPlan(plan);
+}
+
+function cmdAssign(positional, options) {
+  const nodeId = positional[0];
+  if (!nodeId) throw new Error("assign requires a node id");
+  const workflowDir = resolveWorkflowDir(options);
+  const { graph, state } = loadWorkflow(workflowDir);
+  const node = requireNode(graph, nodeId);
+  const agentId = options.agent ? String(options.agent) : null;
+  if (!agentId) throw new Error("assign requires --agent <agent-id>");
+  if (!AGENT_ID_PATTERN.test(agentId)) {
+    throw new Error("--agent must use lowercase letters, digits, dot, colon, underscore, or hyphen");
+  }
+  const surface = normalizeExecutionSurface(options.surface || "subagent");
+  if (!EXECUTION_SURFACES.has(surface)) throw new Error(`--surface must be one of ${[...EXECUTION_SURFACES].join(", ")}`);
+  const status = options.status ? String(options.status) : "planned";
+  if (!ASSIGNMENT_STATUSES.has(status)) throw new Error(`--status must be one of ${[...ASSIGNMENT_STATUSES].join(", ")}`);
+  const modelTier = options["model-tier"] ? String(options["model-tier"]) : null;
+  if (modelTier && !MODEL_TIERS.has(modelTier)) throw new Error(`--model-tier must be one of ${[...MODEL_TIERS].join(", ")}`);
+  const role = options.role ? String(options.role) : node.agent || node.worker_profile || dispatchAgentType(node);
+  const record = {
+    schema_version: SCHEMA_VERSION,
+    at: now(),
+    workflow_id: graph.workflow_id,
+    assignment_id: `${nodeId}:${agentId}:${Date.now()}`,
+    node_id: nodeId,
+    agent_id: agentId,
+    role,
+    execution_surface: surface,
+    status,
+    thread_id: options.thread ? String(options.thread) : null,
+    worktree_path: options.worktree ? String(options.worktree) : null,
+    model_tier: modelTier || node.model_tier || null,
+    model: options.model ? String(options.model) : null,
+    write_scope: splitCsv(options.scope),
+    context_pack: options["context-pack"] ? String(options["context-pack"]) : null,
+    handoff_path: options.handoff ? String(options.handoff) : null,
+    notes: options.notes ? String(options.notes) : null,
+  };
+  const errors = validateAssignmentRecord(graph, record, 0);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  appendText(assignmentsFile(workflowDir), `${JSON.stringify(record)}\n`);
+  appendLedger(workflowDir, {
+    event: "assignment.record",
+    node_id: nodeId,
+    agent_id: agentId,
+    execution_surface: surface,
+    status,
+    thread_id: record.thread_id,
+    worktree_path: record.worktree_path,
+    context_pack: record.context_pack,
+    handoff_path: record.handoff_path,
+  });
+  console.log(`Assignment recorded: ${agentId}`);
+  console.log(`Node: ${nodeId}`);
+  console.log(`Surface: ${surface}`);
+  console.log(`Status: ${status}`);
+  console.log(`Context pack: ${record.context_pack || "none"}`);
+  console.log(`Handoff: ${record.handoff_path || "none"}`);
 }
 
 function cmdContextPack(positional, options) {
@@ -5736,6 +6123,9 @@ function main() {
       return;
     case "dispatch-plan":
       cmdDispatchPlan(options);
+      return;
+    case "assign":
+      cmdAssign(positional, options);
       return;
     case "context-pack":
       cmdContextPack(positional, options);

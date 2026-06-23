@@ -31,7 +31,7 @@
       "id": "spec-kit",
       "repo": "github/spec-kit",
       "url": "https://github.com/github/spec-kit.git",
-      "baseline": "a86ee0e8b6a6ec47e3e31c80137d051f55c8a1cc",
+      "baseline": "59ffa918df3b621439fd58a6646dc9f73998b682",
       "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow",
       "verification": {
         "owner": "github",
@@ -196,7 +196,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "414782450952a196bbb64b1605a458c2531c47b6",
+      "baseline": "bbe100689073815876d330e56a200217a96a9e35",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -226,7 +226,7 @@
       "id": "motion",
       "repo": "motiondivision/motion",
       "url": "https://github.com/motiondivision/motion.git",
-      "baseline": "18c3e3e88b310afe9c6edc960d1b1327a98928ff",
+      "baseline": "f0f893e5e91323be124dec9ab9dc24188ccc66d4",
       "role": "Motion official library reference for animation implementation and Motion AI Kit adjacency",
       "verification": {
         "owner": "motiondivision",
@@ -256,7 +256,7 @@
       "id": "ffmpeg",
       "repo": "FFmpeg/FFmpeg",
       "url": "https://github.com/FFmpeg/FFmpeg.git",
-      "baseline": "30155f9c3aa869fd0a2db25809c2bf2114236d75",
+      "baseline": "8f3c62cb6acae5b753e609e25c141a6f31d0df19",
       "role": "Official FFmpeg GitHub mirror reference for media processing and export workflows",
       "verification": {
         "owner": "FFmpeg",
@@ -271,7 +271,7 @@
       "id": "docker-compose",
       "repo": "docker/compose",
       "url": "https://github.com/docker/compose.git",
-      "baseline": "9cd844243f34e0a0bc5837da5bb5cee72330da9f",
+      "baseline": "3d0dd57fbd634d78fd440c08bd4c143eb1f9d5e0",
       "role": "Official Docker Compose reference for local multi-service runtime readiness",
       "verification": {
         "owner": "docker",
@@ -361,7 +361,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "a7331a0f5a3af5f75981865a5cc41cb90ee7ae8d",
+      "baseline": "fdc58e681c21907b054cc29cec17ccd38571f43b",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

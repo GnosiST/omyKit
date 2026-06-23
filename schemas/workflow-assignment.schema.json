@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GnosiST/omyKit/schemas/workflow-assignment.schema.json",
+  "title": "omyKit Workflow Assignment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "at",
+    "workflow_id",
+    "assignment_id",
+    "node_id",
+    "agent_id",
+    "role",
+    "execution_surface",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflow_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assignment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "node_id": {
+      "type": "string",
+      "pattern": "^[0-9]{2}-[a-z0-9][a-z0-9-]*$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{1,80}$"
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_surface": {
+      "type": "string",
+      "enum": [
+        "main-thread",
+        "subagent",
+        "background_thread",
+        "thread_worktree"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "running",
+        "handoff_received",
+        "passed",
+        "failed",
+        "blocked",
+        "cancelled"
+      ]
+    },
+    "thread_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "worktree_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model_tier": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "fast",
+        "standard",
+        "frontier",
+        null
+      ]
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "write_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "context_pack": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "handoff_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

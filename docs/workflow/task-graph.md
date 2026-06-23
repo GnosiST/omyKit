@@ -79,7 +79,7 @@ For multi-agent work, treat this as two layers:
 
 - `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
 - `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, skill usage, token usage, context usage, and timestamps when available.
-- `dispatch-plan` is the bridge between the two: it reads ready nodes and model policy, then returns a bounded subagent plan for Codex to execute when subagent tools are available.
+- `dispatch-plan` is the bridge between the two: it reads ready nodes and model policy, then returns a bounded subagent/thread/worktree dispatch plan; with `--surface auto`, it recommends an execution surface for ready nodes.
 - `downstream_context` is the compressed fact packet a node carries forward: target nodes, inputs, evidence, risks, and context budget.
 - `context-pack` is the controller-generated minimal executable context for one node or worker, built from state, graph, the node card, dependency handoffs, `downstream_context`, recent events, and command run records.
 - `commands/commands.jsonl` records long-command facts such as dev servers, test watchers, long builds, and screenshot services. It does not mark a node as passed and does not replace a handoff.

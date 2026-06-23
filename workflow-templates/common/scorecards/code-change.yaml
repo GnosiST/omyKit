@@ -105,6 +105,20 @@ checks:
     severity: recommended
     evidence:
       type: subagent_model_recorded_or_explained
+  - id: assignment-handoff-coverage
+    title:
+      en: Agent assignments produce readable handoffs
+      zh-CN: Agent 分配产生可读取交接
+    severity: recommended
+    evidence:
+      type: assignment_handoff_coverage
+  - id: assignment-write-scope-conflicts
+    title:
+      en: Active agent assignments avoid overlapping write scope
+      zh-CN: 活跃 Agent 分配避免写入范围重叠
+    severity: recommended
+    evidence:
+      type: assignment_write_scope_conflicts
   - id: board-language
     title:
       en: Board language follows workflow language

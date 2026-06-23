@@ -110,6 +110,7 @@ $omykit 开始执行：测试 MVP1 角色权限
 $omykit 继续执行
 $omykit 查看工作流列表
 $omykit 交接包：03-implement
+$omykit 记录分工
 $omykit 生成看板并打开
 ```
 
@@ -119,11 +120,13 @@ $omykit 生成看板并打开
 node scripts/omykit-workflow.mjs workflows
 node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs context-pack 03-implement
+node scripts/omykit-workflow.mjs dispatch-plan --surface auto --json
+node scripts/omykit-workflow.mjs assign 03-implement --agent coder-thread-01 --surface worktree --status running --scope "src/**,tests/**" --context-pack context-packs/03-implement.json --handoff handoffs/03-implement.json
 node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs provide them. It is a local static view, not a realtime service.
+The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -132,7 +135,7 @@ The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board
 | `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, controller, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
-| `schemas/` | JSON schemas for controller graphs, node cards, state, and handoffs. |
+| `schemas/` | JSON schemas for controller graphs, node cards, state, assignments, and handoffs. |
 | `scripts/` | Validation, workflow controller, global installation, install-from-ref, and rollback helpers. |
 | `workflow-templates/` | Layered YAML workflow templates, agent/model/runtime/safety profiles, and scorecards used by the controller. |
 | `upstream-sources.json` | Tracked external reference baselines plus source-integrity snapshots for official workflow, spec, local-skill, platform-tool, design, motion, ecosystem, and context-compression sources. |

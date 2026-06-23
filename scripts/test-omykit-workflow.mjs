@@ -58,6 +58,8 @@ assert.match(helpOutput, /dispatch-plan/);
 assert.match(helpOutput, /workflows/);
 assert.match(helpOutput, /context-pack/);
 assert.match(helpOutput, /record-run/);
+assert.match(helpOutput, /assign/);
+assert.match(helpOutput, /--surface/);
 assert.match(helpOutput, /Codex chat intents:/);
 assert.match(helpOutput, /Long task loop:/);
 assert.match(helpOutput, /只创建工作流/);
@@ -91,6 +93,10 @@ assert.equal(dispatchJson.orchestrator.role.includes("Main thread"), true);
 assert.equal(dispatchJson.safety.max_parallel_running_nodes, 3);
 assert.equal(dispatchJson.ready_dispatches[0].node_id, "01-intake");
 assert.equal(dispatchJson.ready_dispatches[0].model_override, "gpt-5.4-mini");
+const surfaceDispatchJson = JSON.parse(run(["dispatch-plan", "--surface", "auto", "--json", "--lang", "zh-CN"]));
+assert.ok(surfaceDispatchJson.runtime_capability.supported_surfaces.includes("thread_worktree"));
+assert.equal(surfaceDispatchJson.ready_dispatches[0].execution_surface, "main-thread");
+assert.equal(surfaceDispatchJson.ready_dispatches[0].executor, "main-thread");
 
 const dir = workflowDir();
 const graphPath = path.join(dir, "graph.json");
@@ -438,6 +444,47 @@ assert.ok(contextPack.dependency_handoffs.some((item) => item.node_id === "01-in
 assert.ok(contextPack.downstream_contexts.some((item) => item.source_node_id === "01-intake" && item.target_nodes.includes("02-design")));
 assert.ok(contextPack.context_policy.max_source_files <= 8);
 
+const researchPackOutput = run(["context-pack", "02-research", "--lang", "zh-CN"]);
+assert.match(researchPackOutput, /Context pack generated: 02-research/);
+const assignOutput = run([
+  "assign",
+  "02-research",
+  "--agent",
+  "research-thread-01",
+  "--role",
+  "researcher",
+  "--surface",
+  "background_thread",
+  "--status",
+  "running",
+  "--thread",
+  "codex-thread-research-01",
+  "--model-tier",
+  "standard",
+  "--model",
+  "gpt-5.4",
+  "--scope",
+  "docs/**,scripts/**",
+  "--context-pack",
+  "context-packs/02-research.json",
+  "--handoff",
+  "handoffs/02-research.json",
+  "--notes",
+  "后台调研线程，主控只读结构化 handoff。",
+]);
+assert.match(assignOutput, /Assignment recorded: research-thread-01/);
+const assignmentLines = fs.readFileSync(path.join(dir, "assignments.jsonl"), "utf8").trim().split(/\n/);
+assert.equal(assignmentLines.length, 1);
+const assignmentRecord = JSON.parse(assignmentLines[0]);
+assert.equal(assignmentRecord.node_id, "02-research");
+assert.equal(assignmentRecord.execution_surface, "background_thread");
+assert.deepEqual(assignmentRecord.write_scope, ["docs/**", "scripts/**"]);
+
+const postAssignDispatchJson = JSON.parse(run(["dispatch-plan", "--surface", "auto", "--json", "--lang", "zh-CN"]));
+const researchDispatch = postAssignDispatchJson.ready_dispatches.find((item) => item.node_id === "02-research");
+assert.equal(researchDispatch.execution_surface, "background_thread");
+assert.equal(researchDispatch.assignment?.agent_id, "research-thread-01");
+
 run(["start", "02-design"]);
 state = readJson(path.join(dir, "state.json"));
 assert.ok(state.active_nodes.includes("02-design"));
@@ -651,6 +698,8 @@ assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-r
 assert.ok(board.scorecard.checks.some((check) => check.id === "downstream-context-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "subagent-model-recorded-or-explained" && check.status === "pending"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-handoff-coverage" && check.status === "warning"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-write-scope-conflicts" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
 assert.ok(board.recommendations.some((item) => item.id === "scorecard-required-not-failed"));
 assert.ok(board.recommendations.some((item) => item.id === "run-workflow-evolution"));
@@ -685,6 +734,11 @@ assert.deepEqual(board.improvement_plan, board.recommendations);
 assert.ok(Array.isArray(board.commands.records));
 assert.ok(Array.isArray(board.commands.active));
 assert.ok(Array.isArray(board.commands.resumable));
+assert.equal(board.summary.assignments, 1);
+assert.ok(Array.isArray(board.assignments.records));
+assert.ok(board.assignments.records.some((assignment) => assignment.agent_id === "research-thread-01" && assignment.execution_surface === "background_thread"));
+assert.ok(board.assignments.by_node.some((item) => item.node_id === "02-research" && item.assignments.length === 1));
+assert.ok(board.collaboration.agent_roster.some((agent) => agent.agent_id === "research-thread-01" && agent.execution_surface === "background_thread"));
 assert.ok(Array.isArray(board.handoff_packets.by_node));
 assert.ok(Array.isArray(board.risks.retry_alerts));
 assert.ok(Array.isArray(board.recent_events));
@@ -753,6 +807,7 @@ const boardHtml = fs.readFileSync(path.join(dir, "board.html"), "utf8");
 assert.match(boardHtml, /总控中心/);
 assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
+assert.match(boardHtml, /Agent 通讯录/);
 assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /入口决策/);
 assert.match(boardHtml, /为 Feature X 创建可追踪的项目化看板/);
@@ -785,6 +840,8 @@ assert.match(boardHtml, /class="panel technical-data"/);
 assert.match(boardHtml, /需求已固化/);
 assert.match(boardHtml, /main-codex/);
 assert.match(boardHtml, /main-agent/);
+assert.match(boardHtml, /research-thread-01/);
+assert.match(boardHtml, /background_thread/);
 assert.doesNotMatch(boardHtml, /\{"passed"/);
 const eventListHtml = boardHtml.slice(boardHtml.indexOf('class="event-list"'), boardHtml.indexOf('class="panel technical-data"'));
 assert.doesNotMatch(eventListHtml, /&quot;event&quot;/);

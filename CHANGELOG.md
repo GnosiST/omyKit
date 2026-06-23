@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added thread/worktree assignment tracking for controller workflows: `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster board projection, assignment scorecard checks, assignment schema, tests, and English/Chinese docs.
+- Refreshed Spec-Kit, OpenAI Codex, Motion, Docker Compose, FFmpeg, and Sentry upstream baselines after reviewing Spec-Kit extension/version metadata, Codex resumed rollout history and MCP dependency updates, Motion v12.41.0 release metadata, Compose `ps --format json` JSON Lines docs, FFmpeg TLS/HLS test fixes, and Sentry frontend observability/dashboard plus sample-transaction endpoint changes; no additional omyKit workflow rule was promoted.
 - Added multi-agent coordination assessment docs covering omyKit's workflow intent, requested and added reference sources, implementation fit, and a thread/worktree-native Codex collaboration roadmap.
 - Refreshed OpenAI Codex, Sentry, and Motion upstream baselines after reviewing a PathUri lexical containment fix, a spans schema cleanup, view-transition API/example updates, and Motion plan-file cleanup; no additional omyKit workflow rule was promoted.
 - Added tracked-workflow recovery and handoff controls: active workflow selection, node context packs, downstream handoff context, command-run recovery records, board projections, scorecard warnings, and English/Chinese docs for long-task continuation.

@@ -1,6 +1,6 @@
 ---
 description: Start, execute, explain, or operate omyKit workflow
-argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始执行 | 只创建工作流 | 继续工作流 | 派发计划 | 交接包 | 工作流列表 | 切换工作流 | 记录后台命令 | 解除阻塞 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
+argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始执行 | 只创建工作流 | 继续工作流 | 派发计划 | 记录分工 | 交接包 | 工作流列表 | 切换工作流 | 记录后台命令 | 解除阻塞 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
 ---
 
 Use $omykit with these user arguments:
