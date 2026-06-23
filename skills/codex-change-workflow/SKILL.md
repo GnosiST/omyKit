@@ -32,7 +32,7 @@ Run this workflow once to frame the change, then execute directly. Re-enter the 
    - Lite: do not enable by default.
    - Standard: enable only for multi-node, compact-prone, parallel, rejected, resumable, or user-requested tracked work.
    - Strict: enable by default.
-5. If enabled, use the first available controller script: project `scripts/omykit-workflow.mjs`, then `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`. Keep node handoffs structured; failed gates must reject to a named upstream node with evidence and required fix.
+5. If enabled, use the first available controller script: project `scripts/omykit-workflow.mjs`, then `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`. Keep node handoffs structured; failed gates must reject to a named upstream node with evidence and required fix. Generate `board` only when the user asks for progress visualization, the task is long enough to need a collaboration map, or before a tracked handoff where board evidence helps review.
 6. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
 7. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
 8. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a narrower secondary only for a separate gap such as responsive adaptation, accessibility, copy, hardening, metadata, icons, motion, performance, or current shadcn/ecosystem discovery.

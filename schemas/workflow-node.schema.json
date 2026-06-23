@@ -85,6 +85,49 @@
     },
     "handoff_required": {
       "type": "boolean"
+    },
+    "worker_profile": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "claimed_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "parallel_group": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "join_policy": {
+      "type": "string",
+      "enum": [
+        "all_required",
+        "any_passed",
+        "manual_review"
+      ]
+    },
+    "lease_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "handoff_target": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
     }
   }
 }

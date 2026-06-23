@@ -50,10 +50,33 @@ node scripts/omykit-workflow.mjs start 03-implement
 node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-implement-to-04-verify.json
 node scripts/omykit-workflow.mjs reject 04-verify --to 03-implement --handoff handoffs/04-verify-to-03-implement.reject.json
 node scripts/omykit-workflow.mjs block 02-design --reason "Waiting for user confirmation"
+node scripts/omykit-workflow.mjs board
+node scripts/omykit-workflow.mjs board --open
 node scripts/omykit-workflow.mjs resume
 ```
 
 Commands operate on `.omykit/workflows/<workflow-id>/` in the current project. If there are multiple workflows, pass `--workflow <workflow-id>`.
+
+## Visual Board
+
+The board command creates a local collaboration map for the active workflow:
+
+```bash
+node scripts/omykit-workflow.mjs board --workflow <workflow-id>
+```
+
+It writes:
+
+```text
+.omykit/workflows/<workflow-id>/board.json
+.omykit/workflows/<workflow-id>/board.html
+```
+
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows command center metrics, status columns, dependency and reject edges, parallel groups, worker profile lanes, node contracts, blockers, decisions, retry alerts, and recent ledger events.
+
+Use `--open` to ask the controller to open the generated HTML with the system default browser. If the browser cannot be opened automatically, the files remain in place and the command prints the HTML path.
+
+The board is intentionally static. It does not start agents, claim nodes, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates.
 
 ## Files
 
@@ -69,9 +92,11 @@ Commands operate on `.omykit/workflows/<workflow-id>/` in the current project. I
       nodes/
       handoffs/
       evidence/
+      board.json
+      board.html
 ```
 
-`graph.json` defines the DAG. `state.json` records current node status. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `evidence/` contains command output, screenshots, summaries, or export evidence.
+`graph.json` defines the DAG. `state.json` records current node status. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
 
 ## Compact Recovery
 

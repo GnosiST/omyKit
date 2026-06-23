@@ -47,6 +47,21 @@ pending -> ready -> running -> passed
 - **Block:** a blocked node should not stop unrelated ready nodes.
 - **Skip:** skipped required work must state why and what risk remains.
 
+## Collaboration Metadata
+
+Nodes may include optional collaboration fields. They are routing and display metadata for the board; they do not automatically dispatch workers.
+
+| Field | Meaning |
+| --- | --- |
+| `worker_profile` | Suggested worker lane such as `planner`, `researcher`, `coder`, `tester`, `reviewer`, `delivery`, or a project-specific profile. |
+| `claimed_by` | Current responsible actor. The controller displays it but does not enforce ownership. |
+| `parallel_group` | A named group that can be scanned as a parallel branch or work lane. |
+| `join_policy` | How a downstream join should reason about the group: `all_required`, `any_passed`, or `manual_review`. |
+| `lease_expires_at` | Future timeout or takeover metadata. The current controller only displays it. |
+| `handoff_target` | Default downstream handoff target for board readability. It must point to an existing node when present. |
+
+These fields prevent similar capabilities from fighting by keeping responsibility explicit: the graph owns dependency order, node cards own local acceptance, handoffs own evidence, and the board only visualizes the resulting state.
+
 ## Retry Limits
 
 Each graph node has `retry_limit`. When the same reject edge exceeds the target node's limit, the controller blocks the target node and requires human decision or design review. This prevents quiet loops.
@@ -61,6 +76,7 @@ Each graph node has `retry_limit`. When the same reject edge exceeds the target 
 - dependency graph has no cycle
 - state entries match graph nodes
 - node statuses are valid
+- collaboration metadata has valid types and join policies
 - node cards exist
 - handoff files have required fields
 

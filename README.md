@@ -19,7 +19,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
-- **Durable task graph:** use a local C-lite controller for long, resumable, multi-node work.
+- **Durable task graph:** use a local C-lite controller and static board for long, resumable, multi-node work.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -37,6 +37,7 @@ flowchart LR
     Route --> Budget["Context budget<br/>scan -> focus -> deep"]
     Budget --> Work["Execute<br/>project-native work"]
     Work --> Controller["Controller<br/>task graph, handoffs"]
+    Controller --> Board["Board<br/>flow, lanes, risks"]
     Work --> Runtime["Runtime readiness<br/>only when needed"]
     Work --> Version["Version readiness<br/>history and rollback"]
     Controller --> Verify["Verify<br/>focused checks"]
@@ -74,6 +75,14 @@ If your Codex client supports prompt files, this is also a Codex chat input:
 
 Do not assume `/omykit` is available unless your local Codex client explicitly maps custom prompt files to that command form.
 
+For tracked controller workflows, generate the local collaboration board from a project shell:
+
+```bash
+node scripts/omykit-workflow.mjs board --open
+```
+
+This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. It is a local static view, not a realtime service.
+
 ## What It Includes
 
 | Path | Purpose |
@@ -105,9 +114,11 @@ See [Skill coordination](docs/workflow/skill-coordination.md) for what each inte
 
 ## Controller Layer
 
-For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, and support compact recovery.
+For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, generate a static collaboration board, and support compact recovery.
 
 The controller is local and deterministic. It does not call models, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows status columns, dependency flow, reject edges, worker lanes, node contracts, blockers, decisions, retries, and recent ledger events without introducing a server or database.
 
 ## Workflow Model
 

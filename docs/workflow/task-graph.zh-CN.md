@@ -47,6 +47,21 @@ pending -> ready -> running -> passed
 - **阻塞：**blocked 节点不应阻止无依赖关系的 ready 节点。
 - **跳过：**跳过 required 工作必须说明理由和剩余风险。
 
+## 协作元数据
+
+节点可以包含可选协作字段。它们用于路由和看板展示，不会自动派发 worker。
+
+| Field | 含义 |
+| --- | --- |
+| `worker_profile` | 建议 worker 分道，例如 `planner`、`researcher`、`coder`、`tester`、`reviewer`、`delivery` 或项目自定义 profile。 |
+| `claimed_by` | 当前负责者。controller 只展示，不强制所有权。 |
+| `parallel_group` | 命名并行组，方便扫描并行分支或工作泳道。 |
+| `join_policy` | 下游汇聚如何处理该组：`all_required`、`any_passed` 或 `manual_review`。 |
+| `lease_expires_at` | 未来用于超时或接管的元数据。当前 controller 只展示。 |
+| `handoff_target` | 默认下游交接目标，方便看板显示流向。存在时必须指向已有节点。 |
+
+这些字段避免同类能力“打架”：graph 负责依赖顺序，节点卡负责局部验收，handoff 负责证据，看板只负责把这些状态可视化。
+
 ## 重试限制
 
 每个 graph 节点都有 `retry_limit`。同一条打回边超过目标节点限制时，controller 会把目标节点标成 blocked，要求人工决策或设计复核，避免静默循环。
@@ -61,6 +76,7 @@ pending -> ready -> running -> passed
 - 依赖图没有环
 - state 条目和 graph 节点一致
 - 节点状态有效
+- 协作元数据类型和 join policy 有效
 - 节点卡存在
 - handoff 文件字段完整
 

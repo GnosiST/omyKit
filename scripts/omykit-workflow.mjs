@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
 const SCHEMA_VERSION = "1";
+const COLUMN_STATUSES = ["pending", "ready", "running", "blocked", "failed", "passed", "skipped"];
 const STATUSES = new Set(["pending", "ready", "running", "passed", "failed", "blocked", "skipped"]);
 const TERMINAL_STATUSES = new Set(["passed", "skipped"]);
 const HANDOFF_STATUSES = new Set(["passed", "failed", "blocked", "skipped"]);
@@ -19,6 +21,15 @@ const NODE_TYPES = new Set([
 ]);
 const MODES = new Set(["Lite", "Standard", "Strict"]);
 const CONTEXT_LEVELS = new Set(["scan", "focus", "deep"]);
+const JOIN_POLICIES = new Set(["all_required", "any_passed", "manual_review"]);
+const COLLABORATION_FIELDS = [
+  "worker_profile",
+  "claimed_by",
+  "parallel_group",
+  "join_policy",
+  "lease_expires_at",
+  "handoff_target",
+];
 const DEFAULT_MODE = "Standard";
 
 function now() {
@@ -94,6 +105,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs complete <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs reject <node-id> --to <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs block <node-id> --reason <text> [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs board [--workflow workflow-id] [--open]
   node scripts/omykit-workflow.mjs resume [--workflow workflow-id]`;
 }
 
@@ -161,6 +173,12 @@ function defaultGraphNodes() {
       retry_limit: 1,
       context_level: "scan",
       owner: "codex",
+      worker_profile: "planner",
+      claimed_by: null,
+      parallel_group: "discovery",
+      join_policy: "all_required",
+      lease_expires_at: null,
+      handoff_target: "02-design",
       acceptance: ["Goal, constraints, deliverable, language, and success criteria are explicit."],
     },
     {
@@ -172,6 +190,12 @@ function defaultGraphNodes() {
       retry_limit: 2,
       context_level: "focus",
       owner: "codex",
+      worker_profile: "planner",
+      claimed_by: null,
+      parallel_group: "strategy",
+      join_policy: "all_required",
+      lease_expires_at: null,
+      handoff_target: "03-plan",
       acceptance: ["Approach, boundaries, risks, and verification strategy are clear."],
     },
     {
@@ -183,6 +207,12 @@ function defaultGraphNodes() {
       retry_limit: 2,
       context_level: "focus",
       owner: "codex",
+      worker_profile: "planner",
+      claimed_by: null,
+      parallel_group: "strategy",
+      join_policy: "all_required",
+      lease_expires_at: null,
+      handoff_target: "04-implement",
       acceptance: ["Execution steps are ordered, scoped, and individually verifiable."],
     },
     {
@@ -194,6 +224,12 @@ function defaultGraphNodes() {
       retry_limit: 3,
       context_level: "focus",
       owner: "codex",
+      worker_profile: "coder",
+      claimed_by: null,
+      parallel_group: "implementation",
+      join_policy: "all_required",
+      lease_expires_at: null,
+      handoff_target: "05-verify",
       acceptance: ["Requested artifact changes are implemented and scoped to the task."],
     },
     {
@@ -205,6 +241,12 @@ function defaultGraphNodes() {
       retry_limit: 2,
       context_level: "focus",
       owner: "codex",
+      worker_profile: "tester",
+      claimed_by: null,
+      parallel_group: "verification",
+      join_policy: "all_required",
+      lease_expires_at: null,
+      handoff_target: "06-delivery",
       acceptance: ["Relevant checks have passed or residual risk is explicitly captured."],
     },
     {
@@ -216,6 +258,12 @@ function defaultGraphNodes() {
       retry_limit: 1,
       context_level: "focus",
       owner: "codex",
+      worker_profile: "delivery",
+      claimed_by: null,
+      parallel_group: "delivery",
+      join_policy: "manual_review",
+      lease_expires_at: null,
+      handoff_target: null,
       acceptance: ["Final handoff includes evidence, skipped checks, risks, and next steps."],
     },
   ];
@@ -237,7 +285,7 @@ function nodeObjective(node) {
 }
 
 function nodeCard(graph, node) {
-  return {
+  const card = {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
     node_id: node.id,
@@ -253,6 +301,10 @@ function nodeCard(graph, node) {
     ],
     handoff_required: true,
   };
+  for (const field of COLLABORATION_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(node, field)) card[field] = node[field];
+  }
+  return card;
 }
 
 function initialState(graph) {
@@ -298,9 +350,25 @@ function validateGraph(graph) {
     if (node.context_level && !CONTEXT_LEVELS.has(node.context_level)) {
       errors.push(`invalid context_level for ${node.id}: ${node.context_level}`);
     }
+    for (const field of ["worker_profile", "parallel_group", "handoff_target"]) {
+      if (node[field] !== undefined && node[field] !== null && typeof node[field] !== "string") {
+        errors.push(`node.${field} must be string or null for ${node.id}`);
+      }
+    }
+    for (const field of ["claimed_by", "lease_expires_at"]) {
+      if (node[field] !== undefined && node[field] !== null && typeof node[field] !== "string") {
+        errors.push(`node.${field} must be string or null for ${node.id}`);
+      }
+    }
+    if (node.join_policy !== undefined && !JOIN_POLICIES.has(node.join_policy)) {
+      errors.push(`invalid join_policy for ${node.id}: ${node.join_policy}`);
+    }
     for (const dependency of node.depends_on || []) {
       if (!map.has(dependency)) errors.push(`${node.id} depends on missing node ${dependency}`);
       if (dependency === node.id) errors.push(`${node.id} cannot depend on itself`);
+    }
+    if (node.handoff_target && !map.has(node.handoff_target)) {
+      errors.push(`${node.id} handoff_target is missing node ${node.handoff_target}`);
     }
   }
 
@@ -541,6 +609,651 @@ function readRecentLedger(workflowDir, limit = 3) {
     .slice(-limit);
 }
 
+function readTextIfExists(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+}
+
+function readMarkdownItems(file, limit = 8) {
+  return readTextIfExists(file)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .slice(-limit);
+}
+
+function readLedgerEvents(workflowDir, limit = 10) {
+  return readRecentLedger(workflowDir, limit).map((line) => {
+    try {
+      return JSON.parse(line);
+    } catch {
+      return { raw: line };
+    }
+  });
+}
+
+function loadNodeCards(workflowDir, graph) {
+  const cards = new Map();
+  for (const node of graph.nodes) {
+    const file = path.join(workflowDir, "nodes", `${node.id}.json`);
+    if (!fs.existsSync(file)) continue;
+    cards.set(node.id, readJson(file));
+  }
+  return cards;
+}
+
+function loadHandoffs(workflowDir) {
+  const handoffDir = path.join(workflowDir, "handoffs");
+  const records = [];
+  const byPath = new Map();
+  const byNode = new Map();
+  if (!fs.existsSync(handoffDir)) return { records, byPath, byNode };
+
+  for (const entry of fs.readdirSync(handoffDir).filter((name) => name.endsWith(".json")).sort()) {
+    const file = path.join(handoffDir, entry);
+    const relativePath = relativeToWorkflow(workflowDir, file);
+    let record;
+    try {
+      const handoff = readJson(file);
+      record = { ...handoff, path: relativePath };
+    } catch (error) {
+      record = { path: relativePath, status: "invalid", error: error.message };
+    }
+    records.push(record);
+    byPath.set(relativePath, record);
+    if (record.node_id) {
+      if (!byNode.has(record.node_id)) byNode.set(record.node_id, []);
+      byNode.get(record.node_id).push(record);
+    }
+  }
+  return { records, byPath, byNode };
+}
+
+function latestHandoffForNode(entry, handoffs, nodeId) {
+  if (entry?.last_handoff) {
+    const fromState = handoffs.byPath.get(entry.last_handoff);
+    if (fromState) return fromState;
+    return { path: entry.last_handoff, node_id: nodeId, status: "missing" };
+  }
+  const records = handoffs.byNode.get(nodeId) || [];
+  return records.length > 0 ? records[records.length - 1] : null;
+}
+
+function collectEvidencePaths(handoff) {
+  if (!handoff || handoff.status === "missing" || handoff.status === "invalid") return [];
+  const paths = new Set();
+  for (const value of handoff.outputs || []) paths.add(value);
+  for (const value of handoff.evidence || []) paths.add(value);
+  for (const item of handoff.verification || []) {
+    if (item.evidence) paths.add(item.evidence);
+  }
+  return [...paths];
+}
+
+function evidenceStatus(entry, handoff) {
+  if (handoff?.status === "missing") return "missing";
+  if (handoff?.status === "invalid") return "invalid";
+  if (handoff) return "present";
+  if (["passed", "failed", "blocked", "skipped"].includes(entry?.status)) return "missing";
+  return "not_required_yet";
+}
+
+function retryInfoForNode(state, nodeId) {
+  const info = { incoming: 0, outgoing: 0, total: 0 };
+  for (const [edge, count] of Object.entries(state.retry_edges || {})) {
+    const [from, to] = edge.split("->");
+    if (from === nodeId) info.outgoing += count;
+    if (to === nodeId) info.incoming += count;
+  }
+  info.total = info.incoming + info.outgoing;
+  return info;
+}
+
+function collaborationValue(node, card, field, fallback) {
+  const value = node[field] ?? card[field];
+  return value === undefined || value === null || value === "" ? fallback : value;
+}
+
+function projectNode(state, cards, handoffs, node) {
+  const entry = state.nodes[node.id] || {};
+  const card = cards.get(node.id) || {};
+  const handoff = latestHandoffForNode(entry, handoffs, node.id);
+  const retry = retryInfoForNode(state, node.id);
+  return {
+    id: node.id,
+    title: node.title,
+    type: node.type,
+    status: entry.status || "missing",
+    owner: node.owner || "codex",
+    required: node.required,
+    context_level: node.context_level || card.context_level || "focus",
+    worker_profile: collaborationValue(node, card, "worker_profile", "unassigned"),
+    claimed_by: collaborationValue(node, card, "claimed_by", null),
+    parallel_group: collaborationValue(node, card, "parallel_group", "none"),
+    join_policy: collaborationValue(node, card, "join_policy", "all_required"),
+    lease_expires_at: collaborationValue(node, card, "lease_expires_at", null),
+    handoff_target: collaborationValue(node, card, "handoff_target", null),
+    retry_count: retry.total,
+    retry_incoming: retry.incoming,
+    retry_outgoing: retry.outgoing,
+    last_handoff: entry.last_handoff || handoff?.path || null,
+    handoff_status: handoff?.status || null,
+    evidence_status: evidenceStatus(entry, handoff),
+    objective: card.objective || nodeObjective(node),
+    depends_on: node.depends_on || [],
+    inputs: node.depends_on || [],
+    inputs_used: handoff?.inputs_used || [],
+    allowed_scope: card.allowed_scope || [],
+    acceptance: card.acceptance || node.acceptance || [],
+    required_checks: (handoff?.verification || []).map((item) => ({
+      command: item.command,
+      result: item.result,
+      evidence: item.evidence || null,
+    })),
+    outputs: card.allowed_outputs || [],
+    evidence_paths: collectEvidencePaths(handoff),
+    open_risks: ["failed", "blocked"].includes(entry.status) && entry.reason ? [entry.reason] : [],
+    non_blocking_notes: [],
+    updated_at: entry.updated_at || null,
+    reason: entry.reason || null,
+  };
+}
+
+function statusCounts(projectedNodes) {
+  const counts = {};
+  for (const status of COLUMN_STATUSES) counts[status] = 0;
+  for (const node of projectedNodes) {
+    if (counts[node.status] === undefined) counts[node.status] = 0;
+    counts[node.status] += 1;
+  }
+  return counts;
+}
+
+function completionPercent(counts, total) {
+  if (total === 0) return 0;
+  return Math.round((((counts.passed || 0) + (counts.skipped || 0)) / total) * 100);
+}
+
+function nextRecommendedAction(graph, state) {
+  const ready = readyNodes(graph, state);
+  const running = nodesWithStatus(graph, state, "running");
+  const blocked = nodesWithStatus(graph, state, "blocked");
+  const failed = nodesWithStatus(graph, state, "failed");
+  if (failed.length > 0) return `Resolve or reject from ${failed[0].id}.`;
+  if (blocked.length > 0 && ready.length === 0) return `Unblock ${blocked[0].id} or record a blocking handoff.`;
+  if (ready.length > 0) return `Start ${ready[0].id}.`;
+  if (running.length > 0) return `Complete ${running[0].id} with a structured handoff.`;
+  return "Delivery complete or no ready nodes.";
+}
+
+function dependencyEdges(graph) {
+  const edges = [];
+  for (const node of graph.nodes) {
+    for (const dependency of node.depends_on || []) {
+      edges.push({ from: dependency, to: node.id, type: "depends_on" });
+    }
+  }
+  return edges;
+}
+
+function buildRejectEdges(handoffs, state) {
+  const edges = new Map();
+  for (const handoff of handoffs.records) {
+    if (handoff.status !== "failed" || !handoff.reject_to) continue;
+    const key = `${handoff.node_id}->${handoff.reject_to}`;
+    edges.set(key, {
+      from: handoff.node_id,
+      to: handoff.reject_to,
+      type: "reject",
+      handoff: handoff.path,
+      reason: handoff.reason || null,
+      retry_count: state.retry_edges?.[key] || 0,
+    });
+  }
+  for (const [edge, count] of Object.entries(state.retry_edges || {})) {
+    if (edges.has(edge)) {
+      edges.get(edge).retry_count = count;
+      continue;
+    }
+    const [from, to] = edge.split("->");
+    edges.set(edge, { from, to, type: "reject", handoff: null, reason: null, retry_count: count });
+  }
+  return [...edges.values()];
+}
+
+function criticalPath(graph) {
+  const map = nodeMap(graph);
+  const memo = new Map();
+  function longestPathTo(nodeId) {
+    if (memo.has(nodeId)) return memo.get(nodeId);
+    const node = map.get(nodeId);
+    if (!node) return [];
+    const dependencyPaths = (node.depends_on || []).map(longestPathTo);
+    const longestDependency = dependencyPaths.reduce((best, candidate) => {
+      return candidate.length > best.length ? candidate : best;
+    }, []);
+    const value = [...longestDependency, nodeId];
+    memo.set(nodeId, value);
+    return value;
+  }
+  return graph.nodes.reduce((best, node) => {
+    const candidate = longestPathTo(node.id);
+    return candidate.length > best.length ? candidate : best;
+  }, []);
+}
+
+function buildParallelGroups(projectedNodes) {
+  const groups = new Map();
+  for (const node of projectedNodes) {
+    if (!node.parallel_group || node.parallel_group === "none") continue;
+    if (!groups.has(node.parallel_group)) {
+      groups.set(node.parallel_group, {
+        group: node.parallel_group,
+        nodes: [],
+        statuses: {},
+        join_policies: new Set(),
+      });
+    }
+    const group = groups.get(node.parallel_group);
+    group.nodes.push(node.id);
+    group.statuses[node.status] = (group.statuses[node.status] || 0) + 1;
+    group.join_policies.add(node.join_policy);
+  }
+  return [...groups.values()].map((group) => ({
+    group: group.group,
+    nodes: group.nodes,
+    statuses: group.statuses,
+    join_policies: [...group.join_policies],
+  }));
+}
+
+function buildCollaboration(projectedNodes) {
+  const profiles = new Map();
+  for (const node of projectedNodes) {
+    const profile = node.worker_profile || "unassigned";
+    if (!profiles.has(profile)) {
+      profiles.set(profile, { profile, nodes: [], counts: {}, claimed_by: [] });
+    }
+    const lane = profiles.get(profile);
+    lane.nodes.push(node.id);
+    lane.counts[node.status] = (lane.counts[node.status] || 0) + 1;
+    if (node.claimed_by) lane.claimed_by.push({ node_id: node.id, claimed_by: node.claimed_by });
+  }
+  const workerProfiles = [...profiles.values()].map((lane) => ({
+    profile: lane.profile,
+    nodes: lane.nodes,
+    counts: lane.counts,
+    claimed_by: lane.claimed_by,
+  }));
+  const overloaded = workerProfiles
+    .filter((lane) => (lane.counts.running || 0) > 1 || (lane.counts.running || 0) + (lane.counts.ready || 0) > 2)
+    .map((lane) => ({
+      profile: lane.profile,
+      ready: lane.counts.ready || 0,
+      running: lane.counts.running || 0,
+    }));
+  return {
+    worker_profiles: workerProfiles,
+    unclaimed_ready: projectedNodes
+      .filter((node) => node.status === "ready" && !node.claimed_by)
+      .map((node) => node.id),
+    claimed_running: projectedNodes
+      .filter((node) => node.status === "running" && node.claimed_by)
+      .map((node) => ({ node_id: node.id, claimed_by: node.claimed_by })),
+    leases: projectedNodes
+      .filter((node) => node.lease_expires_at)
+      .map((node) => ({ node_id: node.id, lease_expires_at: node.lease_expires_at, claimed_by: node.claimed_by })),
+    overloaded_worker_profiles: overloaded,
+  };
+}
+
+function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
+  const map = nodeMap(graph);
+  return {
+    blockers: readMarkdownItems(path.join(workflowDir, "blockers.md")),
+    failed_handoffs: handoffs.records
+      .filter((handoff) => handoff.status === "failed")
+      .map((handoff) => ({
+        node_id: handoff.node_id,
+        reject_to: handoff.reject_to || null,
+        reason: handoff.reason || null,
+        required_fix: handoff.required_fix || null,
+        handoff: handoff.path,
+      })),
+    skipped_required: projectedNodes
+      .filter((node) => node.required && node.status === "skipped")
+      .map((node) => node.id),
+    retry_alerts: Object.entries(state.retry_edges || {}).map(([edge, count]) => {
+      const [from, to] = edge.split("->");
+      const target = map.get(to);
+      const retryLimit = target?.retry_limit ?? null;
+      return {
+        edge,
+        from,
+        to,
+        count,
+        retry_limit: retryLimit,
+        exceeded: retryLimit !== null ? count > retryLimit : false,
+      };
+    }),
+    decisions: readMarkdownItems(path.join(workflowDir, "decisions.md")),
+  };
+}
+
+function buildBoardProjection(workflowDir, graph, state) {
+  const cards = loadNodeCards(workflowDir, graph);
+  const handoffs = loadHandoffs(workflowDir);
+  const projectedNodes = graph.nodes.map((node) => projectNode(state, cards, handoffs, node));
+  const counts = statusCounts(projectedNodes);
+  const columns = {};
+  for (const status of COLUMN_STATUSES) {
+    columns[status] = projectedNodes.filter((node) => node.status === status);
+  }
+  const recentEvents = readLedgerEvents(workflowDir, 10);
+  const critical = criticalPath(graph);
+  return {
+    schema_version: SCHEMA_VERSION,
+    workflow_id: graph.workflow_id,
+    title: graph.title,
+    mode: graph.mode,
+    generated_at: now(),
+    summary: {
+      total: projectedNodes.length,
+      completion_percent: completionPercent(counts, projectedNodes.length),
+      pending: counts.pending || 0,
+      ready: counts.ready || 0,
+      running: counts.running || 0,
+      blocked: counts.blocked || 0,
+      failed: counts.failed || 0,
+      passed: counts.passed || 0,
+      skipped: counts.skipped || 0,
+      next_recommended_action: nextRecommendedAction(graph, state),
+      critical_path: critical,
+      latest_ledger_event: recentEvents[recentEvents.length - 1] || null,
+    },
+    columns,
+    flow: {
+      nodes: projectedNodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        type: node.type,
+        status: node.status,
+        worker_profile: node.worker_profile,
+        parallel_group: node.parallel_group,
+      })),
+      dependency_edges: dependencyEdges(graph),
+      reject_edges: buildRejectEdges(handoffs, state),
+      parallel_groups: buildParallelGroups(projectedNodes),
+      critical_path: critical,
+    },
+    collaboration: buildCollaboration(projectedNodes),
+    risks: buildRisks(workflowDir, graph, state, projectedNodes, handoffs),
+    recent_events: recentEvents,
+  };
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function escapeInlineJson(value) {
+  return JSON.stringify(value, null, 2).replaceAll("<", "\\u003c");
+}
+
+function renderList(items, empty = "none") {
+  if (!items || items.length === 0) return `<span class="muted">${escapeHtml(empty)}</span>`;
+  return `<ul>${items.map((item) => `<li>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</li>`).join("")}</ul>`;
+}
+
+function renderMetric(label, value) {
+  return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function renderNodeCard(node) {
+  return `<article class="node-card ${escapeHtml(node.status)}">
+    <div class="node-head">
+      <strong>${escapeHtml(node.id)}</strong>
+      <span class="status ${escapeHtml(node.status)}">${escapeHtml(node.status)}</span>
+    </div>
+    <div class="node-title">${escapeHtml(node.title)}</div>
+    <dl>
+      <dt>Type</dt><dd>${escapeHtml(node.type)}</dd>
+      <dt>Worker</dt><dd>${escapeHtml(node.worker_profile)}</dd>
+      <dt>Claimed</dt><dd>${escapeHtml(node.claimed_by || "unclaimed")}</dd>
+      <dt>Retry</dt><dd>${escapeHtml(node.retry_count)}</dd>
+      <dt>Handoff</dt><dd>${escapeHtml(node.last_handoff || "missing")}</dd>
+      <dt>Evidence</dt><dd>${escapeHtml(node.evidence_status)}</dd>
+    </dl>
+  </article>`;
+}
+
+function renderEdgeList(edges, empty = "No edges") {
+  if (!edges || edges.length === 0) return `<p class="muted">${escapeHtml(empty)}</p>`;
+  return `<div class="edge-list">${edges
+    .map((edge) => `<div class="edge"><code>${escapeHtml(edge.from)}</code><span>-></span><code>${escapeHtml(edge.to)}</code>${edge.retry_count ? `<small>retry ${escapeHtml(edge.retry_count)}</small>` : ""}</div>`)
+    .join("")}</div>`;
+}
+
+function renderBoardHtml(board) {
+  const columnsHtml = COLUMN_STATUSES.map(
+    (status) => `<section class="column">
+      <h3>${escapeHtml(status)} <span>${board.columns[status].length}</span></h3>
+      ${board.columns[status].length > 0 ? board.columns[status].map(renderNodeCard).join("") : '<p class="muted">empty</p>'}
+    </section>`,
+  ).join("");
+
+  const detailsHtml = Object.values(board.columns)
+    .flat()
+    .map((node) => `<details class="detail">
+      <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.title)}</summary>
+      <div class="detail-grid">
+        <section><h4>Objective</h4><p>${escapeHtml(node.objective)}</p></section>
+        <section><h4>Depends On</h4>${renderList(node.depends_on)}</section>
+        <section><h4>Acceptance</h4>${renderList(node.acceptance)}</section>
+        <section><h4>Outputs</h4>${renderList(node.outputs)}</section>
+        <section><h4>Required Checks</h4>${renderList(node.required_checks)}</section>
+        <section><h4>Evidence Paths</h4>${renderList(node.evidence_paths)}</section>
+        <section><h4>Open Risks</h4>${renderList(node.open_risks)}</section>
+        <section><h4>Notes</h4>${renderList(node.non_blocking_notes)}</section>
+      </div>
+    </details>`)
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>omyKit Board - ${escapeHtml(board.workflow_id)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d7dde5;
+      --ready: #0f766e;
+      --running: #2563eb;
+      --blocked: #a16207;
+      --failed: #b42318;
+      --passed: #287d3c;
+      --skipped: #667085;
+      --pending: #475467;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header, main { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    header { padding-bottom: 12px; }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 { font-size: 30px; line-height: 1.15; margin-bottom: 6px; }
+    h2 { font-size: 18px; margin-bottom: 12px; }
+    h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 0; display: flex; justify-content: space-between; gap: 8px; }
+    code { background: #eef2f6; border-radius: 4px; padding: 1px 5px; }
+    .muted { color: var(--muted); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .command { display: grid; grid-template-columns: 1.2fr 2fr; gap: 16px; align-items: stretch; }
+    .progress { height: 10px; background: #e5e9ef; border-radius: 999px; overflow: hidden; margin: 10px 0 14px; }
+    .progress span { display: block; height: 100%; background: #2563eb; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); gap: 10px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfe; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; font-size: 22px; line-height: 1.2; }
+    .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .board { display: grid; grid-template-columns: repeat(7, minmax(170px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+    .column { min-width: 170px; background: #fdfefe; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .node-card { border: 1px solid var(--line); border-left: 4px solid var(--pending); border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 8px; }
+    .node-card.ready { border-left-color: var(--ready); }
+    .node-card.running { border-left-color: var(--running); }
+    .node-card.blocked { border-left-color: var(--blocked); }
+    .node-card.failed { border-left-color: var(--failed); }
+    .node-card.passed { border-left-color: var(--passed); }
+    .node-card.skipped { border-left-color: var(--skipped); }
+    .node-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .node-title { color: var(--muted); margin: 4px 0 8px; }
+    .status { border-radius: 999px; color: #fff; font-size: 11px; padding: 2px 7px; background: var(--pending); }
+    .status.ready { background: var(--ready); }
+    .status.running { background: var(--running); }
+    .status.blocked { background: var(--blocked); }
+    .status.failed { background: var(--failed); }
+    .status.passed { background: var(--passed); }
+    .status.skipped { background: var(--skipped); }
+    dl { display: grid; grid-template-columns: 62px 1fr; gap: 3px 8px; margin: 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .edge-list { display: grid; gap: 6px; }
+    .edge { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; background: #fbfcfe; }
+    .edge small { margin-left: auto; color: var(--muted); }
+    .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .lane { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfe; }
+    .detail { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .detail summary { cursor: pointer; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+    ul { margin: 0; padding-left: 18px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #111827; color: #f9fafb; padding: 12px; border-radius: 6px; max-height: 360px; overflow: auto; }
+    @media (max-width: 920px) {
+      header, main { padding: 16px; }
+      .command, .grid-2, .detail-grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(90px, 1fr)); }
+      .board { grid-template-columns: 1fr; overflow-x: visible; }
+      .column { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(board.title)}</h1>
+    <p class="muted"><code>${escapeHtml(board.workflow_id)}</code> &middot; ${escapeHtml(board.mode)} &middot; generated ${escapeHtml(board.generated_at)}</p>
+  </header>
+  <main>
+    <section class="panel command">
+      <div>
+        <h2>Command Center</h2>
+        <div class="progress" aria-label="Completion ${escapeHtml(board.summary.completion_percent)} percent"><span style="width:${escapeHtml(board.summary.completion_percent)}%"></span></div>
+        <p><strong>${escapeHtml(board.summary.completion_percent)}%</strong> complete</p>
+        <p><strong>Next:</strong> ${escapeHtml(board.summary.next_recommended_action)}</p>
+        <p><strong>Critical path:</strong> ${escapeHtml(board.summary.critical_path.join(" -> ") || "none")}</p>
+      </div>
+      <div class="metrics">
+        ${renderMetric("Total", board.summary.total)}
+        ${renderMetric("Ready", board.summary.ready)}
+        ${renderMetric("Running", board.summary.running)}
+        ${renderMetric("Blocked", board.summary.blocked)}
+        ${renderMetric("Failed", board.summary.failed)}
+        ${renderMetric("Passed", board.summary.passed)}
+        ${renderMetric("Skipped", board.summary.skipped)}
+        ${renderMetric("Pending", board.summary.pending)}
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2>Flow Map</h2>
+        <h3>Dependencies</h3>
+        ${renderEdgeList(board.flow.dependency_edges)}
+        <h3>Reject Edges</h3>
+        ${renderEdgeList(board.flow.reject_edges, "No reject edges")}
+      </div>
+      <div class="panel">
+        <h2>Collaboration Lanes</h2>
+        <div class="lanes">
+          ${board.collaboration.worker_profiles
+            .map((lane) => `<div class="lane"><h3>${escapeHtml(lane.profile)} <span>${escapeHtml(lane.nodes.length)}</span></h3><p><strong>Nodes:</strong> ${escapeHtml(lane.nodes.join(", "))}</p><p><strong>Counts:</strong> ${escapeHtml(JSON.stringify(lane.counts))}</p></div>`)
+            .join("")}
+        </div>
+        <p><strong>Unclaimed ready:</strong> ${escapeHtml(board.collaboration.unclaimed_ready.join(", ") || "none")}</p>
+        <p><strong>Claimed running:</strong> ${escapeHtml(JSON.stringify(board.collaboration.claimed_running))}</p>
+        <p><strong>Leases:</strong> ${escapeHtml(JSON.stringify(board.collaboration.leases))}</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Work Board</h2>
+      <div class="board">${columnsHtml}</div>
+    </section>
+
+    <section class="panel">
+      <h2>Node Details</h2>
+      ${detailsHtml}
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2>Risk And Decision Panel</h2>
+        <h3>Blockers</h3>${renderList(board.risks.blockers)}
+        <h3>Failed Handoffs</h3>${renderList(board.risks.failed_handoffs)}
+        <h3>Retry Alerts</h3>${renderList(board.risks.retry_alerts)}
+        <h3>Skipped Required</h3>${renderList(board.risks.skipped_required)}
+        <h3>Decisions</h3>${renderList(board.risks.decisions)}
+      </div>
+      <div class="panel">
+        <h2>Recent Events</h2>
+        ${renderList(board.recent_events)}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Board Projection</h2>
+      <pre>${escapeHtml(JSON.stringify(board, null, 2))}</pre>
+    </section>
+  </main>
+  <script type="application/json" id="board-data">${escapeInlineJson(board)}</script>
+</body>
+</html>
+`;
+}
+
+function writeBoard(workflowDir, board) {
+  const jsonPath = path.join(workflowDir, "board.json");
+  const htmlPath = path.join(workflowDir, "board.html");
+  writeJson(jsonPath, board);
+  fs.writeFileSync(htmlPath, renderBoardHtml(board));
+  return { jsonPath, htmlPath };
+}
+
+function openFile(file) {
+  const command =
+    process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
+  const args = process.platform === "win32" ? ["/c", "start", "", file] : [file];
+  const result = spawnSync(command, args, { stdio: "ignore", detached: true });
+  return !result.error && result.status === 0;
+}
+
 function resolveHandoffPath(workflowDir, handoffArg) {
   if (!handoffArg) throw new Error("--handoff is required");
   const absolute = path.isAbsolute(handoffArg) ? handoffArg : path.resolve(process.cwd(), handoffArg);
@@ -644,6 +1357,29 @@ function cmdResume(options) {
     console.log("none");
   } else {
     for (const line of recent) console.log(line);
+  }
+}
+
+function cmdBoard(options) {
+  const workflowDir = resolveWorkflowDir(options);
+  const errors = validateWorkflow(workflowDir);
+  if (errors.length > 0) {
+    throw new Error(`${errors.join("\n")}\nRun validate and fix workflow artifacts before rendering the board.`);
+  }
+  const { graph, state } = loadWorkflow(workflowDir);
+  const board = buildBoardProjection(workflowDir, graph, state);
+  const { jsonPath, htmlPath } = writeBoard(workflowDir, board);
+
+  console.log(`Workflow board generated: ${graph.workflow_id}`);
+  console.log(`JSON: ${path.relative(process.cwd(), jsonPath)}`);
+  console.log(`HTML: ${path.relative(process.cwd(), htmlPath)}`);
+  console.log(`Next recommended action: ${board.summary.next_recommended_action}`);
+  if (options.open) {
+    if (openFile(htmlPath)) {
+      console.log("Opened board in the default browser.");
+    } else {
+      console.log(`Could not open the browser automatically. Open: ${htmlPath}`);
+    }
   }
 }
 
@@ -770,6 +1506,9 @@ function main() {
       return;
     case "resume":
       cmdResume(options);
+      return;
+    case "board":
+      cmdBoard(options);
       return;
     case "start":
       cmdStart(positional, options);
