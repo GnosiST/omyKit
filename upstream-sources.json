@@ -136,7 +136,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "6e0c8b45170eb295cfbba514a4e8aca00efb43aa",
+      "baseline": "266dcbfe5b1972c027a4c04728e45949ccc1e820",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -331,7 +331,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "c5c5d9440a536b8fc5ff8d2a2cffe5263f1682ec",
+      "baseline": "e4ce314cba443be3b9fdb9be516ab81603118fc7",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

@@ -26,6 +26,7 @@ Use `passed` when the node completed and evidence is available.
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "03-implement",
   "status": "passed",
+  "language": "en",
   "summary": "Implemented the scoped change and updated the focused tests.",
   "work_items": [
     {
@@ -62,8 +63,13 @@ Use `passed` when the node completed and evidence is available.
     {
       "agent_id": "agent-1",
       "role": "coder",
+      "scope": "src/foo.ts and tests/foo.test.ts",
       "task": "Implement scoped fallback and test.",
       "status": "done",
+      "model_tier": "standard",
+      "model_selection_reason": "Scoped implementation with tests; no architecture decision needed.",
+      "started_at": "2026-06-23T10:00:00.000Z",
+      "completed_at": "2026-06-23T10:24:00.000Z",
       "evidence": [
         "evidence/03-implement-test-output.txt"
       ],
@@ -71,6 +77,12 @@ Use `passed` when the node completed and evidence is available.
         "source": "tool_reported",
         "model": "gpt-5.4",
         "total_tokens": 18420
+      },
+      "context_usage": {
+        "source": "estimated_from_files",
+        "context_level": "focus",
+        "estimated_tokens": 6200,
+        "input_files": 4
       }
     }
   ],
@@ -79,15 +91,29 @@ Use `passed` when the node completed and evidence is available.
     "total_tokens": 18420,
     "notes": "Summed from recorded agent activity."
   },
+  "context_usage": {
+    "source": "estimated_from_files",
+    "context_level": "focus",
+    "source_bytes": 24000,
+    "estimated_tokens": 6200,
+    "input_files": 4
+  },
+  "timing": {
+    "started_at": "2026-06-23T10:00:00.000Z",
+    "completed_at": "2026-06-23T10:24:00.000Z",
+    "duration_ms": 1440000,
+    "estimated_minutes": 30,
+    "source": "manual"
+  },
   "open_risks": [],
   "non_blocking_notes": [],
   "next_recommended_node": "04-verify"
 }
 ```
 
-Use `work_items` and `changed_files` to make the board a task tracker instead of a generic status board. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work.
+Use `language`, `work_items`, `changed_files`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, and evidence.
 
-Token records must be source-aware. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them.
+Token and context records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata.
 
 ## Failed And Reject
 

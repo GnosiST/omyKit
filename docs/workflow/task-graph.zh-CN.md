@@ -59,15 +59,21 @@ pending -> ready -> running -> passed
 | `join_policy` | 下游汇聚如何处理该组：`all_required`、`any_passed` 或 `manual_review`。 |
 | `lease_expires_at` | 未来用于超时或接管的元数据。当前 controller 只展示。 |
 | `handoff_target` | 默认下游交接目标，方便看板显示流向。存在时必须指向已有节点。 |
+| `task_complexity` | 不绑定供应商的任务难度信号：`simple`、`standard`、`complex` 或 `expert`。 |
+| `model_tier` | 推荐模型档位：`fast`、`standard` 或 `frontier`；controller 只记录策略，不调用模型。 |
+| `model_selection_reason` | 为什么使用该档位的简短说明。 |
+| `estimated_minutes` | 用于看板 ETA 和剩余时间计算的计划估算。 |
 
 这些字段避免同类能力“打架”：graph 负责依赖顺序，节点卡负责局部验收，handoff 负责证据，看板只负责把这些状态可视化。
 
 多 agent 工作要分两层理解：
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
-- handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括任务、状态、证据，以及可用时的 token 消耗。
+- handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据，以及可用时的 token 消耗、上下文用量和时间戳。
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
+
+用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。实际 provider/model 名称只记录在 handoff 执行元数据中。
 
 ## 重试限制
 

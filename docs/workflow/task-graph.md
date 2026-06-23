@@ -59,15 +59,21 @@ Nodes may include optional collaboration fields. They are routing and display me
 | `join_policy` | How a downstream join should reason about the group: `all_required`, `any_passed`, or `manual_review`. |
 | `lease_expires_at` | Future timeout or takeover metadata. The current controller only displays it. |
 | `handoff_target` | Default downstream handoff target for board readability. It must point to an existing node when present. |
+| `task_complexity` | Supplier-independent difficulty signal: `simple`, `standard`, `complex`, or `expert`. |
+| `model_tier` | Recommended model tier: `fast`, `standard`, or `frontier`; the controller records the policy but does not call a model. |
+| `model_selection_reason` | Short explanation for why that tier is appropriate. |
+| `estimated_minutes` | Planning estimate used for board ETA and remaining-time calculations. |
 
 These fields prevent similar capabilities from fighting by keeping responsibility explicit: the graph owns dependency order, node cards own local acceptance, handoffs own evidence, and the board only visualizes the resulting state.
 
 For multi-agent work, treat this as two layers:
 
 - `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
-- `agent_activity` in handoffs and related ledger events describe actual worker activity, including task, status, evidence, and token usage when available.
+- `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, token usage, context usage, and timestamps when available.
 
 Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
+
+Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Record actual provider/model names only in handoff execution metadata.
 
 ## Retry Limits
 

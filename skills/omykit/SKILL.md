@@ -39,6 +39,8 @@ Map user intent to commands:
 - validate workflow files -> `validate`
 - generate or open board -> `board --open --lang <user-language>`; use `zh-CN` for Simplified Chinese prompts and `en` otherwise
 
+In Codex Desktop, after generating a board, return the local `board.html` link and open it in the built-in browser when that surface is available. Treat CLI `--open` as a system-browser fallback, not as the only UX.
+
 If there are multiple workflows and no active/latest workflow is safe to infer, ask which workflow to use. If the controller script is missing, tell the user omyKit must be installed or reinstalled first.
 
 ## Start
@@ -82,7 +84,7 @@ When asking about mode, allow the user to answer with `Lite`, `Standard`, `Stric
 ## Route
 
 - `maintenance` -> handle directly with the omyKit repository scripts; then report install/update evidence
-- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, task-tracker highlights, token coverage, failed/blocked nodes, or validation evidence
+- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, task-tracker highlights, improvement actions, token/context coverage, timing or ETA signals, failed/blocked nodes, or validation evidence
 - `init` -> `codex-project-init`
 - `retrofit` -> `codex-project-retrofit`
 - `change` -> `codex-change-workflow`
@@ -92,3 +94,7 @@ For app work that needs middleware, include `codex-runtime-readiness`.
 For durable, release, migration, rollback, history, or customization concerns, include `codex-version-readiness`.
 
 Read [commands.md](references/commands.md) for supported natural-language entry phrases.
+
+## Agent And Cost Signals
+
+Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.

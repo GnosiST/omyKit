@@ -17,6 +17,16 @@ function run(args, cwd = tmpRoot) {
   });
 }
 
+function runFails(args, pattern, cwd = tmpRoot) {
+  try {
+    run(args, cwd);
+  } catch (error) {
+    assert.match(error.stderr?.toString() || error.message, pattern);
+    return;
+  }
+  assert.fail(`Expected command to fail: ${args.join(" ")}`);
+}
+
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
@@ -69,6 +79,7 @@ const planNode = graph.nodes.find((node) => node.id === "03-plan");
 for (const field of ["worker_profile", "claimed_by", "parallel_group", "join_policy", "lease_expires_at", "handoff_target"]) {
   delete planNode[field];
 }
+planNode.task_complexity = "expert";
 writeJson(graphPath, graph);
 const statePath = path.join(dir, "state.json");
 let state = readJson(statePath);
@@ -108,6 +119,12 @@ planCard.objective = "把看板改进拆成可验证的实现和文档步骤。"
 planCard.acceptance = ["计划节点包含可验证步骤。"];
 writeJson(planCardPath, planCard);
 
+const originalPlanCard = { ...planCard };
+planCard.language = 42;
+writeJson(planCardPath, planCard);
+runFails(["validate"], /language must be string or null/);
+writeJson(planCardPath, originalPlanCard);
+
 state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["01-intake"].status, "ready");
 assert.equal(state.nodes["02-design"].status, "pending");
@@ -124,10 +141,13 @@ assert.ok(state.active_nodes.includes("01-intake"));
 
 const intakeHandoff = path.join(dir, "handoffs", "01-intake-to-02-design.json");
 fs.writeFileSync(path.join(dir, "evidence", "01-intake-summary.txt"), "intake evidence\n");
+const intakeStart = "2099-01-01T00:00:00.000Z";
+const intakeEnd = "2099-01-01T00:08:00.000Z";
 writeJson(intakeHandoff, {
   workflow_id: "feature-x",
   node_id: "01-intake",
   status: "passed",
+  language: "zh-CN",
   summary: "需求已固化：为 Feature X 创建项目化看板。",
   work_items: [
     {
@@ -153,15 +173,42 @@ writeJson(intakeHandoff, {
     total_tokens: 140,
     notes: "test fixture",
   },
+  context_usage: {
+    source: "manual_fixture",
+    context_level: "scan",
+    source_bytes: 1200,
+    estimated_tokens: 300,
+    input_files: 2,
+    notes: "test fixture",
+  },
+  timing: {
+    started_at: intakeStart,
+    completed_at: intakeEnd,
+    duration_ms: 480000,
+    estimated_minutes: 10,
+    source: "manual_fixture",
+  },
   agent_activity: [
     {
       agent_id: "main-codex",
       role: "planner",
+      scope: "nodes/01-intake.json and evidence/01-intake-summary.txt",
       task: "固化 Feature X 需求",
       status: "done",
+      mode: "main-agent",
+      model_tier: "standard",
+      model_selection_reason: "测试夹具中的常规规划任务。",
+      started_at: intakeStart,
+      completed_at: intakeEnd,
       token_usage: {
         source: "manual",
         total_tokens: 140,
+      },
+      context_usage: {
+        source: "manual_fixture",
+        context_level: "scan",
+        estimated_tokens: 300,
+        input_files: 2,
       },
       evidence: ["evidence/01-intake-summary.txt"],
     },
@@ -174,10 +221,34 @@ writeJson(intakeHandoff, {
     },
   ],
 });
+const badUsageHandoff = path.join(dir, "handoffs", "01-intake-missing-usage-source.json");
+writeJson(badUsageHandoff, {
+  workflow_id: "feature-x",
+  node_id: "01-intake",
+  status: "passed",
+  summary: "Invalid fixture with missing usage sources.",
+  outputs: ["nodes/01-intake.json"],
+  verification: [
+    {
+      command: "manual intake check",
+      result: "passed",
+    },
+  ],
+  token_usage: {
+    total_tokens: 7,
+  },
+  context_usage: {
+    estimated_tokens: 11,
+  },
+});
+runFails(["validate"], /source is required/);
+fs.rmSync(badUsageHandoff);
 const completeOutput = run(["complete", "01-intake", "--handoff", "handoffs/01-intake-to-02-design.json"]);
 assert.match(completeOutput, /Ready nodes: 02-design design - Design, 02-research research - Research/);
 state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["01-intake"].status, "passed");
+assert.ok(state.nodes["01-intake"].started_at);
+assert.ok(state.nodes["01-intake"].completed_at);
 assert.equal(state.nodes["02-design"].status, "ready");
 assert.equal(state.nodes["02-research"].status, "ready");
 
@@ -239,6 +310,10 @@ assert.match(boardOutput, /board\.html/);
 const board = readJson(path.join(dir, "board.json"));
 assert.equal(board.language, "zh-CN");
 assert.equal(board.summary.total, 7);
+const projectedNodes = Object.values(board.columns).flat();
+const projectedPlan = projectedNodes.find((node) => node.id === "03-plan");
+assert.equal(projectedPlan.task_complexity, "expert");
+assert.equal(projectedPlan.model_tier, "frontier");
 assert.equal(board.project.name, "Feature X Project");
 assert.equal(board.project.workflow_id, "feature-x");
 assert.ok(Array.isArray(board.project.key_files));
@@ -249,6 +324,12 @@ assert.ok(Array.isArray(board.collaboration.worker_profiles));
 assert.ok(Array.isArray(board.usage.by_node));
 assert.ok(Array.isArray(board.usage.by_agent));
 assert.ok(Array.isArray(board.usage.by_parallel_group));
+assert.ok(Array.isArray(board.context.by_node));
+assert.ok(Array.isArray(board.context.by_agent));
+assert.ok(Array.isArray(board.timing.by_node));
+assert.ok(Array.isArray(board.project.main_changes));
+assert.ok(Array.isArray(board.recommendations));
+assert.deepEqual(board.improvement_plan, board.recommendations);
 assert.ok(Array.isArray(board.risks.retry_alerts));
 assert.ok(Array.isArray(board.recent_events));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake"));
@@ -256,12 +337,22 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && /需求
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.work_items.some((item) => /Feature X/.test(item.title))));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.changed_files.some((file) => file.path === "nodes/01-intake.json")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.token_usage.total_tokens === 140));
-assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex")));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.context_usage.estimated_tokens === 300));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.timing.duration_minutes === 8));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.model_tier === "fast"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex" && activity.scope)));
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
 assert.ok(board.usage.missing_nodes.includes("02-research"));
 assert.ok(board.usage.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.total_tokens === 140));
 assert.ok(board.usage.by_parallel_group.some((group) => group.parallel_group === "strategy" && group.nodes.includes("02-research")));
+assert.equal(board.context.totals.estimated_tokens, 300);
+assert.ok(board.context.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.estimated_tokens === 300));
+assert.ok(board.context.missing_nodes.includes("02-research"));
+assert.ok(board.project.main_changes.some((change) => change.path === "nodes/01-intake.json" && /需求接收节点卡/.test(change.summary)));
+assert.ok(board.recommendations.some((item) => item.id === "missing-token-usage"));
+assert.ok(board.recommendations.some((item) => item.id === "missing-context-usage"));
+assert.ok(board.recommendations.some((item) => item.id === "resolve-02-design"));
 assert.ok(board.columns.blocked.some((node) => node.id === "02-design"));
 assert.ok(board.columns.ready.some((node) => node.id === "02-research"));
 assert.ok(board.flow.reject_edges.some((edge) => edge.from === "02-design" && edge.to === "01-intake"));
@@ -279,8 +370,20 @@ assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
 assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /Token 消耗/);
+assert.match(boardHtml, /整改建议/);
+assert.match(boardHtml, /上下文用量/);
+assert.match(boardHtml, /技术数据/);
+assert.match(boardHtml, /data-filter-status="blocked"/);
+assert.match(boardHtml, /aria-pressed="false"/);
+assert.match(boardHtml, /id="node-01-intake"/);
+assert.match(boardHtml, /data-node-id="01-intake"/);
+assert.match(boardHtml, /class="event-list"/);
+assert.match(boardHtml, /class="panel technical-data"/);
 assert.match(boardHtml, /需求已固化/);
 assert.match(boardHtml, /main-codex/);
+assert.doesNotMatch(boardHtml, /\{"passed"/);
+const eventListHtml = boardHtml.slice(boardHtml.indexOf('class="event-list"'), boardHtml.indexOf('class="panel technical-data"'));
+assert.doesNotMatch(eventListHtml, /&quot;event&quot;/);
 
 run(["board", "--lang", "中文"]);
 const zhAliasBoard = readJson(path.join(dir, "board.json"));
@@ -294,6 +397,9 @@ assert.equal(englishBoard.language, "en");
 const englishHtml = fs.readFileSync(path.join(dir, "board.html"), "utf8");
 assert.match(englishHtml, /Command Center/);
 assert.match(englishHtml, /Task Tracker/);
+assert.match(englishHtml, /Improvement Plan/);
+assert.match(englishHtml, /Technical Data/);
+assert.match(englishHtml, /Click a metric/);
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log("omykit workflow tests passed");

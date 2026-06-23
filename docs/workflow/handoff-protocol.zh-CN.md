@@ -26,6 +26,7 @@
   "workflow_id": "2026-06-23-feature-x",
   "node_id": "03-implement",
   "status": "passed",
+  "language": "zh-CN",
   "summary": "已完成限定范围内的实现，并更新聚焦测试。",
   "work_items": [
     {
@@ -62,8 +63,13 @@
     {
       "agent_id": "agent-1",
       "role": "coder",
+      "scope": "src/foo.ts 和 tests/foo.test.ts",
       "task": "实现限定范围内的兜底逻辑并补测试。",
       "status": "done",
+      "model_tier": "standard",
+      "model_selection_reason": "限定范围实现并补测试，不涉及架构决策。",
+      "started_at": "2026-06-23T10:00:00.000Z",
+      "completed_at": "2026-06-23T10:24:00.000Z",
       "evidence": [
         "evidence/03-implement-test-output.txt"
       ],
@@ -71,6 +77,12 @@
         "source": "tool_reported",
         "model": "gpt-5.4",
         "total_tokens": 18420
+      },
+      "context_usage": {
+        "source": "estimated_from_files",
+        "context_level": "focus",
+        "estimated_tokens": 6200,
+        "input_files": 4
       }
     }
   ],
@@ -79,15 +91,29 @@
     "total_tokens": 18420,
     "notes": "由已记录的 agent activity 汇总。"
   },
+  "context_usage": {
+    "source": "estimated_from_files",
+    "context_level": "focus",
+    "source_bytes": 24000,
+    "estimated_tokens": 6200,
+    "input_files": 4
+  },
+  "timing": {
+    "started_at": "2026-06-23T10:00:00.000Z",
+    "completed_at": "2026-06-23T10:24:00.000Z",
+    "duration_ms": 1440000,
+    "estimated_minutes": 30,
+    "source": "manual"
+  },
   "open_risks": [],
   "non_blocking_notes": [],
   "next_recommended_node": "04-verify"
 }
 ```
 
-使用 `work_items` 和 `changed_files`，让看板成为任务追踪表，而不是通用状态板。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。
+使用 `language`、`work_items`、`changed_files`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier` 和证据。
 
-token 记录必须有来源。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。
+token 和上下文记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只作为执行事实记录。
 
 ## Failed And Reject
 

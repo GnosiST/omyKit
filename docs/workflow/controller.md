@@ -35,7 +35,7 @@ $omykit 生成看板并打开
 $omykit 校验工作流
 ```
 
-Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, token coverage, failed/blocked nodes, and residual risk.
+Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
 
@@ -90,13 +90,13 @@ It writes:
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows a task tracker, actual node work items, changed files, verification results, evidence availability, agent activity, token usage coverage, command-center metrics, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, and recent ledger events.
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, a task tracker, actual node work items, changed-file summaries, verification results, evidence availability, agent activity, model-tier policy, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
 
-Token totals are source-aware. The controller aggregates recorded node or agent token usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost.
+Token and context totals are source-aware. The controller aggregates recorded node or agent usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost.
 
-Use `--lang zh-CN` to render Simplified Chinese board labels. Use `--open` to ask the controller to open the generated HTML with the system default browser. If the browser cannot be opened automatically, the files remain in place and the command prints the HTML path.
+Use `--lang zh-CN` to render Simplified Chinese board labels. In Codex Desktop, Codex should return the generated `board.html` path as a local link and open it in the built-in browser when that surface is available. The CLI `--open` fallback asks the operating system to open the generated HTML with the system default browser; if that fails, the files remain in place and the command prints the HTML path.
 
-The board is intentionally static. It does not automatically start agents, enforce claims, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates. It can record and display multiple agents, worker lanes, logical parallel groups, and handoff evidence when Codex or another worker writes those records.
+The board is intentionally static. It does not automatically start agents, enforce claims, choose a provider model, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates. It can record and display multiple agents, worker lanes, logical parallel groups, model-tier recommendations, timing, usage, and handoff evidence when Codex or another worker writes those records.
 
 ## Files
 

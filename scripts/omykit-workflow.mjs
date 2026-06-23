@@ -22,6 +22,9 @@ const NODE_TYPES = new Set([
 const MODES = new Set(["Lite", "Standard", "Strict"]);
 const CONTEXT_LEVELS = new Set(["scan", "focus", "deep"]);
 const JOIN_POLICIES = new Set(["all_required", "any_passed", "manual_review"]);
+const TASK_COMPLEXITIES = new Set(["simple", "standard", "complex", "expert"]);
+const MODEL_TIERS = new Set(["fast", "standard", "frontier"]);
+const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
   "claimed_by",
@@ -29,12 +32,20 @@ const COLLABORATION_FIELDS = [
   "join_policy",
   "lease_expires_at",
   "handoff_target",
+  "task_complexity",
+  "model_tier",
+  "model_selection_reason",
+  "estimated_minutes",
+  "language",
 ];
 const DEFAULT_MODE = "Standard";
 const BOARD_LABELS = {
   en: {
     pageTitle: "omyKit Board",
     commandCenter: "Command Center",
+    clickMetricHint: "Click a metric to jump to matching nodes.",
+    showingStatus: "Showing",
+    clearFilter: "Clear filter",
     complete: "complete",
     next: "Next",
     criticalPath: "Critical path",
@@ -79,6 +90,8 @@ const BOARD_LABELS = {
     projection: "Board Projection",
     generated: "generated",
     projectSnapshot: "Project Snapshot",
+    mainChanges: "Main Changes",
+    noMainChanges: "No project changes recorded",
     projectPath: "Project path",
     gitBranch: "Git branch",
     gitCommit: "Git commit",
@@ -100,18 +113,53 @@ const BOARD_LABELS = {
     handoff: "Handoff",
     evidence: "Evidence",
     taskTracker: "Task Tracker",
+    statusNodes: "Status Nodes",
     workItems: "Work Items",
     changedFiles: "Changed Files",
+    changeSummary: "Change Summary",
     tokenUsage: "Token Usage",
     tokenTotal: "Total tokens",
     tokenRecorded: "Recorded nodes",
     tokenMissing: "Missing token records",
     tokenCoverage: "Token coverage",
+    contextUsage: "Context Usage",
+    contextCoverage: "Context coverage",
+    contextTotal: "Approx context tokens",
+    contextMissing: "Missing context records",
+    timeUsage: "Time",
+    elapsed: "Elapsed",
+    estimatedRemaining: "Estimated remaining",
+    averageNodeTime: "Average node time",
+    startedAt: "Started",
+    completedAt: "Completed",
+    duration: "Duration",
+    eta: "ETA",
+    modelTier: "Model tier",
+    modelSelection: "Model selection",
+    complexity: "Complexity",
+    assignment: "Assignment",
+    role: "Role",
+    scope: "Scope",
     parallelGroups: "Parallel Groups",
     agentActivity: "Agent Activity",
+    agentPolicy: "Agent Policy",
     actualWork: "Actual Work",
     nodeContract: "Node Contract",
     timeline: "Timeline",
+    timelineHelp: "Recent events are the audit trail for starts, completions, rejects, and blocks.",
+    flowHelp: "Flow map shows dependency order and reject paths; click node ids elsewhere for details.",
+    collaborationHelp: "Lanes group work by role and model tier. They show coordination records, not automatic dispatch.",
+    improvementPlan: "Improvement Plan",
+    noRecommendations: "No action required from the current board data.",
+    actionHint: "Action",
+    inspectNode: "Inspect node",
+    openDetails: "Open details",
+    technicalData: "Technical Data",
+    rawProjection: "Raw board projection",
+    statusBreakdown: "Status breakdown",
+    claimedBy: "Claimed by",
+    noClaims: "No claimed running nodes",
+    noLeases: "No active leases",
     noWorkItems: "No work items recorded",
     noChangedFiles: "No changed files recorded",
     noAgentActivity: "No agent activity recorded",
@@ -137,6 +185,9 @@ const BOARD_LABELS = {
   "zh-CN": {
     pageTitle: "omyKit 看板",
     commandCenter: "总控中心",
+    clickMetricHint: "点击指标可跳转到对应状态节点。",
+    showingStatus: "正在查看",
+    clearFilter: "清除筛选",
     complete: "完成",
     next: "下一步",
     criticalPath: "关键路径",
@@ -181,6 +232,8 @@ const BOARD_LABELS = {
     projection: "看板投影数据",
     generated: "生成于",
     projectSnapshot: "项目快照",
+    mainChanges: "主要改动",
+    noMainChanges: "未记录项目改动",
     projectPath: "项目路径",
     gitBranch: "Git 分支",
     gitCommit: "Git 提交",
@@ -202,18 +255,53 @@ const BOARD_LABELS = {
     handoff: "交接",
     evidence: "证据",
     taskTracker: "任务追踪",
+    statusNodes: "状态节点",
     workItems: "工作项",
     changedFiles: "变更文件",
+    changeSummary: "改动说明",
     tokenUsage: "Token 消耗",
     tokenTotal: "总 token",
     tokenRecorded: "已记录节点",
     tokenMissing: "未记录 token 的节点",
     tokenCoverage: "Token 覆盖率",
+    contextUsage: "上下文用量",
+    contextCoverage: "上下文覆盖率",
+    contextTotal: "估算上下文 token",
+    contextMissing: "未记录上下文的节点",
+    timeUsage: "时间",
+    elapsed: "已用时",
+    estimatedRemaining: "预计剩余",
+    averageNodeTime: "平均节点耗时",
+    startedAt: "开始",
+    completedAt: "完成",
+    duration: "耗时",
+    eta: "预计完成",
+    modelTier: "模型档位",
+    modelSelection: "模型选择",
+    complexity: "复杂度",
+    assignment: "分工",
+    role: "角色",
+    scope: "范围",
     parallelGroups: "并行组",
     agentActivity: "子智能体活动",
+    agentPolicy: "智能体策略",
     actualWork: "实际完成",
     nodeContract: "节点合同",
     timeline: "时间线",
+    timelineHelp: "最近事件是启动、完成、打回和阻塞的审计轨迹。",
+    flowHelp: "流程地图展示依赖顺序和打回路径；节点详情里可以查看具体任务。",
+    collaborationHelp: "协作泳道按角色和模型档位分组，只展示协作记录，不代表自动调度。",
+    improvementPlan: "整改建议",
+    noRecommendations: "当前看板数据没有发现需要处理的问题。",
+    actionHint: "处理",
+    inspectNode: "查看节点",
+    openDetails: "打开详情",
+    technicalData: "技术数据",
+    rawProjection: "原始看板投影",
+    statusBreakdown: "状态分布",
+    claimedBy: "认领人",
+    noClaims: "没有已认领的进行中节点",
+    noLeases: "没有有效租约",
     noWorkItems: "未记录工作项",
     noChangedFiles: "未记录变更文件",
     noAgentActivity: "未记录子智能体活动",
@@ -406,12 +494,13 @@ function nodeMap(graph) {
   return new Map(graph.nodes.map((node) => [node.id, node]));
 }
 
-function stateEntry(status, reason = null, lastHandoff = null) {
+function stateEntry(status, reason = null, lastHandoff = null, extra = {}) {
   return {
     status,
     updated_at: now(),
     last_handoff: lastHandoff,
     reason,
+    ...extra,
   };
 }
 
@@ -537,7 +626,46 @@ function nodeObjective(node) {
   return objectives[node.type] || `Complete ${node.title}.`;
 }
 
+function defaultNodePolicy(node) {
+  const byType = {
+    intake: { task_complexity: "simple", model_tier: "fast", estimated_minutes: 10 },
+    research: { task_complexity: "standard", model_tier: "standard", estimated_minutes: 25 },
+    design: { task_complexity: "complex", model_tier: "frontier", estimated_minutes: 30 },
+    plan: { task_complexity: "standard", model_tier: "standard", estimated_minutes: 20 },
+    implement: { task_complexity: "complex", model_tier: "standard", estimated_minutes: 45 },
+    verify: { task_complexity: "standard", model_tier: "standard", estimated_minutes: 25 },
+    review: { task_complexity: "complex", model_tier: "frontier", estimated_minutes: 30 },
+    delivery: { task_complexity: "simple", model_tier: "fast", estimated_minutes: 15 },
+    evolution: { task_complexity: "complex", model_tier: "frontier", estimated_minutes: 30 },
+  };
+  const base = byType[node.type] || byType.plan;
+  const complexity = node.task_complexity || base.task_complexity;
+  const value = {
+    ...base,
+    task_complexity: complexity,
+    model_tier: node.model_tier || modelTierForComplexity(complexity, base.model_tier),
+  };
+  return {
+    ...value,
+    model_selection_reason: modelSelectionReason(value.task_complexity, value.model_tier),
+  };
+}
+
+function modelTierForComplexity(complexity, fallbackTier = "standard") {
+  if (complexity === "expert") return "frontier";
+  if (complexity === "simple") return "fast";
+  if (complexity === "standard") return "standard";
+  return fallbackTier;
+}
+
+function modelSelectionReason(complexity, tier) {
+  if (tier === "fast") return "Clear, low-risk, bounded task; use the fastest capable model.";
+  if (tier === "frontier") return "Requires architecture, design, review, or broad judgment; use the strongest available model.";
+  return `Task complexity is ${complexity}; use a balanced model before escalating.`;
+}
+
 function nodeCard(graph, node) {
+  const policy = defaultNodePolicy(node);
   const card = {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
@@ -553,6 +681,10 @@ function nodeCard(graph, node) {
       `evidence/${node.id}-summary.txt`,
     ],
     handoff_required: true,
+    task_complexity: node.task_complexity || policy.task_complexity,
+    model_tier: node.model_tier || policy.model_tier,
+    model_selection_reason: node.model_selection_reason || policy.model_selection_reason,
+    estimated_minutes: Number.isFinite(node.estimated_minutes) ? node.estimated_minutes : policy.estimated_minutes,
   };
   for (const field of COLLABORATION_FIELDS) {
     if (Object.prototype.hasOwnProperty.call(node, field)) card[field] = node[field];
@@ -616,6 +748,24 @@ function validateGraph(graph) {
     }
     if (node.join_policy !== undefined && !JOIN_POLICIES.has(node.join_policy)) {
       errors.push(`invalid join_policy for ${node.id}: ${node.join_policy}`);
+    }
+    if (node.task_complexity !== undefined && !TASK_COMPLEXITIES.has(node.task_complexity)) {
+      errors.push(`invalid task_complexity for ${node.id}: ${node.task_complexity}`);
+    }
+    if (node.model_tier !== undefined && !MODEL_TIERS.has(node.model_tier)) {
+      errors.push(`invalid model_tier for ${node.id}: ${node.model_tier}`);
+    }
+    if (node.task_complexity === "expert" && node.model_tier !== undefined && node.model_tier !== "frontier") {
+      errors.push(`node.model_tier must be frontier when task_complexity is expert for ${node.id}`);
+    }
+    if (node.language !== undefined && node.language !== null && typeof node.language !== "string") {
+      errors.push(`node.language must be string or null for ${node.id}`);
+    }
+    if (node.model_selection_reason !== undefined && typeof node.model_selection_reason !== "string") {
+      errors.push(`node.model_selection_reason must be string for ${node.id}`);
+    }
+    if (node.estimated_minutes !== undefined && (!Number.isFinite(node.estimated_minutes) || node.estimated_minutes < 0)) {
+      errors.push(`node.estimated_minutes must be a non-negative number for ${node.id}`);
     }
     for (const dependency of node.depends_on || []) {
       if (!map.has(dependency)) errors.push(`${node.id} depends on missing node ${dependency}`);
@@ -708,6 +858,24 @@ function validateNodeCards(workflowDir, graph) {
     if (!Array.isArray(card.allowed_outputs) || card.allowed_outputs.length === 0) {
       errors.push(`node card ${node.id} allowed_outputs must be non-empty`);
     }
+    if (card.task_complexity !== undefined && !TASK_COMPLEXITIES.has(card.task_complexity)) {
+      errors.push(`node card ${node.id} task_complexity is invalid`);
+    }
+    if (card.model_tier !== undefined && !MODEL_TIERS.has(card.model_tier)) {
+      errors.push(`node card ${node.id} model_tier is invalid`);
+    }
+    if (card.task_complexity === "expert" && card.model_tier !== undefined && card.model_tier !== "frontier") {
+      errors.push(`node card ${node.id} model_tier must be frontier when task_complexity is expert`);
+    }
+    if (card.language !== undefined && card.language !== null && typeof card.language !== "string") {
+      errors.push(`node card ${node.id} language must be string or null`);
+    }
+    if (card.model_selection_reason !== undefined && typeof card.model_selection_reason !== "string") {
+      errors.push(`node card ${node.id} model_selection_reason must be string`);
+    }
+    if (card.estimated_minutes !== undefined && (!Number.isFinite(card.estimated_minutes) || card.estimated_minutes < 0)) {
+      errors.push(`node card ${node.id} estimated_minutes must be non-negative number`);
+    }
   }
   return errors;
 }
@@ -718,6 +886,9 @@ function validateTokenUsageShape(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return [`${label} must be an object`];
   }
+  if (!value.source || typeof value.source !== "string") {
+    errors.push(`${label}.source is required`);
+  }
   for (const field of ["input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens", "total_tokens"]) {
     if (value[field] !== undefined && (!Number.isInteger(value[field]) || value[field] < 0)) {
       errors.push(`${label}.${field} must be a non-negative integer`);
@@ -726,8 +897,48 @@ function validateTokenUsageShape(value, label) {
   return errors;
 }
 
+function validateContextUsageShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (!value.source || typeof value.source !== "string") {
+    errors.push(`${label}.source is required`);
+  }
+  if (value.context_level !== undefined && !CONTEXT_LEVELS.has(value.context_level)) {
+    errors.push(`${label}.context_level must be one of ${[...CONTEXT_LEVELS].join(", ")}`);
+  }
+  for (const field of ["source_bytes", "estimated_tokens", "input_files"]) {
+    if (value[field] !== undefined && (!Number.isInteger(value[field]) || value[field] < 0)) {
+      errors.push(`${label}.${field} must be a non-negative integer`);
+    }
+  }
+  return errors;
+}
+
+function validateTimingShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (value.duration_ms !== undefined && (!Number.isInteger(value.duration_ms) || value.duration_ms < 0)) {
+    errors.push(`${label}.duration_ms must be a non-negative integer`);
+  }
+  if (value.estimated_minutes !== undefined && (!Number.isFinite(value.estimated_minutes) || value.estimated_minutes < 0)) {
+    errors.push(`${label}.estimated_minutes must be a non-negative number`);
+  }
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
+  if (handoff.language !== undefined && typeof handoff.language !== "string") {
+    errors.push("handoff.language must be a string");
+  }
+  errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
+  errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -760,15 +971,29 @@ function validateTaskTrackingFields(handoff) {
     if (!Array.isArray(handoff.agent_activity)) {
       errors.push("handoff.agent_activity must be an array");
     } else {
+      const agentIds = new Set();
       handoff.agent_activity.forEach((item, index) => {
         if (!item || typeof item !== "object" || Array.isArray(item)) {
           errors.push(`handoff.agent_activity[${index}] must be an object`);
           return;
         }
+        if (!item.agent_id) errors.push(`handoff.agent_activity[${index}].agent_id is required`);
+        if (item.agent_id && !AGENT_ID_PATTERN.test(item.agent_id)) {
+          errors.push(`handoff.agent_activity[${index}].agent_id must use lowercase letters, digits, dot, colon, underscore, or hyphen`);
+        }
+        if (item.agent_id) {
+          if (agentIds.has(item.agent_id)) errors.push(`handoff.agent_activity[${index}].agent_id duplicates another agent`);
+          agentIds.add(item.agent_id);
+        }
         if (!item.role) errors.push(`handoff.agent_activity[${index}].role is required`);
+        if (!item.scope) errors.push(`handoff.agent_activity[${index}].scope is required`);
         if (!item.task) errors.push(`handoff.agent_activity[${index}].task is required`);
         if (!item.status) errors.push(`handoff.agent_activity[${index}].status is required`);
+        if (item.model_tier !== undefined && !MODEL_TIERS.has(item.model_tier)) {
+          errors.push(`handoff.agent_activity[${index}].model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
+        }
         errors.push(...validateTokenUsageShape(item.token_usage, `handoff.agent_activity[${index}].token_usage`));
+        errors.push(...validateContextUsageShape(item.context_usage, `handoff.agent_activity[${index}].context_usage`));
       });
     }
   }
@@ -1189,9 +1414,10 @@ function normalizeTokenUsage(value) {
   const cached = Number.isFinite(value.cached_tokens) ? value.cached_tokens : null;
   const summed = [input, output, reasoning].filter((item) => Number.isFinite(item)).reduce((sum, item) => sum + item, 0);
   const total = Number.isFinite(value.total_tokens) ? value.total_tokens : summed || null;
+  const source = typeof value.source === "string" && value.source ? value.source : null;
   return {
-    recorded: Number.isFinite(total),
-    source: value.source || "manual",
+    recorded: Boolean(source) && Number.isFinite(total),
+    source: source || "not_recorded",
     provider: value.provider || null,
     model: value.model || null,
     input_tokens: Number.isFinite(input) ? input : null,
@@ -1209,6 +1435,79 @@ function mergeTokenUsage(target, usage) {
   for (const field of ["input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens", "total_tokens"]) {
     if (Number.isFinite(usage[field])) target[field] += usage[field];
   }
+}
+
+function normalizeContextUsage(value, fallbackLevel) {
+  if (!value || typeof value !== "object") {
+    return {
+      recorded: false,
+      source: "not_recorded",
+      context_level: fallbackLevel || null,
+      source_bytes: null,
+      estimated_tokens: null,
+      input_files: null,
+      notes: null,
+    };
+  }
+  const estimatedTokens = Number.isFinite(value.estimated_tokens) ? value.estimated_tokens : null;
+  const sourceBytes = Number.isFinite(value.source_bytes) ? value.source_bytes : null;
+  const source = typeof value.source === "string" && value.source ? value.source : null;
+  return {
+    recorded: Boolean(source) && (Number.isFinite(estimatedTokens) || Number.isFinite(sourceBytes) || Number.isFinite(value.input_files)),
+    source: source || "not_recorded",
+    context_level: value.context_level || fallbackLevel || null,
+    source_bytes: sourceBytes,
+    estimated_tokens: estimatedTokens,
+    input_files: Number.isFinite(value.input_files) ? value.input_files : null,
+    notes: value.notes || null,
+  };
+}
+
+function mergeContextUsage(target, usage) {
+  if (!usage?.recorded) return;
+  if (Number.isFinite(usage.source_bytes)) target.source_bytes += usage.source_bytes;
+  if (Number.isFinite(usage.estimated_tokens)) target.estimated_tokens += usage.estimated_tokens;
+  if (Number.isFinite(usage.input_files)) target.input_files += usage.input_files;
+}
+
+function parseTimestamp(value) {
+  if (!value) return null;
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : null;
+}
+
+function isoFromMs(value) {
+  return Number.isFinite(value) ? new Date(value).toISOString() : null;
+}
+
+function terminalEventName(eventName) {
+  return ["node.complete", "node.reject", "node.block", "node.skip"].includes(eventName);
+}
+
+function normalizeTiming(handoff, timeline, entry, estimatedMinutes) {
+  const timing = handoff?.timing && typeof handoff.timing === "object" ? handoff.timing : {};
+  const startEvent = timeline.find((event) => event.event === "node.start");
+  const terminalEvent = [...timeline].reverse().find((event) => terminalEventName(event.event));
+  const startedAt = timing.started_at || startEvent?.at || null;
+  const completedAt = timing.completed_at || terminalEvent?.at || (["passed", "failed", "blocked", "skipped"].includes(entry?.status) ? entry?.updated_at : null);
+  const startedMs = parseTimestamp(startedAt);
+  const completedMs = parseTimestamp(completedAt);
+  const durationMs = Number.isFinite(timing.duration_ms)
+    ? timing.duration_ms
+    : startedMs !== null && completedMs !== null && completedMs >= startedMs
+      ? completedMs - startedMs
+      : null;
+  const estimate = Number.isFinite(timing.estimated_minutes) ? timing.estimated_minutes : estimatedMinutes ?? null;
+  const etaMs = startedMs !== null && Number.isFinite(estimate) && !completedAt ? startedMs + estimate * 60_000 : null;
+  return {
+    started_at: startedAt,
+    completed_at: completedAt,
+    duration_ms: durationMs,
+    duration_minutes: Number.isFinite(durationMs) ? Math.round((durationMs / 60_000) * 10) / 10 : null,
+    estimated_minutes: Number.isFinite(estimate) ? estimate : null,
+    estimated_completion_at: timing.estimated_completion_at || isoFromMs(etaMs),
+    source: timing.source || (startedAt || completedAt ? "ledger" : "not_recorded"),
+  };
 }
 
 function normalizeWorkItems(handoff) {
@@ -1268,13 +1567,18 @@ function normalizeAgentActivity(handoff) {
   return activity.map((item, index) => ({
     agent_id: item.agent_id || item.name || `agent-${index + 1}`,
     role: item.role || "worker",
+    scope: item.scope || null,
     task: item.task || item.summary || "",
     status: item.status || "recorded",
     mode: item.mode || "subagent",
+    model_tier: item.model_tier || null,
+    model: item.model || null,
+    model_selection_reason: item.model_selection_reason || null,
     started_at: item.started_at || null,
     completed_at: item.completed_at || null,
     evidence: Array.isArray(item.evidence) ? item.evidence : [],
     token_usage: normalizeTokenUsage(item.token_usage),
+    context_usage: normalizeContextUsage(item.context_usage, null),
   }));
 }
 
@@ -1300,6 +1604,22 @@ function deriveTokenUsageFromAgents(agentActivity) {
   };
 }
 
+function deriveContextUsageFromAgents(agentActivity, fallbackLevel) {
+  const recorded = agentActivity.filter((item) => item.context_usage.recorded);
+  if (recorded.length === 0) return normalizeContextUsage(null, fallbackLevel);
+  const totals = { source_bytes: 0, estimated_tokens: 0, input_files: 0 };
+  for (const item of recorded) mergeContextUsage(totals, item.context_usage);
+  return {
+    recorded: true,
+    source: "derived_from_agent_activity",
+    context_level: fallbackLevel || null,
+    source_bytes: totals.source_bytes || null,
+    estimated_tokens: totals.estimated_tokens || null,
+    input_files: totals.input_files || null,
+    notes: "Summed from agent_activity context records.",
+  };
+}
+
 function readNodeLedgerEvents(allEvents, nodeId) {
   return allEvents
     .filter((event) => event.node_id === nodeId)
@@ -1310,6 +1630,7 @@ function readNodeLedgerEvents(allEvents, nodeId) {
       reject_to: event.reject_to || null,
       reason: event.reason || null,
       token_usage: normalizeTokenUsage(event.token_usage),
+      context_usage: normalizeContextUsage(event.context_usage, null),
     }));
 }
 
@@ -1332,6 +1653,7 @@ function collaborationValue(node, card, field, fallback) {
 function projectNode(workflowDir, state, cards, handoffs, allEvents, node, language) {
   const entry = state.nodes[node.id] || {};
   const card = cards.get(node.id) || {};
+  const policy = defaultNodePolicy(node);
   const handoff = latestHandoffForNode(entry, handoffs, node.id);
   const retry = retryInfoForNode(state, node.id);
   const display = localizedNodeText(node, card, language);
@@ -1342,6 +1664,25 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const explicitTokenUsage = normalizeTokenUsage(handoff?.token_usage);
   const tokenUsage = explicitTokenUsage.recorded ? explicitTokenUsage : deriveTokenUsageFromAgents(agentActivity);
   const timeline = readNodeLedgerEvents(allEvents, node.id);
+  const taskComplexity = collaborationValue(node, card, "task_complexity", policy.task_complexity);
+  const cardTierMatchesComplexity = !card.task_complexity || card.task_complexity === taskComplexity;
+  const modelTier = node.model_tier
+    || (cardTierMatchesComplexity ? card.model_tier : null)
+    || modelTierForComplexity(taskComplexity, policy.model_tier);
+  const cardReasonMatchesPolicy = cardTierMatchesComplexity && (!card.model_tier || card.model_tier === modelTier);
+  const modelReason = node.model_selection_reason
+    || (cardReasonMatchesPolicy ? card.model_selection_reason : null)
+    || modelSelectionReason(taskComplexity, modelTier);
+  const estimatedMinutes = Number.isFinite(node.estimated_minutes)
+    ? node.estimated_minutes
+    : Number.isFinite(card.estimated_minutes)
+      ? card.estimated_minutes
+      : policy.estimated_minutes;
+  const explicitContextUsage = normalizeContextUsage(handoff?.context_usage, node.context_level || card.context_level || "focus");
+  const contextUsage = explicitContextUsage.recorded
+    ? explicitContextUsage
+    : deriveContextUsageFromAgents(agentActivity, node.context_level || card.context_level || "focus");
+  const timing = normalizeTiming(handoff, timeline, entry, estimatedMinutes);
   return {
     id: node.id,
     title: node.title,
@@ -1351,6 +1692,11 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     owner: node.owner || "codex",
     required: node.required,
     context_level: node.context_level || card.context_level || "focus",
+    language: handoff?.language || card.language || node.language || null,
+    task_complexity: taskComplexity,
+    model_tier: modelTier,
+    model_selection_reason: modelReason,
+    estimated_minutes: estimatedMinutes,
     worker_profile: collaborationValue(node, card, "worker_profile", "unassigned"),
     claimed_by: collaborationValue(node, card, "claimed_by", null),
     parallel_group: collaborationValue(node, card, "parallel_group", "none"),
@@ -1385,6 +1731,8 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     changed_files: changedFiles,
     agent_activity: agentActivity,
     token_usage: tokenUsage,
+    context_usage: contextUsage,
+    timing,
     timeline,
     open_risks: ["failed", "blocked"].includes(entry.status) && entry.reason ? [entry.reason] : [],
     non_blocking_notes: handoff?.non_blocking_notes || [],
@@ -1606,6 +1954,232 @@ function buildUsage(projectedNodes) {
   };
 }
 
+function buildContextUsage(projectedNodes) {
+  const totals = { source_bytes: 0, estimated_tokens: 0, input_files: 0 };
+  const byNode = [];
+  const byAgent = new Map();
+  const missingNodes = [];
+  for (const node of projectedNodes) {
+    if (node.context_usage.recorded) {
+      mergeContextUsage(totals, node.context_usage);
+      byNode.push({ node_id: node.id, ...node.context_usage });
+    } else {
+      missingNodes.push(node.id);
+    }
+    for (const activity of node.agent_activity) {
+      if (!activity.context_usage.recorded) continue;
+      const key = `${activity.agent_id}:${activity.role}`;
+      if (!byAgent.has(key)) {
+        byAgent.set(key, {
+          agent_id: activity.agent_id,
+          role: activity.role,
+          source_bytes: 0,
+          estimated_tokens: 0,
+          input_files: 0,
+        });
+      }
+      mergeContextUsage(byAgent.get(key), activity.context_usage);
+    }
+  }
+  return {
+    totals,
+    recorded_nodes: byNode.length,
+    missing_nodes: missingNodes,
+    coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
+    by_node: byNode,
+    by_agent: [...byAgent.values()],
+  };
+}
+
+function buildTiming(projectedNodes) {
+  const durations = projectedNodes
+    .map((node) => node.timing.duration_ms)
+    .filter((value) => Number.isFinite(value));
+  const firstStart = projectedNodes
+    .map((node) => parseTimestamp(node.timing.started_at))
+    .filter((value) => value !== null)
+    .sort((a, b) => a - b)[0] ?? null;
+  const lastEnd = projectedNodes
+    .map((node) => parseTimestamp(node.timing.completed_at))
+    .filter((value) => value !== null)
+    .sort((a, b) => b - a)[0] ?? null;
+  const remainingEstimate = projectedNodes
+    .filter((node) => !["passed", "skipped"].includes(node.status))
+    .reduce((sum, node) => sum + (Number.isFinite(node.timing.estimated_minutes) ? node.timing.estimated_minutes : 0), 0);
+  return {
+    elapsed_ms: firstStart !== null && lastEnd !== null && lastEnd >= firstStart ? lastEnd - firstStart : null,
+    elapsed_minutes: firstStart !== null && lastEnd !== null && lastEnd >= firstStart ? Math.round(((lastEnd - firstStart) / 60_000) * 10) / 10 : null,
+    recorded_nodes: durations.length,
+    average_node_minutes: durations.length === 0 ? null : Math.round((durations.reduce((sum, value) => sum + value, 0) / durations.length / 60_000) * 10) / 10,
+    estimated_remaining_minutes: remainingEstimate,
+    by_node: projectedNodes.map((node) => ({ node_id: node.id, ...node.timing })),
+  };
+}
+
+function buildProjectChanges(projectedNodes, gitStatus) {
+  const byPath = new Map();
+  for (const item of gitStatus || []) {
+    byPath.set(item.path, { path: item.path, status: item.status, summaries: [] });
+  }
+  for (const node of projectedNodes) {
+    for (const file of node.changed_files) {
+      if (!byPath.has(file.path)) byPath.set(file.path, { path: file.path, status: file.status || "changed", summaries: [] });
+      const entry = byPath.get(file.path);
+      if (file.summary) entry.summaries.push(`${node.id}: ${file.summary}`);
+    }
+  }
+  return [...byPath.values()].map((item) => ({
+    path: item.path,
+    status: item.status,
+    summary: item.summaries.join(" | ") || null,
+  }));
+}
+
+function recommendation(id, severity, title, detail, action, nodeIds = []) {
+  return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
+}
+
+function buildRecommendations(projectedNodes, usage, context, risks, project, language = "en") {
+  const items = [];
+  const isZh = language === "zh-CN";
+  const text = boardText(language);
+  const failedOrBlocked = projectedNodes.filter((node) => ["failed", "blocked"].includes(node.status));
+  for (const node of failedOrBlocked) {
+    items.push(recommendation(
+      `resolve-${node.id}`,
+      node.status === "failed" ? "high" : "medium",
+      isZh
+        ? `${node.id} ${node.display_title || node.title} 处于${statusTitle(node.status, text)}`
+        : `${node.id} ${node.display_title || node.title} is ${node.status}`,
+      node.reason || node.handoff_summary || (isZh ? "下游继续前需要处理该节点。" : "Node needs attention before downstream work can continue."),
+      node.status === "failed"
+        ? (isZh ? `查看 ${node.last_handoff || node.id}，按 required_fix 修复或打回上游。` : `Inspect ${node.last_handoff || node.id} and reject/fix upstream output.`)
+        : (isZh ? `记录 blocker handoff，或解除 ${node.id} 的阻塞。` : `Record a blocker handoff or unblock ${node.id}.`),
+      [node.id],
+    ));
+  }
+  const readyUnclaimed = projectedNodes.filter((node) => node.status === "ready" && !node.claimed_by);
+  if (readyUnclaimed.length > 0) {
+    items.push(recommendation(
+      "claim-ready-nodes",
+      "medium",
+      isZh ? "存在未认领的就绪节点" : "Ready nodes are unclaimed",
+      isZh ? "就绪节点没有负责人时，后续执行容易停在计划层。" : "Ready nodes without owners can stall execution.",
+      isZh ? `认领或启动：${readyUnclaimed.map((node) => node.id).join(", ")}。` : `Claim or start: ${readyUnclaimed.map((node) => node.id).join(", ")}.`,
+      readyUnclaimed.map((node) => node.id),
+    ));
+  }
+  const runningNodes = projectedNodes.filter((node) => node.status === "running");
+  if (runningNodes.length > 0) {
+    items.push(recommendation(
+      "complete-running-nodes",
+      "medium",
+      isZh ? "存在进行中的节点" : "Nodes are still running",
+      isZh ? "进行中节点需要在完成、失败、阻塞或跳过时提交结构化 handoff。" : "Running nodes need a structured handoff when done, failed, blocked, or skipped.",
+      isZh ? `完成后为 ${runningNodes.map((node) => node.id).join(", ")} 写入 handoff。` : `Write handoffs for ${runningNodes.map((node) => node.id).join(", ")} when complete.`,
+      runningNodes.map((node) => node.id),
+    ));
+  }
+  const missingEvidence = projectedNodes.filter((node) => node.evidence_items.some((item) => !item.exists));
+  if (missingEvidence.length > 0) {
+    items.push(recommendation(
+      "missing-evidence",
+      "medium",
+      isZh ? "存在缺失的证据路径" : "Evidence paths are missing",
+      isZh ? "部分 handoff 证据路径在 workflow 目录或项目根目录中找不到。" : "Some handoff evidence paths cannot be found from the workflow directory or project root.",
+      isZh ? "补齐证据文件，或修正 handoff 中的路径。" : "Create the missing evidence files or update the handoff paths.",
+      missingEvidence.map((node) => node.id),
+    ));
+  }
+  if (usage.missing_nodes.length > 0) {
+    items.push(recommendation(
+      "missing-token-usage",
+      "low",
+      isZh ? "Token 消耗记录不完整" : "Token usage coverage is incomplete",
+      isZh ? "更多节点记录来源感知 token 后，看板才能分析真实消耗趋势。" : "The board cannot show full token cost trends until more nodes record source-aware token usage.",
+      isZh ? "工具暴露精确用量时记录 token_usage；拿不到时保持缺失，不要编造。" : "Record token_usage when the provider or tool exposes exact usage; otherwise leave it missing.",
+      usage.missing_nodes,
+    ));
+  }
+  if (context.missing_nodes.length > 0) {
+    items.push(recommendation(
+      "missing-context-usage",
+      "low",
+      isZh ? "上下文大小记录不完整" : "Context size coverage is incomplete",
+      isZh ? "上下文记录可以帮助后续优化 compact、检索和子智能体拆分策略。" : "Context records are needed to optimize future workflow cost and compact behavior.",
+      isZh ? "后续节点记录 context_usage.source_bytes、estimated_tokens、input_files 和 source。" : "Record context_usage.source_bytes, estimated_tokens, input_files, and source for future nodes.",
+      context.missing_nodes,
+    ));
+  }
+  const overloaded = projectedNodes.filter((node) => node.agent_activity.length > 3);
+  if (overloaded.length > 0) {
+    items.push(recommendation(
+      "agent-fanout-review",
+      "low",
+      isZh ? "检测到较大的子智能体扇出" : "Large agent fan-out detected",
+      isZh ? "同一节点使用很多子智能体可能有价值，但如果范围重叠会浪费上下文。" : "Many agent activities on one node can be useful, but may waste context if their scopes overlap.",
+      isZh ? "确认每个子智能体都有独立角色、边界上下文和不重叠产物。" : "Confirm each subagent has a distinct role, bounded context, and non-overlapping output.",
+      overloaded.map((node) => node.id),
+    ));
+  }
+  const noChangeSummary = (project?.main_changes || []).filter((change) => !change.summary);
+  if (project?.git?.dirty && noChangeSummary.length > 0) {
+    items.push(recommendation(
+      "missing-change-summary",
+      "low",
+      isZh ? "部分当前改动缺少主要改动说明" : "Some active changes lack summaries",
+      isZh ? "只列文件名不能说明这些改动完成了什么，也不利于回滚和审查。" : "A file list alone does not explain what the changes achieved or support review and rollback.",
+      isZh ? "在相关节点 handoff.changed_files 中补充 summary。" : "Add summary fields to handoff.changed_files for the relevant nodes.",
+      [],
+    ));
+  }
+  const workFilesWithoutChanges = projectedNodes.filter((node) => (
+    node.work_items.some((item) => item.files?.length > 0) && node.changed_files.length === 0
+  ));
+  if (workFilesWithoutChanges.length > 0) {
+    items.push(recommendation(
+      "work-files-without-changes",
+      "low",
+      isZh ? "工作项文件没有进入变更摘要" : "Work item files are not summarized as changed files",
+      isZh ? "任务详情里出现文件，但项目快照无法说明这些文件的主要变化。" : "Task details mention files, but the project snapshot cannot explain the main changes.",
+      isZh ? "把实际改动文件提升到 changed_files，或说明它们只是参考输入。" : "Promote changed files into changed_files, or clarify that they were reference inputs only.",
+      workFilesWithoutChanges.map((node) => node.id),
+    ));
+  }
+  const laneLoad = new Map();
+  for (const node of projectedNodes) {
+    const profile = node.worker_profile || "unassigned";
+    if (!laneLoad.has(profile)) laneLoad.set(profile, { profile, ready: 0, running: 0, nodes: [] });
+    const lane = laneLoad.get(profile);
+    if (["ready", "running"].includes(node.status)) lane.nodes.push(node.id);
+    if (node.status === "ready") lane.ready += 1;
+    if (node.status === "running") lane.running += 1;
+  }
+  for (const lane of [...laneLoad.values()].filter((item) => item.running > 1 || item.ready + item.running > 2)) {
+    items.push(recommendation(
+      `overloaded-${lane.profile}`,
+      "low",
+      isZh ? `${lane.profile} 泳道负载偏高` : `${lane.profile} lane is overloaded`,
+      isZh ? "同一角色同时承担过多 ready/running 节点会降低并行收益。" : "Too many ready/running nodes in one role lowers the value of parallelism.",
+      isZh ? "拆分角色、缩小节点范围，或释放不必要的认领。" : "Split the role, reduce node scope, or release unnecessary claims.",
+      lane.nodes,
+    ));
+  }
+  for (const alert of risks.retry_alerts || []) {
+    if (alert.exceeded) {
+      items.push(recommendation(
+        `retry-${alert.edge}`,
+        "high",
+        isZh ? `${alert.edge} 超过重试上限` : `Retry limit exceeded for ${alert.edge}`,
+        isZh ? "同一打回循环已经超过配置的重试限制。" : "The same reject loop exceeded its configured retry limit.",
+        isZh ? "停止自动重试，进行人工设计决策。" : "Stop automatic retries and make a human design decision.",
+        [alert.from, alert.to],
+      ));
+    }
+  }
+  return items;
+}
+
 function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
   const map = nodeMap(graph);
   return {
@@ -1652,6 +2226,12 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const recentEvents = allEvents.slice(-10);
   const critical = criticalPath(graph);
   const usage = buildUsage(projectedNodes);
+  const context = buildContextUsage(projectedNodes);
+  const timing = buildTiming(projectedNodes);
+  const project = buildProjectSnapshot(workflowDir, graph);
+  project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
+  const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, risks, project, language);
   return {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
@@ -1659,7 +2239,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     mode: graph.mode,
     language,
     generated_at: now(),
-    project: buildProjectSnapshot(workflowDir, graph),
+    project,
     summary: {
       total: projectedNodes.length,
       completion_percent: completionPercent(counts, projectedNodes.length),
@@ -1695,7 +2275,11 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     },
     collaboration: buildCollaboration(projectedNodes),
     usage,
-    risks: buildRisks(workflowDir, graph, state, projectedNodes, handoffs),
+    context,
+    timing,
+    risks,
+    recommendations,
+    improvement_plan: recommendations,
     recent_events: recentEvents,
   };
 }
@@ -1713,9 +2297,25 @@ function escapeInlineJson(value) {
   return JSON.stringify(value, null, 2).replaceAll("<", "\\u003c");
 }
 
+function formatListValue(item) {
+  if (typeof item === "string") return item;
+  if (!item || typeof item !== "object") return String(item ?? "");
+  if (item.edge) {
+    return `${item.edge}: ${item.count ?? 0}${item.retry_limit !== null && item.retry_limit !== undefined ? ` / ${item.retry_limit}` : ""}${item.exceeded ? " exceeded" : ""}`;
+  }
+  if (item.node_id) {
+    return [item.node_id, item.reject_to ? `reject_to=${item.reject_to}` : null, item.reason, item.required_fix]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  return Object.entries(item)
+    .map(([key, value]) => `${key}=${Array.isArray(value) ? value.join(",") : value}`)
+    .join(" · ");
+}
+
 function renderList(items, empty = "none") {
   if (!items || items.length === 0) return `<span class="muted">${escapeHtml(empty)}</span>`;
-  return `<ul>${items.map((item) => `<li>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</li>`).join("")}</ul>`;
+  return `<ul>${items.map((item) => `<li>${escapeHtml(formatListValue(item))}</li>`).join("")}</ul>`;
 }
 
 function renderObjectList(items, empty, renderItem) {
@@ -1723,8 +2323,14 @@ function renderObjectList(items, empty, renderItem) {
   return `<ul>${items.map((item) => `<li>${renderItem(item)}</li>`).join("")}</ul>`;
 }
 
-function renderMetric(label, value) {
-  return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+function renderMetric(label, value, options = null) {
+  const body = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
+  if (typeof options === "string") return `<a class="metric metric-link" href="${escapeHtml(options)}">${body}</a>`;
+  if (options?.filterStatus) {
+    return `<button type="button" class="metric metric-button" data-filter-status="${escapeHtml(options.filterStatus)}" aria-pressed="false">${body}</button>`;
+  }
+  if (options?.href) return `<a class="metric metric-link" href="${escapeHtml(options.href)}">${body}</a>`;
+  return `<div class="metric">${body}</div>`;
 }
 
 function renderInlineItems(items, empty) {
@@ -1749,6 +2355,15 @@ function formatTokens(usage, text) {
   return `${usage.total_tokens} (${text.source}: ${usage.source})`;
 }
 
+function formatDuration(minutes, text) {
+  if (!Number.isFinite(minutes)) return text.notRecorded;
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rest = Math.round(minutes % 60);
+  return rest > 0 ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
 function renderTokenUsage(usage, text) {
   if (!usage?.recorded) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
   const fields = [
@@ -1763,6 +2378,30 @@ function renderTokenUsage(usage, text) {
     ["recorded_at", usage.recorded_at],
   ].filter(([, value]) => value !== null && value !== undefined);
   return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>${usage.notes ? `<p class="muted">${escapeHtml(usage.notes)}</p>` : ""}`;
+}
+
+function renderContextUsage(usage, text) {
+  if (!usage?.recorded) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const fields = [
+    ["level", usage.context_level],
+    ["source_bytes", usage.source_bytes],
+    ["estimated_tokens", usage.estimated_tokens],
+    ["input_files", usage.input_files],
+    [text.source, usage.source],
+  ].filter(([, value]) => value !== null && value !== undefined);
+  return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>${usage.notes ? `<p class="muted">${escapeHtml(usage.notes)}</p>` : ""}`;
+}
+
+function renderTiming(timing, text) {
+  const fields = [
+    [text.startedAt, timing.started_at],
+    [text.completedAt, timing.completed_at],
+    [text.duration, formatDuration(timing.duration_minutes, text)],
+    [text.eta, timing.estimated_completion_at],
+    ["estimate", Number.isFinite(timing.estimated_minutes) ? `${timing.estimated_minutes}m` : null],
+    [text.source, timing.source],
+  ].filter(([, value]) => value !== null && value !== undefined);
+  return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>`;
 }
 
 function renderWorkItems(items, text) {
@@ -1791,7 +2430,11 @@ function renderAgentActivity(items, text) {
   return renderObjectList(items, text.noAgentActivity, (item) => {
     const tokens = formatTokens(item.token_usage, text);
     const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
-    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p><p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${evidence}`;
+    const model = item.model_tier || item.model ? `<p><strong>${escapeHtml(text.modelSelection)}:</strong> ${escapeHtml([item.model_tier, item.model].filter(Boolean).join(" / "))}</p>` : "";
+    const scope = item.scope ? `<p><strong>${escapeHtml(text.scope)}:</strong> ${escapeHtml(item.scope)}</p>` : "";
+    const context = item.context_usage?.recorded ? `<p>${escapeHtml(text.contextUsage)}: ${escapeHtml(item.context_usage.estimated_tokens || item.context_usage.source_bytes || text.notRecorded)} (${escapeHtml(item.context_usage.source)})</p>` : "";
+    const timing = [item.started_at, item.completed_at].filter(Boolean).join(" -> ");
+    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
   });
 }
 
@@ -1810,14 +2453,60 @@ function renderUsageGroups(groups, text) {
   });
 }
 
+function renderProjectChanges(changes, text) {
+  return renderObjectList(changes, text.noMainChanges, (change) => {
+    return `<code>${escapeHtml(change.path)}</code> <span class="muted">${escapeHtml(change.status || "")}</span>${change.summary ? `<p>${escapeHtml(change.summary)}</p>` : ""}`;
+  });
+}
+
+function renderNodeLinks(nodeIds, text) {
+  if (!nodeIds || nodeIds.length === 0) return `<span class="muted">${escapeHtml(text.none)}</span>`;
+  return nodeIds.map((nodeId) => `<a href="#node-${escapeHtml(nodeId)}"><code>${escapeHtml(nodeId)}</code></a>`).join(" ");
+}
+
+function renderStatusCounts(counts, text) {
+  const items = Object.entries(counts || {}).filter(([, value]) => value > 0);
+  if (items.length === 0) return `<span class="muted">${escapeHtml(text.none)}</span>`;
+  return items.map(([status, value]) => `${escapeHtml(statusTitle(status, text))}: ${escapeHtml(value)}`).join(" · ");
+}
+
+function renderClaimedItems(items, text) {
+  return renderObjectList(items, text.noClaims, (item) => {
+    return `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a> ${escapeHtml(text.claimedBy)} ${escapeHtml(item.claimed_by)}`;
+  });
+}
+
+function renderLeaseItems(items, text) {
+  return renderObjectList(items, text.noLeases, (item) => {
+    return `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a> ${escapeHtml(item.lease_expires_at)}${item.claimed_by ? ` · ${escapeHtml(item.claimed_by)}` : ""}`;
+  });
+}
+
+function renderRecommendations(items, text) {
+  return renderObjectList(items, text.noRecommendations, (item) => {
+    const nodes = item.node_ids?.length ? `<p><strong>${escapeHtml(text.nodes)}:</strong> ${item.node_ids.map((nodeId) => `<a href="#node-${escapeHtml(nodeId)}">${escapeHtml(nodeId)}</a>`).join(", ")}</p>` : "";
+    return `<strong>${escapeHtml(item.severity.toUpperCase())}</strong> ${escapeHtml(item.title)}<p class="muted">${escapeHtml(item.detail)}</p><p><strong>${escapeHtml(text.actionHint)}:</strong> ${escapeHtml(item.action)}</p>${nodes}`;
+  });
+}
+
+function renderRecentEvents(events, text) {
+  return renderObjectList(events, text.none, (event) => {
+    const nodeLink = event.node_id ? `<a href="#node-${escapeHtml(event.node_id)}">${escapeHtml(event.node_id)}</a>` : "";
+    const detail = [event.handoff ? `handoff=${event.handoff}` : null, event.reject_to ? `reject_to=${event.reject_to}` : null, event.reason ? `reason=${event.reason}` : null]
+      .filter(Boolean)
+      .join(" · ");
+    return `<code>${escapeHtml(event.at || "")}</code> ${escapeHtml(event.event || "event")} ${nodeLink}${detail ? `<p class="muted">${escapeHtml(detail)}</p>` : ""}`;
+  });
+}
+
 function statusTitle(status, text) {
   return text[status] || status;
 }
 
 function renderNodeCard(node, text) {
-  return `<article class="node-card ${escapeHtml(node.status)}">
+  return `<article class="node-card ${escapeHtml(node.status)}" id="card-${escapeHtml(node.id)}" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
     <div class="node-head">
-      <strong>${escapeHtml(node.id)}</strong>
+      <a href="#node-${escapeHtml(node.id)}"><strong>${escapeHtml(node.id)}</strong></a>
       <span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span>
     </div>
     <div class="node-title">${escapeHtml(node.display_title || node.title)}</div>
@@ -1831,6 +2520,7 @@ function renderNodeCard(node, text) {
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
       <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
+      <dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd>
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
@@ -1843,7 +2533,7 @@ function renderNodeCard(node, text) {
 function renderEdgeList(edges, empty = "No edges") {
   if (!edges || edges.length === 0) return `<p class="muted">${escapeHtml(empty)}</p>`;
   return `<div class="edge-list">${edges
-    .map((edge) => `<div class="edge"><code>${escapeHtml(edge.from)}</code><span>-></span><code>${escapeHtml(edge.to)}</code>${edge.retry_count ? `<small>retry ${escapeHtml(edge.retry_count)}</small>` : ""}</div>`)
+    .map((edge) => `<div class="edge" data-from="${escapeHtml(edge.from)}" data-to="${escapeHtml(edge.to)}"><a href="#node-${escapeHtml(edge.from)}"><code>${escapeHtml(edge.from)}</code></a><span>-></span><a href="#node-${escapeHtml(edge.to)}"><code>${escapeHtml(edge.to)}</code></a>${edge.retry_count ? `<small>retry ${escapeHtml(edge.retry_count)}</small>` : ""}</div>`)
     .join("")}</div>`;
 }
 
@@ -1863,8 +2553,8 @@ function renderTaskTracker(nodes, text) {
         const files = node.changed_files.map((file) => file.path).join(", ") || text.noChangedFiles;
         const checks = node.required_checks.map((item) => `${item.command}: ${item.result}`).join("; ") || text.none;
         const risks = [...node.open_risks, ...node.non_blocking_notes].join("; ") || text.none;
-        return `<div class="task-row" role="row">
-          <span><strong>${escapeHtml(node.id)}</strong><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
+        return `<div class="task-row" role="row" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
+          <span><a href="#node-${escapeHtml(node.id)}"><strong>${escapeHtml(node.id)}</strong></a><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
           <span>${escapeHtml(truncateText(work, 240))}</span>
           <span>${escapeHtml(truncateText(files, 180))}</span>
           <span>${escapeHtml(truncateText(checks, 220))}</span>
@@ -1879,7 +2569,7 @@ function renderTaskTracker(nodes, text) {
 function renderBoardHtml(board) {
   const text = boardText(board.language);
   const columnsHtml = COLUMN_STATUSES.map(
-    (status) => `<section class="column">
+    (status) => `<section class="column" id="status-${escapeHtml(status)}">
       <h3>${escapeHtml(statusTitle(status, text))} <span>${board.columns[status].length}</span></h3>
       ${board.columns[status].length > 0 ? board.columns[status].map((node) => renderNodeCard(node, text)).join("") : `<p class="muted">${escapeHtml(text.empty)}</p>`}
     </section>`,
@@ -1887,7 +2577,7 @@ function renderBoardHtml(board) {
 
   const detailsHtml = Object.values(board.columns)
     .flat()
-    .map((node) => `<details class="detail">
+    .map((node) => `<details class="detail" id="node-${escapeHtml(node.id)}" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
@@ -1895,6 +2585,9 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
         <section><h4>${escapeHtml(text.tokenUsage)}</h4>${renderTokenUsage(node.token_usage, text)}</section>
+        <section><h4>${escapeHtml(text.contextUsage)}</h4>${renderContextUsage(node.context_usage, text)}</section>
+        <section><h4>${escapeHtml(text.timeUsage)}</h4>${renderTiming(node.timing, text)}</section>
+        <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.model_selection_reason)}</dd></dl></section>
         <section><h4>${escapeHtml(text.agentActivity)}</h4>${renderAgentActivity(node.agent_activity, text)}</section>
         <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList([...node.open_risks, ...node.non_blocking_notes], text.none)}</section>
         <section><h4>${escapeHtml(text.timeline)}</h4>${renderTimeline(node.timeline, text)}</section>
@@ -1960,7 +2653,10 @@ function renderBoardHtml(board) {
     .progress { height: 10px; background: #e5e9ef; border-radius: 999px; overflow: hidden; margin: 10px 0 14px; }
     .progress span { display: block; height: 100%; background: #2563eb; }
     .metrics { display: grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); gap: 10px; }
-    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfe; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfcfe; color: inherit; text-decoration: none; }
+    .metric-button { width: 100%; font: inherit; text-align: left; cursor: pointer; }
+    .metric-link { display: block; }
+    .metric-button[aria-pressed="true"] { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14); }
     .metric span { display: block; color: var(--muted); font-size: 12px; }
     .metric strong { display: block; font-size: 22px; line-height: 1.2; }
     .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
@@ -1972,6 +2668,8 @@ function renderBoardHtml(board) {
     .task-row > span { padding: 10px; border-left: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
     .task-row > span:first-child { border-left: 0; }
     .task-head { background: #eef2f6; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; font-weight: 700; }
+    .task-row.is-hidden, .node-card.is-hidden, .detail.is-hidden { display: none; }
+    .task-row.is-focused, .node-card.is-focused, .detail.is-focused { outline: 3px solid rgba(37, 99, 235, 0.25); outline-offset: 2px; }
     .node-counts { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
     .node-counts span { background: #eef2f6; border-radius: 999px; color: var(--muted); font-size: 11px; padding: 1px 6px; }
     .node-card { border: 1px solid var(--line); border-left: 4px solid var(--pending); border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 8px; }
@@ -2030,26 +2728,33 @@ function renderBoardHtml(board) {
         <p><strong>${escapeHtml(board.summary.completion_percent)}%</strong> ${escapeHtml(text.complete)}</p>
         <p><strong>${escapeHtml(text.next)}:</strong> ${escapeHtml(board.summary.next_recommended_action)}</p>
         <p><strong>${escapeHtml(text.criticalPath)}:</strong> ${escapeHtml(board.summary.critical_path.join(" -> ") || text.none)}</p>
+        <p class="muted">${escapeHtml(text.clickMetricHint)}</p>
       </div>
       <div class="metrics">
-        ${renderMetric(text.total, board.summary.total)}
-        ${renderMetric(text.ready, board.summary.ready)}
-        ${renderMetric(text.running, board.summary.running)}
-        ${renderMetric(text.blocked, board.summary.blocked)}
-        ${renderMetric(text.failed, board.summary.failed)}
-        ${renderMetric(text.passed, board.summary.passed)}
-        ${renderMetric(text.skipped, board.summary.skipped)}
-        ${renderMetric(text.pending, board.summary.pending)}
-        ${renderMetric(text.workItems, board.summary.work_items)}
-        ${renderMetric(text.changedFiles, board.summary.changed_files)}
-        ${renderMetric(text.checks, board.summary.verification_checks)}
-        ${renderMetric(text.agents, board.summary.agent_activities)}
+        ${renderMetric(text.total, board.summary.total, { filterStatus: "all" })}
+        ${renderMetric(text.ready, board.summary.ready, { filterStatus: "ready" })}
+        ${renderMetric(text.running, board.summary.running, { filterStatus: "running" })}
+        ${renderMetric(text.blocked, board.summary.blocked, { filterStatus: "blocked" })}
+        ${renderMetric(text.failed, board.summary.failed, { filterStatus: "failed" })}
+        ${renderMetric(text.passed, board.summary.passed, { filterStatus: "passed" })}
+        ${renderMetric(text.skipped, board.summary.skipped, { filterStatus: "skipped" })}
+        ${renderMetric(text.pending, board.summary.pending, { filterStatus: "pending" })}
+        ${renderMetric(text.workItems, board.summary.work_items, "#task-tracker")}
+        ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
+        ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
+        ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="recommendations">
+      <h2>${escapeHtml(text.improvementPlan)}</h2>
+      ${renderRecommendations(board.recommendations || board.improvement_plan, text)}
+    </section>
+
+    <section class="panel" id="task-tracker">
       <h2>${escapeHtml(text.taskTracker)}</h2>
       ${renderTaskTracker(allNodes, text)}
+      <p id="filter-status" class="muted" aria-live="polite"></p>
     </section>
 
     <section class="panel">
@@ -2066,6 +2771,18 @@ function renderBoardHtml(board) {
     </section>
 
     <section class="panel">
+      <h2>${escapeHtml(text.contextUsage)} / ${escapeHtml(text.timeUsage)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.contextTotal, board.context.totals.estimated_tokens || text.notRecorded)}
+        ${renderMetric(text.contextCoverage, `${board.context.coverage_percent}%`)}
+        ${renderMetric(text.elapsed, formatDuration(board.timing.elapsed_minutes, text))}
+        ${renderMetric(text.estimatedRemaining, formatDuration(board.timing.estimated_remaining_minutes, text))}
+        ${renderMetric(text.averageNodeTime, formatDuration(board.timing.average_node_minutes, text))}
+      </div>
+      <p><strong>${escapeHtml(text.contextMissing)}:</strong> ${escapeHtml(board.context.missing_nodes.join(", ") || text.none)}</p>
+    </section>
+
+    <section class="panel">
       <h2>${escapeHtml(text.nodeDetails)}</h2>
       ${detailsHtml}
     </section>
@@ -2073,6 +2790,10 @@ function renderBoardHtml(board) {
     <section class="panel">
       <h2>${escapeHtml(text.projectSnapshot)}</h2>
       <div class="detail-grid">
+        <section id="main-changes">
+          <h4>${escapeHtml(text.mainChanges)}</h4>
+          ${renderProjectChanges(project.main_changes, text)}
+        </section>
         <section>
           <h4>${escapeHtml(project.name || text.projectSnapshot)}</h4>
           <p class="muted">${escapeHtml(project.description || project.workflow_title || "")}</p>
@@ -2103,9 +2824,10 @@ function renderBoardHtml(board) {
       </div>
     </section>
 
-    <section class="grid-2">
+    <section class="grid-2" id="flow-collaboration">
       <div class="panel">
         <h2>${escapeHtml(text.flowMap)}</h2>
+        <p class="muted">${escapeHtml(text.flowHelp)}</p>
         <h3>${escapeHtml(text.dependencies)}</h3>
         ${renderEdgeList(board.flow.dependency_edges, text.noEdges)}
         <h3>${escapeHtml(text.rejectEdges)}</h3>
@@ -2113,14 +2835,17 @@ function renderBoardHtml(board) {
       </div>
       <div class="panel">
         <h2>${escapeHtml(text.collaborationLanes)}</h2>
+        <p class="muted">${escapeHtml(text.collaborationHelp)}</p>
         <div class="lanes">
           ${board.collaboration.worker_profiles
-            .map((lane) => `<div class="lane"><h3>${escapeHtml(lane.profile)} <span>${escapeHtml(lane.nodes.length)}</span></h3><p><strong>${escapeHtml(text.nodes)}:</strong> ${escapeHtml(lane.nodes.join(", "))}</p><p><strong>${escapeHtml(text.counts)}:</strong> ${escapeHtml(JSON.stringify(lane.counts))}</p></div>`)
+            .map((lane) => `<div class="lane"><h3>${escapeHtml(lane.profile)} <span>${escapeHtml(lane.nodes.length)}</span></h3><p><strong>${escapeHtml(text.nodes)}:</strong> ${renderNodeLinks(lane.nodes, text)}</p><p><strong>${escapeHtml(text.statusBreakdown)}:</strong> ${renderStatusCounts(lane.counts, text)}</p></div>`)
             .join("")}
         </div>
-        <p><strong>${escapeHtml(text.unclaimedReady)}:</strong> ${escapeHtml(board.collaboration.unclaimed_ready.join(", ") || text.none)}</p>
-        <p><strong>${escapeHtml(text.claimedRunning)}:</strong> ${escapeHtml(JSON.stringify(board.collaboration.claimed_running))}</p>
-        <p><strong>${escapeHtml(text.leases)}:</strong> ${escapeHtml(JSON.stringify(board.collaboration.leases))}</p>
+        <p><strong>${escapeHtml(text.unclaimedReady)}:</strong> ${renderNodeLinks(board.collaboration.unclaimed_ready, text)}</p>
+        <p><strong>${escapeHtml(text.claimedRunning)}:</strong></p>
+        ${renderClaimedItems(board.collaboration.claimed_running, text)}
+        <p><strong>${escapeHtml(text.leases)}:</strong></p>
+        ${renderLeaseItems(board.collaboration.leases, text)}
       </div>
     </section>
 
@@ -2140,15 +2865,71 @@ function renderBoardHtml(board) {
       </div>
       <div class="panel">
         <h2>${escapeHtml(text.recentEvents)}</h2>
-        ${renderList(board.recent_events, text.none)}
+        <p class="muted">${escapeHtml(text.timelineHelp)}</p>
+        <div class="event-list">${renderRecentEvents(board.recent_events, text)}</div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>${escapeHtml(text.projection)}</h2>
+    <details class="panel technical-data">
+      <summary>${escapeHtml(text.technicalData)}</summary>
+      <h2>${escapeHtml(text.rawProjection)}</h2>
       <pre>${escapeHtml(JSON.stringify(board, null, 2))}</pre>
-    </section>
+    </details>
   </main>
+  <script>
+    (() => {
+      const labels = {
+        all: ${JSON.stringify(text.total)},
+        showing: ${JSON.stringify(text.showingStatus)},
+        clear: ${JSON.stringify(text.clearFilter)},
+        none: ${JSON.stringify(text.none)}
+      };
+      const filterStatus = document.getElementById("filter-status");
+      const metricButtons = [...document.querySelectorAll("[data-filter-status]")];
+      const statusLabels = new Map(${JSON.stringify(COLUMN_STATUSES.map((status) => [status, statusTitle(status, text)]))});
+
+      function setFilter(status) {
+        const active = status && status !== "all" ? status : null;
+        metricButtons.forEach((button) => {
+          button.setAttribute("aria-pressed", button.dataset.filterStatus === (active || "all") ? "true" : "false");
+        });
+        document.querySelectorAll("[data-status]").forEach((item) => {
+          item.classList.toggle("is-hidden", Boolean(active) && item.dataset.status !== active);
+        });
+        if (filterStatus) {
+          filterStatus.textContent = active ? labels.showing + ": " + (statusLabels.get(active) || active) + ". " + labels.clear : "";
+          filterStatus.dataset.active = active || "";
+        }
+        const target = active ? document.getElementById("status-" + active) : document.getElementById("task-tracker");
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function focusNode(nodeId) {
+        if (!nodeId) return;
+        document.querySelectorAll(".is-focused").forEach((item) => item.classList.remove("is-focused"));
+        const detail = document.getElementById("node-" + nodeId);
+        if (detail) {
+          detail.open = true;
+          detail.classList.add("is-focused");
+          detail.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        document.querySelector('[data-node-id="' + nodeId + '"].task-row')?.classList.add("is-focused");
+        document.getElementById("card-" + nodeId)?.classList.add("is-focused");
+      }
+
+      metricButtons.forEach((button) => button.addEventListener("click", () => setFilter(button.dataset.filterStatus)));
+      filterStatus?.addEventListener("click", () => setFilter("all"));
+      document.addEventListener("click", (event) => {
+        const anchor = event.target.closest('a[href^="#node-"]');
+        if (!anchor) return;
+        const nodeId = anchor.getAttribute("href").replace("#node-", "");
+        window.setTimeout(() => focusNode(nodeId), 0);
+      });
+      if (window.location.hash.startsWith("#node-")) {
+        focusNode(window.location.hash.replace("#node-", ""));
+      }
+    })();
+  </script>
   <script type="application/json" id="board-data">${escapeInlineJson(board)}</script>
 </body>
 </html>
@@ -2309,10 +3090,14 @@ function cmdStart(positional, options) {
   requireNode(graph, nodeId);
   const entry = state.nodes[nodeId];
   if (entry.status !== "ready") throw new Error(`Node ${nodeId} is ${entry.status}, not ready`);
-  state.nodes[nodeId] = stateEntry("running", "Started", entry.last_handoff || null);
+  const startedAt = now();
+  state.nodes[nodeId] = stateEntry("running", "Started", entry.last_handoff || null, {
+    started_at: entry.started_at || startedAt,
+    completed_at: null,
+  });
   markActive(state, nodeId);
   saveState(workflowDir, state);
-  appendLedger(workflowDir, { event: "node.start", node_id: nodeId });
+  appendLedger(workflowDir, { at: startedAt, event: "node.start", node_id: nodeId });
   printStatus(graph, state);
 }
 
@@ -2332,16 +3117,23 @@ function cmdComplete(positional, options) {
   if (handoff.status !== "passed") errors.push("complete requires a passed handoff");
   if (errors.length > 0) throw new Error(errors.join("\n"));
 
+  const completedAt = now();
+  const previousEntry = state.nodes[nodeId];
   const relativeHandoff = relativeToWorkflow(workflowDir, handoffPath);
-  state.nodes[nodeId] = stateEntry("passed", null, relativeHandoff);
+  state.nodes[nodeId] = stateEntry("passed", null, relativeHandoff, {
+    started_at: previousEntry.started_at || handoff.timing?.started_at || completedAt,
+    completed_at: handoff.timing?.completed_at || completedAt,
+  });
   clearActive(state, nodeId);
   recalculateReady(graph, state);
   saveState(workflowDir, state);
   appendLedger(workflowDir, {
+    at: completedAt,
     event: "node.complete",
     node_id: nodeId,
     handoff: relativeHandoff,
     token_usage: handoff.token_usage || null,
+    context_usage: handoff.context_usage || null,
   });
   printStatus(graph, state);
 }
@@ -2363,11 +3155,15 @@ function cmdReject(positional, options) {
   if (handoff.reject_to !== rejectTo) errors.push(`handoff.reject_to must be ${rejectTo}`);
   if (errors.length > 0) throw new Error(errors.join("\n"));
 
+  const completedAt = now();
   const edge = `${nodeId}->${rejectTo}`;
   const retryCount = (state.retry_edges[edge] || 0) + 1;
   state.retry_edges[edge] = retryCount;
   const relativeHandoff = relativeToWorkflow(workflowDir, handoffPath);
-  state.nodes[nodeId] = stateEntry("failed", handoff.reason, relativeHandoff);
+  state.nodes[nodeId] = stateEntry("failed", handoff.reason, relativeHandoff, {
+    started_at: state.nodes[nodeId].started_at || handoff.timing?.started_at || completedAt,
+    completed_at: handoff.timing?.completed_at || completedAt,
+  });
   state.nodes[rejectTo] = stateEntry("ready", `Rejected by ${nodeId}: ${handoff.required_fix}`, state.nodes[rejectTo].last_handoff || null);
   resetDependents(graph, state, rejectTo, new Set([nodeId]));
   if (retryCount > target.retry_limit) {
@@ -2380,12 +3176,14 @@ function cmdReject(positional, options) {
   clearActive(state, nodeId, rejectTo);
   saveState(workflowDir, state);
   appendLedger(workflowDir, {
+    at: completedAt,
     event: "node.reject",
     node_id: nodeId,
     reject_to: rejectTo,
     retry_count: retryCount,
     handoff: relativeHandoff,
     token_usage: handoff.token_usage || null,
+    context_usage: handoff.context_usage || null,
   });
   printStatus(graph, state);
 }
@@ -2399,10 +3197,14 @@ function cmdBlock(positional, options) {
   const { graph, state } = loadWorkflow(workflowDir);
   requireNode(graph, nodeId);
   const entry = state.nodes[nodeId];
-  state.nodes[nodeId] = stateEntry("blocked", String(reason), entry.last_handoff || null);
+  const completedAt = now();
+  state.nodes[nodeId] = stateEntry("blocked", String(reason), entry.last_handoff || null, {
+    started_at: entry.started_at || completedAt,
+    completed_at: completedAt,
+  });
   clearActive(state, nodeId);
   saveState(workflowDir, state);
-  appendLedger(workflowDir, { event: "node.block", node_id: nodeId, reason: String(reason) });
+  appendLedger(workflowDir, { at: completedAt, event: "node.block", node_id: nodeId, reason: String(reason) });
   appendText(path.join(workflowDir, "blockers.md"), `- ${now()} ${nodeId}: ${reason}\n`);
   printStatus(graph, state);
 }

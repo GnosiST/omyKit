@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added board interaction and operations telemetry: clickable status filters, node-detail anchors, project change summaries, generated improvement actions, context-size coverage, node timing/ETA, and supplier-independent model-tier policy for agent work.
+- Tightened workflow handoffs and schemas for language, context usage, timing, agent scope, model tier, and stable agent IDs so multi-agent records are auditable without forcing the controller to call models.
+- Refreshed `openai/codex` and `getsentry/sentry` upstream baselines after reviewing Codex Apps cache/auth setup cleanup and Sentry inbound-filter audit-log metadata; no omyKit workflow rule was promoted.
 - Redesigned the workflow board as a project task tracker: nodes now project actual work items, changed files, evidence availability, agent activity, token usage coverage, per-node timelines, and parallel-group token summaries instead of only generic node contracts.
 - Extended workflow handoffs with optional `work_items`, `changed_files`, `agent_activity`, and source-aware `token_usage`; token totals only aggregate recorded usage and leave missing nodes visible.
 - Refreshed upstream baselines for OpenAI Codex, Moby, and Sentry after reviewing GitHub compare metadata; no omyKit workflow rule was promoted.

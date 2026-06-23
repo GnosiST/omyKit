@@ -86,6 +86,38 @@
     "handoff_required": {
       "type": "boolean"
     },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "task_complexity": {
+      "type": "string",
+      "enum": [
+        "simple",
+        "standard",
+        "complex",
+        "expert"
+      ]
+    },
+    "model_tier": {
+      "type": "string",
+      "enum": [
+        "fast",
+        "standard",
+        "frontier"
+      ]
+    },
+    "model_selection_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "estimated_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
     "worker_profile": {
       "type": [
         "string",
@@ -129,5 +161,26 @@
       ],
       "minLength": 1
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "task_complexity"
+        ],
+        "properties": {
+          "task_complexity": {
+            "const": "expert"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "model_tier": {
+            "const": "frontier"
+          }
+        }
+      }
+    }
+  ]
 }

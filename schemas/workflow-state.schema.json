@@ -65,6 +65,20 @@
             "type": "string",
             "minLength": 1
           },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
           "last_handoff": {
             "type": [
               "string",
