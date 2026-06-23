@@ -164,6 +164,10 @@ writeJson(intakeHandoff, {
   node_id: "01-intake",
   status: "passed",
   language: "zh-CN",
+  model: "GPT-5.4",
+  model_provider: "openai",
+  model_tier: "standard",
+  model_selection_reason: "测试夹具中的常规规划任务。",
   summary: "需求已固化：为 Feature X 创建项目化看板。",
   work_items: [
     {
@@ -194,6 +198,8 @@ writeJson(intakeHandoff, {
   ],
   token_usage: {
     source: "manual",
+    provider: "openai",
+    model: "GPT-5.4",
     input_tokens: 100,
     output_tokens: 40,
     total_tokens: 140,
@@ -223,6 +229,7 @@ writeJson(intakeHandoff, {
       status: "done",
       mode: "main-agent",
       model_tier: "standard",
+      model: "GPT-5.4",
       model_selection_reason: "测试夹具中的常规规划任务。",
       started_at: intakeStart,
       completed_at: intakeEnd,
@@ -374,6 +381,7 @@ const projectedNodes = Object.values(board.columns).flat();
 const projectedPlan = projectedNodes.find((node) => node.id === "03-plan");
 assert.equal(projectedPlan.task_complexity, "expert");
 assert.equal(projectedPlan.model_tier, "frontier");
+assert.equal(projectedPlan.recommended_model, "GPT-5.5");
 assert.equal(board.project.name, "Feature X Project");
 assert.equal(board.project.workflow_id, "feature-x");
 assert.ok(Array.isArray(board.project.key_files));
@@ -389,6 +397,9 @@ assert.ok(Array.isArray(board.context.by_agent));
 assert.ok(Array.isArray(board.skills.by_node));
 assert.ok(Array.isArray(board.skills.by_skill));
 assert.ok(Array.isArray(board.skills.by_agent));
+assert.ok(Array.isArray(board.models.by_node));
+assert.ok(Array.isArray(board.models.recommended_by_model));
+assert.ok(Array.isArray(board.models.actual_by_model));
 assert.ok(Array.isArray(board.timing.by_node));
 assert.ok(Array.isArray(board.project.main_changes));
 assert.ok(Array.isArray(board.recommendations));
@@ -403,9 +414,12 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.to
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.context_usage.estimated_tokens === 300));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.timing.duration_minutes === 8));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.model_tier === "fast"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.recommended_model === "GPT-5.4-Mini"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.actual_models.some((model) => model.model === "GPT-5.4")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex" && activity.scope)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skills_used.some((skill) => skill.name === "omykit")));
 assert.equal(board.summary.skills_used, 1);
+assert.equal(board.summary.actual_models, 1);
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
 assert.ok(board.usage.missing_nodes.includes("02-research"));
@@ -417,10 +431,15 @@ assert.ok(board.context.missing_nodes.includes("02-research"));
 assert.ok(board.skills.by_skill.some((skill) => skill.name === "omykit" && skill.nodes.includes("01-intake")));
 assert.ok(board.skills.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.skill === "omykit"));
 assert.ok(board.skills.missing_nodes.includes("02-research"));
+assert.equal(board.models.actual_recorded_nodes, 1);
+assert.ok(board.models.actual_by_model.some((model) => model.model === "GPT-5.4" && model.nodes.includes("01-intake")));
+assert.ok(board.models.recommended_by_model.some((model) => model.model === "GPT-5.5" && model.nodes.includes("03-plan")));
+assert.ok(board.models.missing_actual_nodes.includes("02-research"));
 assert.ok(board.project.main_changes.some((change) => change.path === "nodes/01-intake.json" && /需求接收节点卡/.test(change.summary)));
 assert.ok(board.recommendations.some((item) => item.id === "missing-token-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "missing-context-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "missing-skill-usage"));
+assert.ok(board.recommendations.some((item) => item.id === "missing-model-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "resolve-02-design"));
 assert.ok(board.columns.blocked.some((node) => node.id === "02-design"));
 assert.ok(board.columns.ready.some((node) => node.id === "02-research"));
@@ -441,6 +460,10 @@ assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /Token 消耗/);
 assert.match(boardHtml, /Skill 使用记录/);
 assert.match(boardHtml, /使用的 Skills/);
+assert.match(boardHtml, /模型使用记录/);
+assert.match(boardHtml, /推荐模型/);
+assert.match(boardHtml, /实际模型/);
+assert.match(boardHtml, /GPT-5\.4/);
 assert.match(boardHtml, /整改建议/);
 assert.match(boardHtml, /上下文用量/);
 assert.match(boardHtml, /工作流模板/);

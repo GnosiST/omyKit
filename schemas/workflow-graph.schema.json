@@ -211,6 +211,14 @@
             "type": "string",
             "minLength": 1
           },
+          "recommended_model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended_model_reason": {
+            "type": "string",
+            "minLength": 1
+          },
           "estimated_minutes": {
             "type": "number",
             "minimum": 0

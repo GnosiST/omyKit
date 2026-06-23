@@ -35,7 +35,7 @@ $omykit 生成看板并打开
 $omykit 校验工作流
 ```
 
-Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
+Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、推荐模型和实际模型记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
 
 只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
 
@@ -99,12 +99,12 @@ node scripts/omykit-workflow.mjs resume
 | --- | --- |
 | 图拓扑 | 节点 id、节点类型、依赖、重试上限、汇聚、handoff 目标。 |
 | Agent 配置 | 节点卡和 handoff 使用的角色名与范围边界。 |
-| 模型配置 | 推荐的模型档位策略；具体供应商和模型仍由 Codex 执行时选择。 |
+| 模型配置 | 推荐的模型档位策略和具体模型映射；实际供应商和模型只作为执行元数据记录。 |
 | 运行配置 | 预期本地验证上下文，例如项目默认、浏览器验收或纯文档工作。 |
 | 安全限位 | 重试、并行、权限和停止条件指导。 |
 | Scorecard | 审计 handoff、验证、用量记录、语言和模型档位策略的证据检查。 |
 
-想新增节点，优先编辑对应模板 YAML。想调整谁负责某一步，编辑 agent 层或节点的 `agent` 字段。想调整模型策略，编辑模型配置或节点档位。这样图拓扑、agent、模型、运行环境、安全限位和评分可以分别审查、分别演进。
+想新增节点，优先编辑对应模板 YAML。想调整谁负责某一步，编辑 agent 层或节点的 `agent` 字段。想调整模型策略，编辑模型配置、节点档位或节点级推荐。这样图拓扑、agent、模型、运行环境、安全限位和评分可以分别审查、分别演进。
 
 ## 可视化看板
 
@@ -122,15 +122,15 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、任务追踪表、每个节点实际完成的工作项、变更文件摘要、skill 使用记录、验证结果、证据是否存在、子智能体活动、模型档位策略、token/上下文覆盖率、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、任务追踪表、每个节点实际完成的工作项、变更文件摘要、skill 使用记录、验证结果、证据是否存在、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
 
-token 和上下文总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。
+token、上下文、skill 和实际模型总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。推荐模型来自所选 `model_profile` 和节点策略；实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
 
 看板语言按这个顺序确定：显式 `--lang`、workflow metadata 语言、最新 handoff 语言、标题语言推断。只有需要覆盖 workflow 语言时才手动传 `--lang zh-CN`。在 Codex Desktop 中，Codex 应返回生成的 `board.html` 本地链接，并在可用时用内置浏览器打开。CLI 的 `--open` fallback 会让操作系统尝试用系统默认浏览器打开 HTML；如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
-看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill 的节点伪造记录。
+看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill 或运行环境没有暴露模型的节点伪造记录。
 
-这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不替用户选择具体供应商模型，不自动推断 skill 使用，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组、skill 使用记录、模型档位建议、耗时、用量和 handoff 证据。
+这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不替用户选择具体供应商模型，不自动推断 skill 使用，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组、skill 使用记录、模型档位建议、推荐模型、实际模型记录、耗时、用量和 handoff 证据。
 
 ## 文件
 

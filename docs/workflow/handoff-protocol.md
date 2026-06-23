@@ -27,6 +27,10 @@ Use `passed` when the node completed and evidence is available.
   "node_id": "03-implement",
   "status": "passed",
   "language": "en",
+  "model": "GPT-5.4",
+  "model_provider": "openai",
+  "model_tier": "standard",
+  "model_selection_reason": "Scoped implementation with tests; no architecture decision needed.",
   "summary": "Implemented the scoped change and updated the focused tests.",
   "work_items": [
     {
@@ -79,6 +83,7 @@ Use `passed` when the node completed and evidence is available.
       "task": "Implement scoped fallback and test.",
       "status": "done",
       "model_tier": "standard",
+      "model": "GPT-5.4",
       "model_selection_reason": "Scoped implementation with tests; no architecture decision needed.",
       "started_at": "2026-06-23T10:00:00.000Z",
       "completed_at": "2026-06-23T10:24:00.000Z",
@@ -97,7 +102,8 @@ Use `passed` when the node completed and evidence is available.
       ],
       "token_usage": {
         "source": "tool_reported",
-        "model": "gpt-5.4",
+        "provider": "openai",
+        "model": "GPT-5.4",
         "total_tokens": 18420
       },
       "context_usage": {
@@ -110,6 +116,8 @@ Use `passed` when the node completed and evidence is available.
   ],
   "token_usage": {
     "source": "derived_from_agent_activity",
+    "provider": "openai",
+    "model": "GPT-5.4",
     "total_tokens": 18420,
     "notes": "Summed from recorded agent activity."
   },
@@ -133,9 +141,9 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, and evidence.
+Use `language`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, optional actual `model`, and evidence.
 
-Token and context records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata.
+Token, context, and model records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata through `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`.
 
 ## Failed And Reject
 
@@ -198,6 +206,7 @@ Use `skipped` only when skipping is intentional and the remaining risk is explic
 - Keep evidence paths retrievable from the workflow directory or target project.
 - Keep user-facing summaries in the user's current language.
 - Record only skills that were actually used; include purpose and evidence when available.
+- Record actual model names only when the runtime exposes them; otherwise leave them missing and let the board show the gap.
 - Keep token usage source-aware; when usage is unavailable, leave it missing instead of estimating zero.
 
 See [task-graph.md](task-graph.md) for node states and [controller.md](controller.md) for commands.

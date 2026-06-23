@@ -56,6 +56,13 @@ checks:
     severity: recommended
     evidence:
       type: skills_used_recorded
+  - id: model-usage-recorded
+    title:
+      en: Terminal nodes record actual model usage when available
+      zh-CN: 终态节点记录实际使用模型
+    severity: recommended
+    evidence:
+      type: model_usage_recorded
   - id: board-language
     title:
       en: Board language follows workflow language

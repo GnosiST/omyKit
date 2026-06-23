@@ -40,6 +40,8 @@ const COLLABORATION_FIELDS = [
   "task_complexity",
   "model_tier",
   "model_selection_reason",
+  "recommended_model",
+  "recommended_model_reason",
   "estimated_minutes",
   "language",
   "agent",
@@ -174,6 +176,13 @@ const BOARD_LABELS = {
     eta: "ETA",
     modelTier: "Model tier",
     modelSelection: "Model selection",
+    recommendedModel: "Recommended model",
+    actualModel: "Actual model",
+    modelUsage: "Model Usage",
+    modelRecorded: "Recorded actual-model nodes",
+    modelMissing: "Missing actual-model records",
+    modelCoverage: "Actual-model coverage",
+    noModelsRecorded: "No model records",
     complexity: "Complexity",
     assignment: "Assignment",
     role: "Role",
@@ -340,6 +349,13 @@ const BOARD_LABELS = {
     eta: "预计完成",
     modelTier: "模型档位",
     modelSelection: "模型选择",
+    recommendedModel: "推荐模型",
+    actualModel: "实际模型",
+    modelUsage: "模型使用记录",
+    modelRecorded: "已记录实际模型节点",
+    modelMissing: "未记录实际模型的节点",
+    modelCoverage: "实际模型覆盖率",
+    noModelsRecorded: "未记录模型",
     complexity: "复杂度",
     assignment: "分工",
     role: "角色",
@@ -676,6 +692,88 @@ function loadScorecardsForGraph(graph) {
   return asStringArray(ids).map((id) => loadScorecardDefinition(id));
 }
 
+function loadModelProfileDefinition(profileId) {
+  if (!profileId) return null;
+  const file = path.join(templatesRoot(), "common", "model-profiles.yaml");
+  if (!fs.existsSync(file)) return null;
+  const doc = readYaml(file);
+  const profiles = Array.isArray(doc.model_profiles) ? doc.model_profiles : [];
+  return profiles.find((profile) => profile.id === profileId) || null;
+}
+
+function defaultRecommendedModel(tier, language = "en") {
+  const byTier = {
+    fast: {
+      model: "GPT-5.4-Mini",
+      reason: {
+        en: "Low-cost model for simple bounded work.",
+        "zh-CN": "用于简单有边界工作的低成本模型。",
+      },
+    },
+    standard: {
+      model: "GPT-5.4",
+      reason: {
+        en: "Stable general-purpose model for medium reasoning and ordinary delivery work.",
+        "zh-CN": "适合中等推理和常规交付工作的稳定通用模型。",
+      },
+    },
+    frontier: {
+      model: "GPT-5.5",
+      reason: {
+        en: "Strongest general reasoning model for complex judgment, planning, and high-risk review.",
+        "zh-CN": "用于复杂判断、规划和高风险评审的最强通用推理模型。",
+      },
+    },
+  };
+  const value = byTier[tier] || byTier.standard;
+  return {
+    model: value.model,
+    reason: localizedValue(value.reason, language),
+    source: "default-policy",
+  };
+}
+
+function matchesModelOverride(override, nodeType, taskComplexity, modelTier) {
+  if (override.node_type && override.node_type !== nodeType) return false;
+  if (override.task_complexity && override.task_complexity !== taskComplexity) return false;
+  if (override.tier && override.tier !== modelTier) return false;
+  return true;
+}
+
+function recommendedModelForNode({ node, card, modelTier, taskComplexity, modelProfile, language }) {
+  const cardRecommendationMatchesPolicy = (
+    (!card.task_complexity || card.task_complexity === taskComplexity)
+    && (!card.model_tier || card.model_tier === modelTier)
+  );
+  const explicitModel = node.recommended_model || (cardRecommendationMatchesPolicy ? card.recommended_model : null);
+  const explicitReason = node.recommended_model_reason || (cardRecommendationMatchesPolicy ? card.recommended_model_reason : null);
+  if (explicitModel) {
+    return {
+      model: explicitModel,
+      reason: explicitReason || modelSelectionReason(taskComplexity, modelTier),
+      source: "node",
+    };
+  }
+  const profile = loadModelProfileDefinition(modelProfile);
+  const override = (profile?.node_overrides || []).find((item) => matchesModelOverride(item, node.type, taskComplexity, modelTier));
+  if (override?.model) {
+    return {
+      model: override.model,
+      reason: localizedValue(override.reason, language) || localizedValue(override.purpose, language) || modelSelectionReason(taskComplexity, modelTier),
+      source: `profile:${modelProfile}`,
+    };
+  }
+  const profileModel = (profile?.model_map || []).find((item) => item.tier === modelTier);
+  if (profileModel?.model) {
+    return {
+      model: profileModel.model,
+      reason: localizedValue(profileModel.reason, language) || localizedValue(profileModel.purpose, language) || modelSelectionReason(taskComplexity, modelTier),
+      source: `profile:${modelProfile}`,
+    };
+  }
+  return defaultRecommendedModel(modelTier, language);
+}
+
 function validateCommonLayerReference(kind, id, errors, label) {
   if (!id) return;
   const fileByKind = {
@@ -733,6 +831,8 @@ function compileTemplateNode(rawNode, language) {
     "task_complexity",
     "model_tier",
     "model_selection_reason",
+    "recommended_model",
+    "recommended_model_reason",
     "estimated_minutes",
     "agent",
     "model_profile",
@@ -1104,6 +1204,17 @@ function modelSelectionReason(complexity, tier) {
 
 function nodeCard(graph, node) {
   const policy = defaultNodePolicy(node);
+  const modelProfile = node.model_profile || graph.metadata?.layers?.model_profile || null;
+  const modelTier = node.model_tier || policy.model_tier;
+  const taskComplexity = node.task_complexity || policy.task_complexity;
+  const recommended = recommendedModelForNode({
+    node,
+    card: {},
+    modelTier,
+    taskComplexity,
+    modelProfile,
+    language: graph.metadata?.language || "en",
+  });
   const card = {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
@@ -1119,9 +1230,11 @@ function nodeCard(graph, node) {
       `evidence/${node.id}-summary.txt`,
     ],
     handoff_required: true,
-    task_complexity: node.task_complexity || policy.task_complexity,
-    model_tier: node.model_tier || policy.model_tier,
+    task_complexity: taskComplexity,
+    model_tier: modelTier,
     model_selection_reason: node.model_selection_reason || policy.model_selection_reason,
+    recommended_model: node.recommended_model || recommended.model,
+    recommended_model_reason: node.recommended_model_reason || recommended.reason,
     estimated_minutes: Number.isFinite(node.estimated_minutes) ? node.estimated_minutes : policy.estimated_minutes,
   };
   for (const field of COLLABORATION_FIELDS) {
@@ -1225,6 +1338,11 @@ function validateGraph(graph) {
     }
     if (node.model_selection_reason !== undefined && typeof node.model_selection_reason !== "string") {
       errors.push(`node.model_selection_reason must be string for ${node.id}`);
+    }
+    for (const field of ["recommended_model", "recommended_model_reason"]) {
+      if (node[field] !== undefined && typeof node[field] !== "string") {
+        errors.push(`node.${field} must be string for ${node.id}`);
+      }
     }
     if (node.estimated_minutes !== undefined && (!Number.isFinite(node.estimated_minutes) || node.estimated_minutes < 0)) {
       errors.push(`node.estimated_minutes must be a non-negative number for ${node.id}`);
@@ -1349,6 +1467,11 @@ function validateNodeCards(workflowDir, graph) {
     if (card.model_selection_reason !== undefined && typeof card.model_selection_reason !== "string") {
       errors.push(`node card ${node.id} model_selection_reason must be string`);
     }
+    for (const field of ["recommended_model", "recommended_model_reason"]) {
+      if (card[field] !== undefined && typeof card[field] !== "string") {
+        errors.push(`node card ${node.id} ${field} must be string`);
+      }
+    }
     if (card.estimated_minutes !== undefined && (!Number.isFinite(card.estimated_minutes) || card.estimated_minutes < 0)) {
       errors.push(`node card ${node.id} estimated_minutes must be non-negative number`);
     }
@@ -1369,6 +1492,11 @@ function validateTokenUsageShape(value, label) {
   }
   if (!value.source || typeof value.source !== "string") {
     errors.push(`${label}.source is required`);
+  }
+  for (const field of ["provider", "model", "notes", "recorded_at"]) {
+    if (value[field] !== undefined && (typeof value[field] !== "string" || !value[field])) {
+      errors.push(`${label}.${field} must be a non-empty string`);
+    }
   }
   for (const field of ["input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens", "total_tokens"]) {
     if (value[field] !== undefined && (!Number.isInteger(value[field]) || value[field] < 0)) {
@@ -1444,6 +1572,14 @@ function validateTaskTrackingFields(handoff) {
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
     errors.push("handoff.language must be a string");
   }
+  for (const field of ["model", "model_provider", "model_selection_reason"]) {
+    if (handoff[field] !== undefined && typeof handoff[field] !== "string") {
+      errors.push(`handoff.${field} must be a string`);
+    }
+  }
+  if (handoff.model_tier !== undefined && !MODEL_TIERS.has(handoff.model_tier)) {
+    errors.push(`handoff.model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
+  }
   errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
@@ -1499,6 +1635,11 @@ function validateTaskTrackingFields(handoff) {
         if (!item.status) errors.push(`handoff.agent_activity[${index}].status is required`);
         if (item.model_tier !== undefined && !MODEL_TIERS.has(item.model_tier)) {
           errors.push(`handoff.agent_activity[${index}].model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
+        }
+        for (const field of ["model", "model_selection_reason"]) {
+          if (item[field] !== undefined && typeof item[field] !== "string") {
+            errors.push(`handoff.agent_activity[${index}].${field} must be a string`);
+          }
         }
         errors.push(...validateSkillsUsedShape(item.skills_used, `handoff.agent_activity[${index}].skills_used`));
         errors.push(...validateTokenUsageShape(item.token_usage, `handoff.agent_activity[${index}].token_usage`));
@@ -1942,8 +2083,8 @@ function normalizeTokenUsage(value) {
   return {
     recorded: Boolean(source) && Number.isFinite(total),
     source: source || "not_recorded",
-    provider: value.provider || null,
-    model: value.model || null,
+    provider: typeof value.provider === "string" && value.provider ? value.provider : null,
+    model: typeof value.model === "string" && value.model ? value.model : null,
     input_tokens: Number.isFinite(input) ? input : null,
     output_tokens: Number.isFinite(output) ? output : null,
     reasoning_tokens: Number.isFinite(reasoning) ? reasoning : null,
@@ -2155,6 +2296,78 @@ function normalizeAgentActivity(handoff) {
   }));
 }
 
+function mergeModelRecords(records) {
+  const map = new Map();
+  for (const record of records) {
+    if (!record?.model) continue;
+    const key = [record.model, record.provider || ""].join("\u0000");
+    if (!map.has(key)) {
+      map.set(key, {
+        model: record.model,
+        provider: record.provider || null,
+        model_tier: record.model_tier || null,
+        source: record.source || "recorded",
+        reason: record.reason || null,
+        agent_id: record.agent_id || null,
+        role: record.role || null,
+      });
+      continue;
+    }
+    const current = map.get(key);
+    current.model_tier ||= record.model_tier || null;
+    current.source = [...new Set([current.source, record.source].filter(Boolean))].join(", ");
+    current.reason ||= record.reason || null;
+    current.agent_id ||= record.agent_id || null;
+    current.role ||= record.role || null;
+  }
+  return [...map.values()];
+}
+
+function actualModelRecords(handoff, tokenUsage, agentActivity) {
+  const records = [];
+  const fallbackProvider = handoff?.model_provider || tokenUsage?.provider || null;
+  if (handoff?.model) {
+    records.push({
+      model: handoff.model,
+      provider: fallbackProvider,
+      model_tier: handoff.model_tier || null,
+      source: "handoff",
+      reason: handoff.model_selection_reason || null,
+    });
+  }
+  if (tokenUsage?.model) {
+    records.push({
+      model: tokenUsage.model,
+      provider: tokenUsage.provider || fallbackProvider,
+      source: tokenUsage.source || "token_usage",
+    });
+  }
+  for (const activity of agentActivity || []) {
+    if (activity.model) {
+      records.push({
+        model: activity.model,
+        provider: fallbackProvider,
+        model_tier: activity.model_tier || null,
+        source: "agent_activity",
+        reason: activity.model_selection_reason || null,
+        agent_id: activity.agent_id,
+        role: activity.role,
+      });
+    }
+    if (activity.token_usage?.model) {
+      records.push({
+        model: activity.token_usage.model,
+        provider: activity.token_usage.provider || fallbackProvider,
+        model_tier: activity.model_tier || null,
+        source: activity.token_usage.source || "agent_token_usage",
+        agent_id: activity.agent_id,
+        role: activity.role,
+      });
+    }
+  }
+  return mergeModelRecords(records);
+}
+
 function deriveTokenUsageFromAgents(agentActivity) {
   const recorded = agentActivity.filter((item) => item.token_usage.recorded);
   if (recorded.length === 0) return normalizeTokenUsage(null);
@@ -2250,6 +2463,16 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const modelReason = node.model_selection_reason
     || (cardReasonMatchesPolicy ? card.model_selection_reason : null)
     || modelSelectionReason(taskComplexity, modelTier);
+  const modelProfile = collaborationValue(node, card, "model_profile", null);
+  const recommended = recommendedModelForNode({
+    node,
+    card,
+    modelTier,
+    taskComplexity,
+    modelProfile,
+    language,
+  });
+  const actualModels = actualModelRecords(handoff, tokenUsage, agentActivity);
   const estimatedMinutes = Number.isFinite(node.estimated_minutes)
     ? node.estimated_minutes
     : Number.isFinite(card.estimated_minutes)
@@ -2273,10 +2496,14 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     task_complexity: taskComplexity,
     model_tier: modelTier,
     model_selection_reason: modelReason,
+    recommended_model: recommended.model,
+    recommended_model_reason: recommended.reason,
+    recommended_model_source: recommended.source,
+    actual_models: actualModels,
     estimated_minutes: estimatedMinutes,
     worker_profile: collaborationValue(node, card, "worker_profile", "unassigned"),
     agent: collaborationValue(node, card, "agent", null),
-    model_profile: collaborationValue(node, card, "model_profile", null),
+    model_profile: modelProfile,
     runtime_profile: collaborationValue(node, card, "runtime_profile", null),
     safety_profile: collaborationValue(node, card, "safety_profile", null),
     scorecard: collaborationValue(node, card, "scorecard", null),
@@ -2636,6 +2863,69 @@ function buildSkillUsage(projectedNodes) {
   };
 }
 
+function buildModelUsage(projectedNodes) {
+  const byNode = [];
+  const byRecommendedModel = new Map();
+  const byActualModel = new Map();
+  const missingActualNodes = [];
+  for (const node of projectedNodes) {
+    const recommendedKey = node.recommended_model || "unassigned";
+    if (!byRecommendedModel.has(recommendedKey)) {
+      byRecommendedModel.set(recommendedKey, { model: recommendedKey, nodes: [], tiers: new Set(), sources: new Set(), reasons: new Set() });
+    }
+    const recommended = byRecommendedModel.get(recommendedKey);
+    recommended.nodes.push(node.id);
+    if (node.model_tier) recommended.tiers.add(node.model_tier);
+    if (node.recommended_model_source) recommended.sources.add(node.recommended_model_source);
+    if (node.recommended_model_reason) recommended.reasons.add(node.recommended_model_reason);
+
+    if (node.actual_models.length === 0) {
+      missingActualNodes.push(node.id);
+    } else {
+      for (const record of node.actual_models) {
+        const key = [record.model, record.provider || ""].join("\u0000");
+        if (!byActualModel.has(key)) {
+          byActualModel.set(key, { model: record.model, provider: record.provider || null, nodes: [], sources: new Set(), tiers: new Set(), agents: new Set() });
+        }
+        const actual = byActualModel.get(key);
+        actual.nodes.push(node.id);
+        if (record.source) actual.sources.add(record.source);
+        if (record.model_tier) actual.tiers.add(record.model_tier);
+        if (record.agent_id) actual.agents.add(record.agent_id);
+      }
+    }
+    byNode.push({
+      node_id: node.id,
+      model_tier: node.model_tier,
+      recommended_model: node.recommended_model,
+      recommended_model_source: node.recommended_model_source,
+      actual_models: node.actual_models,
+    });
+  }
+  return {
+    recommended_nodes: projectedNodes.filter((node) => node.recommended_model).length,
+    actual_recorded_nodes: projectedNodes.length - missingActualNodes.length,
+    missing_actual_nodes: missingActualNodes,
+    actual_coverage_percent: projectedNodes.length === 0 ? 100 : Math.round(((projectedNodes.length - missingActualNodes.length) / projectedNodes.length) * 100),
+    by_node: byNode,
+    recommended_by_model: [...byRecommendedModel.values()].map((entry) => ({
+      model: entry.model,
+      nodes: [...new Set(entry.nodes)],
+      tiers: [...entry.tiers],
+      sources: [...entry.sources],
+      reasons: [...entry.reasons],
+    })),
+    actual_by_model: [...byActualModel.values()].map((entry) => ({
+      model: entry.model,
+      provider: entry.provider,
+      nodes: [...new Set(entry.nodes)],
+      sources: [...entry.sources],
+      tiers: [...entry.tiers],
+      agents: [...entry.agents],
+    })),
+  };
+}
+
 function buildTiming(projectedNodes) {
   const durations = projectedNodes
     .map((node) => node.timing.duration_ms)
@@ -2684,7 +2974,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, skills, risks, project, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, skills, models, risks, project, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -2764,6 +3054,16 @@ function buildRecommendations(projectedNodes, usage, context, skills, risks, pro
       isZh ? "缺少节点级 skill 记录时，很难复盘每个节点为什么调用某个 specialist skill。" : "Without node-level skill records, it is hard to audit why a specialist skill was used.",
       isZh ? "后续 handoff 记录 skills_used；如果没有使用 skill，保持缺失即可。" : "Record skills_used in future handoffs; leave it missing when no skill was used.",
       skills.missing_nodes,
+    ));
+  }
+  if (models.missing_actual_nodes.length > 0) {
+    items.push(recommendation(
+      "missing-model-usage",
+      "low",
+      isZh ? "实际模型记录不完整" : "Actual model coverage is incomplete",
+      isZh ? "看板已经能显示推荐模型，但缺少实际执行模型时，无法复盘成本和质量选择是否匹配。" : "The board can show recommended models, but actual model records are needed to audit cost and quality choices.",
+      isZh ? "后续 handoff 或 agent_activity 记录 model；如果环境未暴露实际模型，保持缺失即可。" : "Record model in handoff or agent_activity when the runtime exposes it; leave it missing when unavailable.",
+      models.missing_actual_nodes,
     ));
   }
   const overloaded = projectedNodes.filter((node) => node.agent_activity.length > 3);
@@ -2962,6 +3262,11 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
         .map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "expert 复杂度节点必须使用 frontier 档位。" : "Expert-complexity nodes must use the frontier tier.");
     }
+    case "model_usage_recorded": {
+      if (terminalNodes.length === 0) return pending();
+      const failing = terminalNodes.filter((node) => node.actual_models.length === 0).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录实际使用模型。" : "Terminal nodes did not record actual model usage.");
+    }
     case "board_language": {
       const expected = graph.metadata?.language || language;
       return expected === language ? pass() : fail([], isZh ? "看板语言与 workflow metadata 不一致。" : "Board language does not match workflow metadata.");
@@ -3035,12 +3340,13 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const usage = buildUsage(projectedNodes);
   const context = buildContextUsage(projectedNodes);
   const skills = buildSkillUsage(projectedNodes);
+  const models = buildModelUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, risks, project, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, risks, project, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -3079,6 +3385,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
       skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+      actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
       agent_activities: projectedNodes.reduce((sum, node) => sum + node.agent_activity.length, 0),
       next_recommended_action: nextRecommendedAction(graph, state, language),
@@ -3104,6 +3411,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     usage,
     context,
     skills,
+    models,
     timing,
     scorecard,
     risks,
@@ -3264,6 +3572,26 @@ function renderSkillsUsed(items, text) {
   });
 }
 
+function renderModelRecords(items, text) {
+  return renderObjectList(items, text.noModelsRecorded, (item) => {
+    const meta = [item.provider, item.model_tier, item.source, item.agent_id].filter(Boolean).join(" · ");
+    const reason = item.reason ? `<p class="muted">${escapeHtml(item.reason)}</p>` : "";
+    return `<strong>${escapeHtml(item.model)}</strong>${meta ? ` <span class="muted">${escapeHtml(meta)}</span>` : ""}${reason}`;
+  });
+}
+
+function renderModelGroups(groups, text) {
+  return renderObjectList(groups, text.noModelsRecorded, (group) => {
+    const meta = [
+      group.provider ? `${text.source}: ${group.provider}` : null,
+      group.tiers?.length ? `${text.modelTier}: ${group.tiers.join(", ")}` : null,
+      group.sources?.length ? `${text.source}: ${group.sources.join(", ")}` : null,
+      group.agents?.length ? `${text.agents}: ${group.agents.join(", ")}` : null,
+    ].filter(Boolean).join(" · ");
+    return `<strong>${escapeHtml(group.model)}</strong><p>${escapeHtml(text.nodes)}: ${renderNodeLinks(group.nodes, text)}</p>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}`;
+  });
+}
+
 function renderAgentActivity(items, text) {
   return renderObjectList(items, text.noAgentActivity, (item) => {
     const tokens = formatTokens(item.token_usage, text);
@@ -3392,6 +3720,8 @@ function renderNodeCard(node, text) {
       <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
       <dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd>
       <dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd>
+      <dt>${escapeHtml(text.recommendedModel)}</dt><dd>${escapeHtml(node.recommended_model || text.none)}</dd>
+      <dt>${escapeHtml(text.actualModel)}</dt><dd>${escapeHtml(node.actual_models.map((item) => item.model).join(", ") || text.notRecorded)}</dd>
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
@@ -3415,6 +3745,7 @@ function renderTaskTracker(nodes, text) {
       <span>${escapeHtml(text.nodes)}</span>
       <span>${escapeHtml(text.actualWork)}</span>
       <span>${escapeHtml(text.skillsUsed)}</span>
+      <span>${escapeHtml(text.modelSelection)}</span>
       <span>${escapeHtml(text.changedFiles)}</span>
       <span>${escapeHtml(text.verification)}</span>
       <span>${escapeHtml(text.tokenUsage)}</span>
@@ -3424,6 +3755,8 @@ function renderTaskTracker(nodes, text) {
       .map((node) => {
         const work = node.work_items.map((item) => item.title).join("; ") || text.noWorkItems;
         const skills = node.skills_used.map((skill) => skill.name).join(", ") || text.noSkillsUsed;
+        const actualModels = node.actual_models.map((item) => item.model).join(", ") || text.notRecorded;
+        const model = `${node.recommended_model || text.none} -> ${actualModels}`;
         const files = node.changed_files.map((file) => file.path).join(", ") || text.noChangedFiles;
         const checks = node.required_checks.map((item) => `${item.command}: ${item.result}`).join("; ") || text.none;
         const risks = [...node.open_risks, ...node.non_blocking_notes].join("; ") || text.none;
@@ -3431,6 +3764,7 @@ function renderTaskTracker(nodes, text) {
           <span><a href="#node-${escapeHtml(node.id)}"><strong>${escapeHtml(node.id)}</strong></a><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
           <span>${escapeHtml(truncateText(work, 240))}</span>
           <span>${escapeHtml(truncateText(skills, 160))}</span>
+          <span>${escapeHtml(truncateText(model, 180))}</span>
           <span>${escapeHtml(truncateText(files, 180))}</span>
           <span>${escapeHtml(truncateText(checks, 220))}</span>
           <span>${escapeHtml(formatTokens(node.token_usage, text))}</span>
@@ -3461,9 +3795,10 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
         <section><h4>${escapeHtml(text.tokenUsage)}</h4>${renderTokenUsage(node.token_usage, text)}</section>
+        <section><h4>${escapeHtml(text.actualModel)}</h4>${renderModelRecords(node.actual_models, text)}</section>
         <section><h4>${escapeHtml(text.contextUsage)}</h4>${renderContextUsage(node.context_usage, text)}</section>
         <section><h4>${escapeHtml(text.timeUsage)}</h4>${renderTiming(node.timing, text)}</section>
-        <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(node.model_profile || text.none)}</dd><dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(node.runtime_profile || text.none)}</dd><dt>${escapeHtml(text.safetyProfile)}</dt><dd>${escapeHtml(node.safety_profile || text.none)}</dd><dt>${escapeHtml(text.scorecard)}</dt><dd>${escapeHtml(node.scorecard || text.none)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.model_selection_reason)}</dd></dl></section>
+        <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.recommendedModel)}</dt><dd>${escapeHtml(node.recommended_model || text.none)}</dd><dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(node.model_profile || text.none)}</dd><dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(node.runtime_profile || text.none)}</dd><dt>${escapeHtml(text.safetyProfile)}</dt><dd>${escapeHtml(node.safety_profile || text.none)}</dd><dt>${escapeHtml(text.scorecard)}</dt><dd>${escapeHtml(node.scorecard || text.none)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.recommended_model_reason || node.model_selection_reason)}</dd></dl></section>
         <section><h4>${escapeHtml(text.agentActivity)}</h4>${renderAgentActivity(node.agent_activity, text)}</section>
         <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList([...node.open_risks, ...node.non_blocking_notes], text.none)}</section>
         <section><h4>${escapeHtml(text.timeline)}</h4>${renderTimeline(node.timeline, text)}</section>
@@ -3541,7 +3876,7 @@ function renderBoardHtml(board) {
     .board { display: grid; grid-template-columns: repeat(7, minmax(170px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
     .column { min-width: 170px; background: #fdfefe; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .task-table { display: grid; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.4fr) minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(200px, 1.2fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
+    .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.4fr) minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(200px, 1.2fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
     .task-row:first-child { border-top: 0; }
     .task-row > span { padding: 10px; border-left: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
     .task-row > span:first-child { border-left: 0; }
@@ -3619,6 +3954,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.pending, board.summary.pending, { filterStatus: "pending" })}
         ${renderMetric(text.workItems, board.summary.work_items, "#task-tracker")}
         ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
+        ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
@@ -3668,6 +4004,21 @@ function renderBoardHtml(board) {
       <p><strong>${escapeHtml(text.skillMissing)}:</strong> ${escapeHtml(board.skills.missing_nodes.join(", ") || text.none)}</p>
       <h3>${escapeHtml(text.skillsUsed)}</h3>
       ${renderSkillGroups(board.skills.by_skill, text)}
+    </section>
+
+    <section class="panel" id="model-usage">
+      <h2>${escapeHtml(text.modelUsage)}</h2>
+      <div class="metrics">
+        ${renderMetric(text.recommendedModel, board.models.recommended_nodes)}
+        ${renderMetric(text.modelRecorded, board.models.actual_recorded_nodes)}
+        ${renderMetric(text.modelMissing, board.models.missing_actual_nodes.length)}
+        ${renderMetric(text.modelCoverage, `${board.models.actual_coverage_percent}%`)}
+      </div>
+      <p><strong>${escapeHtml(text.modelMissing)}:</strong> ${escapeHtml(board.models.missing_actual_nodes.join(", ") || text.none)}</p>
+      <h3>${escapeHtml(text.recommendedModel)}</h3>
+      ${renderModelGroups(board.models.recommended_by_model, text)}
+      <h3>${escapeHtml(text.actualModel)}</h3>
+      ${renderModelGroups(board.models.actual_by_model, text)}
     </section>
 
     <section class="panel">

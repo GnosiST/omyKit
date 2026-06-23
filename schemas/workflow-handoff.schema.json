@@ -36,6 +36,26 @@
       "type": "string",
       "minLength": 1
     },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_tier": {
+      "type": "string",
+      "enum": [
+        "fast",
+        "standard",
+        "frontier"
+      ]
+    },
+    "model_selection_reason": {
+      "type": "string",
+      "minLength": 1
+    },
     "skills_used": {
       "type": "array",
       "items": {

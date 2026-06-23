@@ -86,7 +86,7 @@ When asking about mode, allow the user to answer with `Lite`, `Standard`, `Stric
 ## Route
 
 - `maintenance` -> handle directly with the omyKit repository scripts; then report install/update evidence
-- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, task-tracker highlights, improvement actions, skill usage, token/context coverage, timing or ETA signals, failed/blocked nodes, or validation evidence
+- `controller` -> handle directly with `omykit-workflow.mjs`; then report status, next action, board paths, task-tracker highlights, improvement actions, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, or validation evidence
 - `init` -> `codex-project-init`
 - `retrofit` -> `codex-project-retrofit`
 - `change` -> `codex-change-workflow`
@@ -99,7 +99,7 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 
 ## Agent And Cost Signals
 
-Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
+Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Let the active workflow `model_profile` provide concrete model recommendations, but record actual provider/model only when the runtime exposes it through handoff `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If exact token, context, or actual-model metrics are unavailable, leave them missing; do not invent usage numbers.
 
 ## Workflow Templates And Scorecards
 

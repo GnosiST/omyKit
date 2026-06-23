@@ -38,7 +38,7 @@ Keep these layers separate:
 | --- | --- |
 | template graph | Node order, dependencies, retry limits, joins, or handoff targets change. |
 | agent set | Role names, boundaries, or expected scopes change. |
-| model profile | The tier-selection policy changes. |
+| model profile | Tier selection, tier-to-model recommendation, or node-specific model override changes. |
 | runtime profile | Verification expects a different local environment or toolchain. |
 | safety limits | Retry, permission, parallelism, or stop conditions change. |
 | scorecard | Evidence gates should be added, removed, or tightened. |
@@ -69,6 +69,7 @@ Current evidence checks cover:
 - changed-file summaries
 - verification records and evidence paths
 - recorded skill usage when skills were actually used
+- recommended model and actual model records when the runtime exposes them
 - source-aware token and context usage records
 - required nodes not being failed or blocked
 - subagent role/scope/task/status records
@@ -94,5 +95,5 @@ For Chinese user prompts, `$omykit` should initialize tracked workflows with `--
 - Add a new template when the graph topology differs meaningfully.
 - Add or edit a scorecard when evidence expectations differ but flow stays the same.
 - Add a runtime profile when verification setup differs but graph topology does not.
-- Add a model profile when cost/quality policy differs but node responsibilities stay the same.
+- Add a model profile when cost/quality policy or concrete model recommendation differs but node responsibilities stay the same.
 - Keep third-party skill ideas as scoped references; do not copy third-party skill bodies, templates, badges, images, or branding into omyKit.

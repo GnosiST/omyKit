@@ -64,6 +64,8 @@ pending -> ready -> running -> passed
 | `task_complexity` | 不绑定供应商的任务难度信号：`simple`、`standard`、`complex` 或 `expert`。 |
 | `model_tier` | 推荐模型档位：`fast`、`standard` 或 `frontier`；controller 只记录策略，不调用模型。 |
 | `model_selection_reason` | 为什么使用该档位的简短说明。 |
+| `recommended_model` | 可选的具体模型推荐；缺省时 controller 会根据当前 `model_profile` 和节点策略推导。 |
+| `recommended_model_reason` | 为什么推荐该具体模型的简短说明。 |
 | `estimated_minutes` | 用于看板 ETA 和剩余时间计算的计划估算。 |
 | `agent` | 模板层期望执行或负责该节点的角色 id。 |
 | `model_profile` | 模板层模型策略引用。 |
@@ -80,7 +82,7 @@ pending -> ready -> running -> passed
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
 
-用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。实际 provider/model 名称只记录在 handoff 执行元数据中。
+用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。
 
 ## 重试限制
 

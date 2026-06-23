@@ -331,7 +331,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "bd45aa8f39dd54c2d7625eac88abde81d55b681d",
+      "baseline": "f46e58dc97ed32da219ff2b9548a700995b307f7",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",

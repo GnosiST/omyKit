@@ -27,6 +27,10 @@
   "node_id": "03-implement",
   "status": "passed",
   "language": "zh-CN",
+  "model": "GPT-5.4",
+  "model_provider": "openai",
+  "model_tier": "standard",
+  "model_selection_reason": "限定范围实现并补测试，不涉及架构决策。",
   "summary": "已完成限定范围内的实现，并更新聚焦测试。",
   "work_items": [
     {
@@ -79,6 +83,7 @@
       "task": "实现限定范围内的兜底逻辑并补测试。",
       "status": "done",
       "model_tier": "standard",
+      "model": "GPT-5.4",
       "model_selection_reason": "限定范围实现并补测试，不涉及架构决策。",
       "started_at": "2026-06-23T10:00:00.000Z",
       "completed_at": "2026-06-23T10:24:00.000Z",
@@ -97,7 +102,8 @@
       ],
       "token_usage": {
         "source": "tool_reported",
-        "model": "gpt-5.4",
+        "provider": "openai",
+        "model": "GPT-5.4",
         "total_tokens": 18420
       },
       "context_usage": {
@@ -110,6 +116,8 @@
   ],
   "token_usage": {
     "source": "derived_from_agent_activity",
+    "provider": "openai",
+    "model": "GPT-5.4",
     "total_tokens": 18420,
     "notes": "由已记录的 agent activity 汇总。"
   },
@@ -133,9 +141,9 @@
 }
 ```
 
-使用 `language`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier` 和证据。
+使用 `language`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier`、可选实际 `model` 和证据。
 
-token 和上下文记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只作为执行事实记录。
+token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model` 记录为执行事实。
 
 ## Failed And Reject
 
@@ -198,6 +206,7 @@ token 和上下文记录必须有来源。只要出现 `token_usage` 或 `contex
 - evidence 路径必须能从 workflow 目录或目标项目找回。
 - 用户可见 summary 使用用户当前语言。
 - 只记录实际使用过的 skill；可取得时写清用途和证据。
+- 只有运行环境暴露实际模型时才记录模型名；拿不到就保持缺失，让看板显示缺口。
 - token 用量必须带来源；无法取得真实用量时标记未记录，不要估成 0。
 
 节点状态见 [task-graph.zh-CN.md](task-graph.zh-CN.md)，命令见 [controller.zh-CN.md](controller.zh-CN.md)。

@@ -7,6 +7,29 @@ model_profiles:
     policy:
       en: Use fast tier for bounded intake and delivery, standard tier for implementation and verification, frontier tier for design or high-risk review.
       zh-CN: 有边界的接收和交付用 fast，普通实现和验证用 standard，方案设计或高风险评审用 frontier。
+    model_map:
+      - tier: fast
+        model: GPT-5.4-Mini
+        reason:
+          en: Low-cost model for simple bounded work such as intake, delivery packaging, extraction, or short transformations.
+          zh-CN: 适合简单有边界任务的低成本模型，例如需求接收、交付打包、信息提取或短文本转换。
+      - tier: standard
+        model: GPT-5.4
+        reason:
+          en: Stable general-purpose model for ordinary implementation, verification, office work, and medium reasoning.
+          zh-CN: 稳定通用模型，适合常规实现、验证、办公任务和中等推理。
+      - tier: frontier
+        model: GPT-5.5
+        reason:
+          en: Strongest general reasoning model for architecture, complex planning, high-risk review, and multi-step synthesis.
+          zh-CN: 最强通用推理模型，适合架构、复杂规划、高风险评审和多步骤综合判断。
+    node_overrides:
+      - node_type: implement
+        task_complexity: simple
+        model: GPT-5.3-Codex-Spark
+        reason:
+          en: Prefer the lightweight Codex coding model for narrow IDE-like code edits, small scripts, and style-only changes.
+          zh-CN: 对窄范围 IDE 式代码修改、小脚本和纯样式调整，优先使用轻量 Codex 编码模型。
   - id: cost-aware
     name:
       en: Cost Aware
@@ -14,6 +37,29 @@ model_profiles:
     policy:
       en: Start with the lowest sufficient tier, escalate only after ambiguity, failed checks, or architecture risk is recorded.
       zh-CN: 从最低足够档位开始，只有记录到歧义、检查失败或架构风险后才升级模型。
+    model_map:
+      - tier: fast
+        model: GPT-5.4-Mini
+        reason:
+          en: Use for simple high-volume or low-risk steps before escalating.
+          zh-CN: 用于简单、高频、低风险步骤，必要时再升级。
+      - tier: standard
+        model: GPT-5.4
+        reason:
+          en: Default when the task needs stable medium reasoning without frontier-model cost.
+          zh-CN: 需要稳定中等推理但不值得使用 frontier 成本时的默认选择。
+      - tier: frontier
+        model: GPT-5.5
+        reason:
+          en: Escalate only after recorded ambiguity, failed checks, architecture risk, or high-stakes review.
+          zh-CN: 只有记录到歧义、检查失败、架构风险或高风险评审时才升级。
+    node_overrides:
+      - node_type: implement
+        task_complexity: simple
+        model: GPT-5.3-Codex-Spark
+        reason:
+          en: Use the coding-specialized preview model for narrow code-only changes when quality risk is low.
+          zh-CN: 低风险窄范围纯代码修改可使用编码专用 preview 模型。
   - id: quality-critical
     name:
       en: Quality Critical
@@ -21,3 +67,19 @@ model_profiles:
     policy:
       en: Use stronger models for design, review, security, migration, and client-facing delivery gates.
       zh-CN: 对方案、评审、安全、迁移和面向客户的交付门禁使用更强模型。
+    model_map:
+      - tier: fast
+        model: GPT-5.4
+        reason:
+          en: Use the stable general model even for smaller steps when quality is more important than minimal cost.
+          zh-CN: 高质量优先时，即使较小步骤也使用稳定通用模型，而不是最低成本模型。
+      - tier: standard
+        model: GPT-5.4
+        reason:
+          en: Stable default for production implementation, verification, and professional documentation.
+          zh-CN: 生产实现、验证和专业文档的稳定默认模型。
+      - tier: frontier
+        model: GPT-5.5
+        reason:
+          en: Use for design judgment, client-facing work, broad reviews, migrations, and high-risk synthesis.
+          zh-CN: 用于设计判断、客户可见工作、广泛评审、迁移和高风险综合判断。

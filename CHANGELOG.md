@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added model traceability to tracked workflows: model profiles now map tiers to recommended concrete models, board projections show recommended versus actual recorded models, scorecards warn about missing terminal-node actual-model records, and docs/schemas/tests cover the contract.
+- Refreshed the Sentry upstream baseline after reviewing a low-value span issue UI revert and feature-flag guard removal; no additional omyKit workflow rule was promoted.
 - Synced controller overview docs and the `omykit` entry skill so skill-usage tracking is consistently described across README, task-graph, and workflow-kit docs.
 - Refreshed the Sentry upstream baseline after reviewing a dynamic-sampling generic-metrics volume change; no additional omyKit workflow rule was promoted.
 - Added workflow skill-usage traceability: handoffs can now record node-level and agent-level `skills_used`, the board exposes skill coverage and missing records, scorecards warn about missing terminal-node skill records, and docs/tests cover the contract.

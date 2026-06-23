@@ -134,6 +134,43 @@
           },
           "acceptance": {
             "$ref": "#/definitions/i18nStringArray"
+          },
+          "context_level": {
+            "type": "string",
+            "enum": [
+              "scan",
+              "focus",
+              "deep"
+            ]
+          },
+          "task_complexity": {
+            "type": "string",
+            "enum": [
+              "simple",
+              "standard",
+              "complex",
+              "expert"
+            ]
+          },
+          "model_tier": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "standard",
+              "frontier"
+            ]
+          },
+          "model_selection_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended_model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended_model_reason": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

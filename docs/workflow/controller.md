@@ -35,7 +35,7 @@ $omykit 生成看板并打开
 $omykit 校验工作流
 ```
 
-Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
+Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
 
@@ -99,12 +99,12 @@ Templates are layered:
 | --- | --- |
 | graph topology | Node ids, node types, dependencies, retry limits, joins, handoff targets. |
 | agent profile | Role names and scope boundaries used by node cards and handoffs. |
-| model profile | Recommended model-tier policy; actual provider/model remains a Codex execution choice. |
+| model profile | Recommended model-tier policy and concrete model map; actual provider/model remains execution metadata. |
 | runtime profile | Expected local verification context such as project default, browser QA, or docs-only work. |
 | safety limits | Retry, parallelism, permission, and stop-condition guidance. |
 | scorecards | Evidence checks that audit handoffs, verification, usage records, language, and model-tier policy. |
 
-To add a node, edit the relevant template YAML. To change who should do a step, edit the agent layer or node `agent` field. To change model policy, edit the model profile or node tier. This keeps topology, agents, models, runtime, safety, and scoring independently reviewable.
+To add a node, edit the relevant template YAML. To change who should do a step, edit the agent layer or node `agent` field. To change model policy, edit the model profile, node tier, or node-level recommendation. This keeps topology, agents, models, runtime, safety, and scoring independently reviewable.
 
 ## Visual Board
 
@@ -122,15 +122,15 @@ It writes:
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, a task tracker, actual node work items, changed-file summaries, skill usage, verification results, evidence availability, agent activity, model-tier policy, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, a task tracker, actual node work items, changed-file summaries, skill usage, verification results, evidence availability, agent activity, model-tier policy, recommended concrete models, actual model records, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
 
-Token and context totals are source-aware. The controller aggregates recorded node or agent usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost.
+Token, context, skill, and actual-model totals are source-aware. The controller aggregates recorded node or agent usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost. Recommended models come from the selected `model_profile` and node policy; actual models come from `handoff.model`, `handoff.token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`.
 
 Board language follows this order: explicit `--lang`, workflow metadata language, latest handoff language, then title-language inference. Use `--lang zh-CN` only when you need to override the workflow language. In Codex Desktop, Codex should return the generated `board.html` path as a local link and open it in the built-in browser when that surface is available. The CLI `--open` fallback asks the operating system to open the generated HTML with the system default browser; if that fails, the files remain in place and the command prints the HTML path.
 
-The board also renders the selected workflow template and scorecard audit. Scorecards inspect recorded evidence; they do not trust natural-language completion claims by themselves. Failed scorecard checks become improvement actions with affected node links when possible. Skill-usage checks are recommended warnings: they expose missing records without forcing skill use where no skill was actually used.
+The board also renders the selected workflow template and scorecard audit. Scorecards inspect recorded evidence; they do not trust natural-language completion claims by themselves. Failed scorecard checks become improvement actions with affected node links when possible. Skill-usage and actual-model checks are recommended warnings: they expose missing records without forcing fake skill or model records where the runtime did not expose them.
 
-The board is intentionally static. It does not automatically start agents, enforce claims, choose a provider model, infer skill usage, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates. It can record and display multiple agents, worker lanes, logical parallel groups, skill usage, model-tier recommendations, timing, usage, and handoff evidence when Codex or another worker writes those records.
+The board is intentionally static. It does not automatically start agents, enforce claims, choose a provider model, infer skill usage, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates. It can record and display multiple agents, worker lanes, logical parallel groups, skill usage, model-tier recommendations, recommended models, actual model records, timing, usage, and handoff evidence when Codex or another worker writes those records.
 
 ## Files
 

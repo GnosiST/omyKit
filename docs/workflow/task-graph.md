@@ -64,6 +64,8 @@ Nodes may include optional collaboration fields. They are routing and display me
 | `task_complexity` | Supplier-independent difficulty signal: `simple`, `standard`, `complex`, or `expert`. |
 | `model_tier` | Recommended model tier: `fast`, `standard`, or `frontier`; the controller records the policy but does not call a model. |
 | `model_selection_reason` | Short explanation for why that tier is appropriate. |
+| `recommended_model` | Optional concrete model recommendation. If omitted, the controller derives it from the active `model_profile` and node policy. |
+| `recommended_model_reason` | Short explanation for the concrete model recommendation. |
 | `estimated_minutes` | Planning estimate used for board ETA and remaining-time calculations. |
 | `agent` | Template-level role id expected to execute or own the node. |
 | `model_profile` | Template-level model policy reference. |
@@ -80,7 +82,7 @@ For multi-agent work, treat this as two layers:
 
 Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
 
-Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Record actual provider/model names only in handoff execution metadata.
+Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. The active `model_profile` maps tiers to recommended concrete models and may add node-specific overrides. Record actual provider/model names only in handoff execution metadata, because the controller recommends but does not call models.
 
 ## Retry Limits
 
