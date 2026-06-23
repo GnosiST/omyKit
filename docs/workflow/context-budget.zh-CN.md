@@ -66,11 +66,13 @@ scan -> focus -> deep
 
 对于启用 controller 的 workflow，compact 或中断后先从持久状态恢复，不要直接读取大范围上下文：
 
-1. `.omykit/workflows/<id>/state.json`
-2. `.omykit/workflows/<id>/graph.json`
-3. 最新相关 `ledger.jsonl` 事件
-4. active、ready、failed 或 blocked 节点卡
-5. 相关 handoff 和 evidence 摘要
+1. `.omykit/active-workflow`，或多个 workflow 时显式指定 `--workflow <id>`
+2. `.omykit/workflows/<id>/state.json`
+3. `.omykit/workflows/<id>/graph.json`
+4. running 或 ready 节点的 `context-packs/<node-id>.json`；没有时先生成
+5. 最新相关 `ledger.jsonl` 事件和 `commands/commands.jsonl` 后台命令记录
+6. active、ready、failed 或 blocked 节点卡
+7. 相关 handoff 和 evidence 摘要
 
 只有下一步依赖精确编辑、引用出处、安全/法律/隐私判断或失败根因时，才回到完整源码、完整日志或原始交付物。
 

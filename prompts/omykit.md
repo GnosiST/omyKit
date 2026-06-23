@@ -1,6 +1,6 @@
 ---
 description: Start, execute, explain, or operate omyKit workflow
-argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始执行 | 只创建工作流 | 继续工作流 | 派发计划 | 解除阻塞 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
+argument-hint: help | 帮助 | 初始化项目 | 改造旧项目 | 开始执行 | 只创建工作流 | 继续工作流 | 派发计划 | 交接包 | 工作流列表 | 切换工作流 | 记录后台命令 | 解除阻塞 | 生成看板 | 查看进度 | 查看模板 | scorecard 验票 | 交付检查 | 更新自己
 ---
 
 Use $omykit with these user arguments:
@@ -15,6 +15,6 @@ If the arguments are clear, infer safe defaults, state assumptions, and proceed 
 
 If the arguments ask for help, usage, commands, or "怎么用", answer directly with concise omyKit usage groups. Do not start a workflow or run controller commands unless the user also asks for a concrete action.
 
-If the arguments ask to create and execute, start, continue, advance, or run a long task, do not stop after workflow creation. Create or resume the tracked workflow, start the next ready node, do the node work, write a structured handoff, then complete/reject/block and continue until delivery passes, a real blocker needs the user, or the user explicitly asks to stop. If the user says only create/init/skeleton/no execution, create workflow state only and return the next command.
+If the arguments ask to create and execute, start, continue, advance, or run a long task, do not stop after workflow creation. Create or resume the tracked workflow, start or finish the current ready/running node, generate a bounded context pack before delegation or recovery, do the node work, record long-running command metadata when recovery depends on logs or resume commands, write a structured handoff with downstream context, then complete/reject/block and continue until delivery passes, a real blocker needs the user, or the user explicitly asks to stop. If the user says only create/init/skeleton/no execution, create workflow state only and return the next command.
 
 Use the workflow at task boundaries and meaningful phase changes, not for every individual action.

@@ -66,6 +66,7 @@ Current evidence checks cover:
 
 - terminal node handoff summaries
 - actual work item records
+- downstream context for passed nodes that hand off to later nodes
 - changed-file summaries
 - verification records and evidence paths
 - recorded skill usage when skills were actually used

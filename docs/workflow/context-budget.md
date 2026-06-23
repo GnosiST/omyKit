@@ -63,11 +63,13 @@ Compression is useful only after narrowing fails. Use this order:
 
 For controller-backed workflows, resume after compact or interruption from durable state before reading broad context:
 
-1. `.omykit/workflows/<id>/state.json`
-2. `.omykit/workflows/<id>/graph.json`
-3. the latest relevant `ledger.jsonl` events
-4. active, ready, failed, or blocked node cards
-5. related handoff and evidence summaries
+1. `.omykit/active-workflow`, or an explicit `--workflow <id>` when multiple workflows exist
+2. `.omykit/workflows/<id>/state.json`
+3. `.omykit/workflows/<id>/graph.json`
+4. `context-packs/<node-id>.json` for the running or ready node; generate it first when missing
+5. the latest relevant `ledger.jsonl` events and `commands/commands.jsonl` records
+6. active, ready, failed, or blocked node cards
+7. related handoff and evidence summaries
 
 Return to full source files, full logs, or original artifacts only when the next action depends on exact edits, citations, security/legal/privacy judgment, or failure root cause.
 

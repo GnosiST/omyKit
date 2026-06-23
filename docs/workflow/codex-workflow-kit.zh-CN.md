@@ -71,7 +71,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handoff 文件，审计入口决策，把 skill、agent、模型和用量证据投影到看板，推荐 ready 节点和合适模型，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，也不会让 Lite 任务默认变重。
+Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handoff 文件，审计入口决策，生成压缩节点上下文包，记录后台命令续接元数据，把 skill、agent、模型和用量证据投影到看板，推荐 ready 节点和合适模型，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，也不会让 Lite 任务默认变重。
 
 参见 [controller.zh-CN.md](controller.zh-CN.md)、[task-graph.zh-CN.md](task-graph.zh-CN.md) 和 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。
 

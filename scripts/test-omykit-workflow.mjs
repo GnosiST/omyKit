@@ -33,7 +33,8 @@ function readJson(file) {
 
 function workflowDirFor(root) {
   const workflowsRoot = path.join(root, ".omykit", "workflows");
-  const entries = fs.readdirSync(workflowsRoot);
+  const entries = fs.readdirSync(workflowsRoot)
+    .filter((entry) => fs.statSync(path.join(workflowsRoot, entry)).isDirectory());
   assert.equal(entries.length, 1);
   return path.join(workflowsRoot, entries[0]);
 }
@@ -54,6 +55,9 @@ assert.match(helpOutput, /Usage:/);
 assert.match(helpOutput, /templates/);
 assert.match(helpOutput, /board/);
 assert.match(helpOutput, /dispatch-plan/);
+assert.match(helpOutput, /workflows/);
+assert.match(helpOutput, /context-pack/);
+assert.match(helpOutput, /record-run/);
 assert.match(helpOutput, /Codex chat intents:/);
 assert.match(helpOutput, /Long task loop:/);
 assert.match(helpOutput, /只创建工作流/);
@@ -73,6 +77,9 @@ assert.match(initOutput, /Workflow created: feature-x/);
 assert.match(initOutput, /Continue now:/);
 assert.match(initOutput, /start 01-intake/);
 assert.match(initOutput, /Creating the workflow is not task completion/);
+const workflowsOutput = run(["workflows"]);
+assert.match(workflowsOutput, /\* feature-x/);
+assert.match(workflowsOutput, /active/);
 
 const dispatchOutput = run(["dispatch-plan", "--lang", "zh-CN"]);
 assert.match(dispatchOutput, /派发计划: feature-x/);
@@ -223,6 +230,19 @@ writeJson(intakeHandoff, {
       },
     ],
     custom_answers_allowed: true,
+  },
+  downstream_context: {
+    target_nodes: ["02-design", "02-research"],
+    summary: "Feature X 的目标、路由、语言和验收标准已经固化，下游应基于该边界设计方案。",
+    required_inputs: ["nodes/01-intake.json", "evidence/01-intake-summary.txt"],
+    evidence: ["evidence/01-intake-summary.txt"],
+    carry_forward_risks: ["看板需要继续保持中文展示和真实项目摘要。"],
+    context_budget: {
+      level: "scan",
+      max_source_files: 4,
+      notes: "下游先读 state、graph、当前节点卡和 intake handoff 摘要；只有实现时再回源码。",
+    },
+    handoff_contract: "下游节点必须保留用户目标、语言策略和自定义答案策略，不要把 intake 重新解释成只创建骨架。",
   },
   work_items: [
     {
@@ -407,6 +427,17 @@ assert.ok(state.nodes["01-intake"].completed_at);
 assert.equal(state.nodes["02-design"].status, "ready");
 assert.equal(state.nodes["02-research"].status, "ready");
 
+const contextPackOutput = run(["context-pack", "02-design", "--lang", "zh-CN"]);
+assert.match(contextPackOutput, /Context pack generated: 02-design/);
+assert.match(contextPackOutput, /context-packs\/02-design\.json/);
+const contextPack = readJson(path.join(dir, "context-packs", "02-design.json"));
+assert.equal(contextPack.workflow_id, "feature-x");
+assert.equal(contextPack.node.node_id, "02-design");
+assert.equal(contextPack.language, "zh-CN");
+assert.ok(contextPack.dependency_handoffs.some((item) => item.node_id === "01-intake" && /需求已固化/.test(item.summary)));
+assert.ok(contextPack.downstream_contexts.some((item) => item.source_node_id === "01-intake" && item.target_nodes.includes("02-design")));
+assert.ok(contextPack.context_policy.max_source_files <= 8);
+
 run(["start", "02-design"]);
 state = readJson(path.join(dir, "state.json"));
 assert.ok(state.active_nodes.includes("02-design"));
@@ -445,6 +476,29 @@ const blockOutput = run(["block", "02-design", "--reason", "Waiting for user con
 assert.match(blockOutput, /Blocked nodes: 02-design design - Design/);
 state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["02-design"].status, "blocked");
+
+const runRecordOutput = run([
+  "record-run",
+  "02-research",
+  "--id",
+  "dev-server",
+  "--label",
+  "本地开发服务",
+  "--command",
+  "npm run dev",
+  "--status",
+  "running",
+  "--pid",
+  "4242",
+  "--log",
+  ".omykit/workflows/feature-x/commands/dev-server.log",
+  "--resume",
+  "npm run dev",
+]);
+assert.match(runRecordOutput, /Command run recorded: dev-server/);
+const runLog = fs.readFileSync(path.join(dir, "commands", "commands.jsonl"), "utf8");
+assert.match(runLog, /"run_id":"dev-server"/);
+assert.match(runLog, /"status":"running"/);
 
 run(["complete", "01-intake", "--handoff", "handoffs/01-intake-to-02-design.json"]);
 state = readJson(path.join(dir, "state.json"));
@@ -575,7 +629,11 @@ assert.match(validateOutput, /Workflow valid: feature-x/);
 
 const resumeOutput = run(["resume"]);
 assert.match(resumeOutput, /Resume context:/);
+assert.match(resumeOutput, /Active workflow: feature-x/);
 assert.match(resumeOutput, /Continue command:/);
+assert.match(resumeOutput, /Context pack command:/);
+assert.match(resumeOutput, /Command runs:/);
+assert.match(resumeOutput, /dev-server/);
 assert.match(resumeOutput, /Recent ledger events:/);
 
 const boardOutput = run(["board", "--lang", "zh-CN"]);
@@ -590,6 +648,7 @@ assert.equal(board.template.layers.model_profile, "balanced");
 assert.equal(board.controller.role, "orchestrator-observer");
 assert.ok(Array.isArray(board.scorecard.checks));
 assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "downstream-context-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "subagent-model-recorded-or-explained" && check.status === "pending"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
@@ -623,6 +682,10 @@ assert.ok(Array.isArray(board.evolution.candidates));
 assert.ok(Array.isArray(board.project.main_changes));
 assert.ok(Array.isArray(board.recommendations));
 assert.deepEqual(board.improvement_plan, board.recommendations);
+assert.ok(Array.isArray(board.commands.records));
+assert.ok(Array.isArray(board.commands.active));
+assert.ok(Array.isArray(board.commands.resumable));
+assert.ok(Array.isArray(board.handoff_packets.by_node));
 assert.ok(Array.isArray(board.risks.retry_alerts));
 assert.ok(Array.isArray(board.recent_events));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake"));
@@ -642,6 +705,7 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.re
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.actual_models.some((model) => model.model === "GPT-5.4")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex" && activity.scope)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skills_used.some((skill) => skill.name === "omykit")));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.downstream_context?.target_nodes.includes("02-design")));
 assert.equal(board.summary.skills_used, 1);
 assert.equal(board.summary.actual_models, 1);
 assert.equal(board.summary.intake_decisions, 1);
@@ -672,6 +736,7 @@ assert.ok(board.recommendations.some((item) => item.id === "missing-token-usage"
 assert.ok(board.recommendations.some((item) => item.id === "missing-context-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "missing-skill-usage"));
 assert.ok(board.recommendations.some((item) => item.id === "missing-model-usage"));
+assert.ok(board.recommendations.some((item) => item.id === "running-command-log"));
 assert.ok(board.recommendations.some((item) => item.id === "resolve-02-design"));
 assert.ok(board.columns.blocked.some((node) => node.id === "02-design"));
 assert.ok(board.columns.ready.some((node) => node.id === "02-research"));
@@ -696,6 +761,9 @@ assert.match(boardHtml, /Token 消耗/);
 assert.match(boardHtml, /Skill 使用记录/);
 assert.match(boardHtml, /使用的 Skills/);
 assert.match(boardHtml, /模型使用记录/);
+assert.match(boardHtml, /交接包/);
+assert.match(boardHtml, /后台命令/);
+assert.match(boardHtml, /本地开发服务/);
 assert.match(boardHtml, /推荐模型/);
 assert.match(boardHtml, /实际模型/);
 assert.match(boardHtml, /GPT-5\.4/);
@@ -736,6 +804,21 @@ assert.match(englishHtml, /Task Tracker/);
 assert.match(englishHtml, /Improvement Plan/);
 assert.match(englishHtml, /Technical Data/);
 assert.match(englishHtml, /Click a metric/);
+
+const tmpMulti = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-multi-"));
+run(["init", "First task", "--id", "first-task"], tmpMulti);
+run(["init", "Second task", "--id", "second-task"], tmpMulti);
+const activeMultiStatus = run(["status"], tmpMulti);
+assert.match(activeMultiStatus, /Workflow: second-task/);
+const multiList = run(["workflows"], tmpMulti);
+assert.match(multiList, /\* second-task/);
+assert.match(multiList, /first-task/);
+const useFirst = run(["workflows", "use", "first-task"], tmpMulti);
+assert.match(useFirst, /Active workflow set: first-task/);
+assert.match(run(["status"], tmpMulti), /Workflow: first-task/);
+fs.rmSync(path.join(tmpMulti, ".omykit", "active-workflow"));
+runFails(["status"], /Multiple omyKit workflows found/, tmpMulti);
+fs.rmSync(tmpMulti, { recursive: true, force: true });
 
 const tmpZh = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-zh-"));
 fs.writeFileSync(path.join(tmpZh, "README.md"), "# 中文 UI 项目\n\nTemporary project context.\n");

@@ -87,6 +87,40 @@
 
 `scope` 允许 `generic_omykit`、`project_local`、`one_off` 和 `volatile_ecosystem`。`promotion_status` 允许 `candidate`、`promoted`、`not_promoted` 和 `needs_review`。真实候选至少需要一个证据路径。
 
+## 下游交接上下文
+
+当下游节点或子智能体需要继承当前节点的事实时，handoff 应记录 `downstream_context`。它不是长篇复述，而是给下游的低 token 事实包。
+
+```json
+{
+  "downstream_context": {
+    "target_nodes": [
+      "04-implement",
+      "05-verify"
+    ],
+    "summary": "方案已确定：保持现有 API，只修改 UI 空状态分支。",
+    "required_inputs": [
+      "nodes/03-plan.json",
+      "evidence/03-plan-summary.txt"
+    ],
+    "evidence": [
+      "evidence/03-plan-summary.txt"
+    ],
+    "carry_forward_risks": [
+      "视觉验收仍需要浏览器截图。"
+    ],
+    "context_budget": {
+      "level": "focus",
+      "max_source_files": 6,
+      "notes": "实现节点只读取计划摘要和相关 UI 文件。"
+    },
+    "handoff_contract": "下游实现必须保留既有 API，并在 verification 中记录截图或跳过理由。"
+  }
+}
+```
+
+`downstream_context` 必须包含至少一个 `target_nodes` 和一个 `summary`。`context-pack <node-id>` 会读取依赖 handoff 和这些 `downstream_context`，生成给下游或子智能体的最小上下文包。
+
 ## Passed
 
 节点完成并有证据时使用 `passed`。
@@ -126,6 +160,29 @@
       "summary": "增加空状态兜底。"
     }
   ],
+  "downstream_context": {
+    "target_nodes": [
+      "04-verify"
+    ],
+    "summary": "实现保持既有 API，只改变空状态兜底分支；验证节点应重点检查旧行为和空状态文案。",
+    "required_inputs": [
+      "src/foo.ts",
+      "tests/foo.test.ts",
+      "evidence/03-implement-test-output.txt"
+    ],
+    "evidence": [
+      "evidence/03-implement-test-output.txt"
+    ],
+    "carry_forward_risks": [
+      "还需要浏览器或聚焦测试确认 UI 文案。"
+    ],
+    "context_budget": {
+      "level": "focus",
+      "max_source_files": 4,
+      "notes": "验证节点优先读取变更文件和测试输出。"
+    },
+    "handoff_contract": "下游验证必须确认旧空状态行为没有回归。"
+  },
   "verification": [
     {
       "command": "npm test -- foo",
@@ -276,6 +333,8 @@ token、上下文和模型记录必须有来源。只要出现 `token_usage` 或
 - blocked 节点不要阻塞无依赖关系的 ready 节点。
 - evidence 路径必须能从 workflow 目录或目标项目找回。
 - 用户可见 summary 使用用户当前语言。
+- 下游需要继承的事实写入 `downstream_context`，不要只留在聊天摘要里。
+- `downstream_context` 应优先引用摘要和证据路径，不要复制大段日志、源码或完整对话。
 - 只记录实际使用过的 skill；可取得时写清用途和证据。
 - 只有运行环境暴露实际模型时才记录模型名；子智能体拿不到模型时写 `model_unavailable_reason`，节点级模型记录可保持缺失。
 - token 用量必须带来源；无法取得真实用量时标记未记录，不要估成 0。

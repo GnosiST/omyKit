@@ -6,6 +6,17 @@ The omyKit workflow controller is a local C-lite state machine for long, resumab
 
 Use it when a task needs durable state, structured handoffs, retry visibility, or continuation after compact.
 
+## Execution Surfaces
+
+| Surface | Responsibility | Default |
+| --- | --- | --- |
+| Main Codex thread | Orchestrate, observe, dispatch, integrate handoffs, audit scorecards, and escalate real human blockers. | Required |
+| Board/observer view | Inspect progress, evidence, logs, handoff packets, model/skill/usage records, and improvement actions. | Recommended for long work |
+| Subagent | Handle one bounded node or subtask and return a structured handoff. | Use only when work can be split or context should be isolated |
+| Second Codex main window | Pure observer or human intervention surface. | Optional; use only for team collaboration or explicit separation of observing and execution |
+
+The default can stay in one Codex conversation: the main thread reads controller state, opens the board as an observer surface when useful, and delegates bounded workers through subagent tools. Do not force two windows for every task. The important invariant is that each worker receives only the node `context-pack` and writes back a handoff.
+
 ## Activation
 
 | Mode | Controller use |
@@ -33,6 +44,9 @@ $omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
 $omykit 派发计划
+$omykit 交接包
+$omykit 查看工作流列表
+$omykit 切换工作流：<workflow-id>
 $omykit 解除阻塞
 $omykit 下一步
 $omykit 生成看板并打开
@@ -49,12 +63,14 @@ Creating a workflow is not completion. `init` only creates durable state. For lo
 
 Execution loop:
 
-1. `resume` or `next` identifies the ready node.
+1. `resume` or `next` identifies running, failed, blocked, and ready nodes; when a node is running, converge it with handoff/block/reject before expanding parallel work.
 2. `start <node-id>` marks the node active.
-3. Codex performs that node's real work in the current project.
-4. Codex writes a structured handoff with work items, evidence, skills/model/usage when available, and delivery `evolution_candidates`.
-5. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
-6. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
+3. If the node will be delegated or resumed after compaction, generate `context-pack <node-id>` first.
+4. Codex performs that node's real work in the current project.
+5. For dev servers, test watchers, long builds, or screenshot services, record command metadata with `record-run` when recovery depends on logs, pid, or resume commands.
+6. Codex writes a structured handoff with work items, evidence, `downstream_context`, skills/model/usage when available, and delivery `evolution_candidates`.
+7. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
+8. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
 
 Use `$omykit 开始执行：<任务>` or `$omykit 创建并执行工作流：<任务>` when you want Codex to create/resume and keep advancing. Use `$omykit 只创建工作流：<任务>` only when you want the skeleton and manual continuation commands.
 
@@ -70,6 +86,38 @@ node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
 ```
 
 The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, context pack, and handoff contract. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
+
+## Context Packs
+
+`context-pack` generates the smallest executable context for one node:
+
+```bash
+node scripts/omykit-workflow.mjs context-pack 03-plan --workflow <workflow-id> --lang en
+```
+
+It writes:
+
+```text
+.omykit/workflows/<workflow-id>/context-packs/<node-id>.json
+```
+
+The pack contains `workflow_id`, the target node contract, dependency handoff summaries, upstream `downstream_context`, recent relevant events, active command runs, and resume pointers. It does not copy the whole conversation or the whole project source. A subagent or resumed Codex thread should read the context pack first, then load exact source files only when the node needs edits, quotes, root-cause analysis, or safety-sensitive judgment.
+
+## Command Run Records
+
+The controller does not own processes and does not pretend it can recover arbitrary shell sessions. For long commands that affect continuation, Codex should record the run facts:
+
+```bash
+node scripts/omykit-workflow.mjs record-run 05-verify \
+  --id dev-server \
+  --command "npm run dev" \
+  --status running \
+  --pid 4242 \
+  --log .omykit/workflows/<workflow-id>/commands/dev-server.log \
+  --resume "npm run dev"
+```
+
+Records append to `commands/commands.jsonl` and appear in `resume` plus the board. Typical background commands are dev servers, test watchers, long builds, browser capture jobs, screenshot services, data imports, and local container checks. After interruption, inspect the run record, log path, and resume command before deciding whether to wait, restart the command, or block the node.
 
 ## Runtime Location
 
@@ -95,6 +143,8 @@ In a target project, prefer a project-local `scripts/omykit-workflow.mjs` if pre
 node scripts/omykit-workflow.mjs init "feature title"
 node scripts/omykit-workflow.mjs init "bug title" --template bugfix.standard
 node scripts/omykit-workflow.mjs init "UI redesign" --template frontend-ui.strict --lang zh-CN
+node scripts/omykit-workflow.mjs workflows
+node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs templates list --lang zh-CN
 node scripts/omykit-workflow.mjs templates show frontend-ui.strict --lang zh-CN
 node scripts/omykit-workflow.mjs templates validate
@@ -102,6 +152,9 @@ node scripts/omykit-workflow.mjs status
 node scripts/omykit-workflow.mjs next
 node scripts/omykit-workflow.mjs validate
 node scripts/omykit-workflow.mjs scorecard
+node scripts/omykit-workflow.mjs dispatch-plan --json
+node scripts/omykit-workflow.mjs context-pack 03-implement
+node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs start 03-implement
 node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-implement-to-04-verify.json
 node scripts/omykit-workflow.mjs reject 04-verify --to 03-implement --handoff handoffs/04-verify-to-03-implement.reject.json
@@ -111,7 +164,7 @@ node scripts/omykit-workflow.mjs board --open --lang zh-CN
 node scripts/omykit-workflow.mjs resume
 ```
 
-Commands operate on `.omykit/workflows/<workflow-id>/` in the current project. If there are multiple workflows, pass `--workflow <workflow-id>`.
+Commands operate on `.omykit/workflows/<workflow-id>/` in the current project. `init` writes `.omykit/active-workflow`. When multiple workflows exist, run `workflows`, select with `workflows use <workflow-id>`, or pass `--workflow <workflow-id>`. Without an active workflow and with multiple workflows present, the controller refuses to guess to avoid resuming the wrong task.
 
 ## Workflow Templates
 
@@ -154,7 +207,7 @@ It writes:
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, intake decisions, a task tracker, actual node work items, changed-file summaries, skill usage, verification results, evidence availability, workflow evolution candidates, agent activity, model-tier policy, recommended concrete models, actual model records, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows clickable command-center metrics, intake decisions, a task tracker, actual node work items, downstream handoff context, handoff packets, command run records, changed-file summaries, skill usage, verification results, evidence availability, workflow evolution candidates, agent activity, model-tier policy, recommended concrete models, actual model records, token/context coverage, timing and ETA estimates, project snapshot, Git branch/commit/status, dependency and reject edges, parallel groups, worker profile lanes, blockers, decisions, retry alerts, recent ledger events, and generated improvement actions.
 
 Token, context, skill, and actual-model totals are source-aware. The controller aggregates recorded node or agent usage only when a handoff or ledger event provides it; missing nodes are shown as missing records, not zero cost. Recommended models come from the selected `model_profile` and node policy; actual models come from `handoff.model`, `handoff.token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`.
 
@@ -177,22 +230,26 @@ The board is intentionally static. It does not automatically start agents, enfor
       blockers.md
       nodes/
       handoffs/
+      context-packs/
+      commands/
       evidence/
       board.json
       board.html
 ```
 
-`graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
+`graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
 
 ## Compact Recovery
 
 After compact or interruption, read in this order:
 
-1. `state.json`
-2. `graph.json`
-3. latest relevant `ledger.jsonl` events
-4. active, ready, failed, or blocked node cards
-5. related handoff and evidence summaries
+1. `.omykit/active-workflow` or explicit `--workflow <id>`
+2. `state.json`
+3. `graph.json`
+4. `context-packs/<node-id>.json` for the running or ready node; generate it first when missing
+5. latest relevant `ledger.jsonl` events
+6. active, ready, failed, or blocked node cards
+7. related handoff, command run, and evidence summaries
 
 Only return to full source files or full evidence when exact edits, quotes, security/legal/privacy judgment, or failure root cause requires it.
 

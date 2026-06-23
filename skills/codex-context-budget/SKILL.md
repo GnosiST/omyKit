@@ -37,15 +37,17 @@ Apply the budget when choosing context or crossing a task phase. Do not restart 
 
 For omyKit controller workflows after compact, interruption, or handoff, resume with the smallest durable state:
 
-1. `.omykit/workflows/<id>/state.json`
-2. `.omykit/workflows/<id>/graph.json`
-3. latest relevant `ledger.jsonl` events
-4. active, failed, blocked, or ready node cards
-5. related handoff and evidence summaries
+1. `.omykit/active-workflow`, or an explicit `--workflow <id>` when multiple workflows exist.
+2. `.omykit/workflows/<id>/state.json`.
+3. `.omykit/workflows/<id>/graph.json`.
+4. `context-packs/<node-id>.json` for the running or ready node; generate it first when missing.
+5. Latest relevant `ledger.jsonl` events and `commands/commands.jsonl` records.
+6. Active, failed, blocked, or ready node cards.
+7. Related handoff and evidence summaries.
 
 Return to original files or full evidence only when the next action needs exact edits, quotes, security/legal/privacy judgment, or failure root cause.
 
-For subagent dispatch, the main thread keeps only the orchestration state and gives each worker the smallest node-local context pack: `state.json`, `graph.json`, the node card, relevant dependency handoff summaries, and exact files only when the node needs edits or verification. Do not fork the whole conversation history into a worker unless the subtask cannot be specified any other way.
+For subagent dispatch, the main thread keeps only the orchestration state and gives each worker the smallest node-local context pack: active workflow id, `state.json`, `graph.json`, the node card, relevant dependency handoff summaries, upstream `downstream_context`, active command records, and exact files only when the node needs edits or verification. Do not fork the whole conversation history into a worker unless the subtask cannot be specified any other way.
 
 ## Hard Limits
 

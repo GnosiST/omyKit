@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added tracked-workflow recovery and handoff controls: active workflow selection, node context packs, downstream handoff context, command-run recovery records, board projections, scorecard warnings, and English/Chinese docs for long-task continuation.
 - Added `dispatch-plan` for tracked workflows so Codex can keep the main thread as an orchestrator-observer, delegate bounded ready nodes, and use subagent model overrides only when the runtime supports them.
 - Added `controller_role` metadata plus subagent actual-model audit fields (`model_provider` and `model_unavailable_reason`) for clearer model traceability.
 - Refreshed the Spec-Kit upstream baseline after reviewing community Architecture Workflow and Discovery extension catalog updates; no additional omyKit workflow rule was promoted.

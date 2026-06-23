@@ -380,6 +380,75 @@
         "minLength": 1
       }
     },
+    "downstream_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_nodes",
+        "summary"
+      ],
+      "properties": {
+        "target_nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "carry_forward_risks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "context_budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": [
+                "scan",
+                "focus",
+                "deep"
+              ]
+            },
+            "max_source_files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "handoff_contract": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "outputs": {
       "type": "array",
       "items": {

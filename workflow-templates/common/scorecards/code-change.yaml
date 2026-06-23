@@ -28,6 +28,13 @@ checks:
     severity: recommended
     evidence:
       type: terminal_work_items
+  - id: downstream-context-recorded
+    title:
+      en: Passed handoff nodes carry compact downstream context
+      zh-CN: 通过的交接节点携带压缩下游上下文
+    severity: recommended
+    evidence:
+      type: downstream_context_recorded
   - id: evolution-review-recorded
     title:
       en: Delivery nodes record workflow evolution review

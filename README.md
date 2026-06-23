@@ -107,16 +107,23 @@ For tracked controller workflows, prefer the Codex chat form:
 
 ```text
 $omykit 开始执行：测试 MVP1 角色权限
+$omykit 继续执行
+$omykit 查看工作流列表
+$omykit 交接包：03-implement
 $omykit 生成看板并打开
 ```
 
 `开始执行` means Codex should create or resume the workflow, start the ready node, do the node work, write a handoff, and continue until delivery passes or a real blocker needs the user. Use `只创建工作流` only when you want the workflow skeleton and manual continuation command. Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
 
 ```bash
+node scripts/omykit-workflow.mjs workflows
+node scripts/omykit-workflow.mjs workflows use <workflow-id>
+node scripts/omykit-workflow.mjs context-pack 03-implement
+node scripts/omykit-workflow.mjs record-run 05-verify --id test-watch --command "npm test -- --watch" --status running --log .omykit/workflows/<workflow-id>/commands/test-watch.log --resume "npm test -- --watch"
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, and actual model records per node and per worker when handoffs provide them. It is a local static view, not a realtime service.
+The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -150,13 +157,13 @@ See [Skill coordination](docs/workflow/skill-coordination.md) for what each inte
 
 ## Controller Layer
 
-For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, generate a static collaboration board, and support compact recovery.
+For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, generate node context packs, record long-running command recovery metadata, generate a static collaboration board, and support compact recovery.
 
 The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
 
 ## Workflow Model
 

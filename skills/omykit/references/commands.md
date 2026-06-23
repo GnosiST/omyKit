@@ -14,6 +14,9 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `只创建工作流`, `只初始化 workflow`, `先建骨架`, `不要执行`, `skeleton only` | `controller` skeleton only |
 | `使用 bugfix 模板`, `使用 UI 模板`, `查看 workflow 模板`, `templates list` | `controller` |
 | `查看进度`, `工作流状态`, `下一步`, `当前节点`, `继续工作流`, `解除阻塞`, `resume workflow`, `unblock workflow` | `controller` |
+| `工作流列表`, `切换工作流`, `使用这个 workflow`, `active workflow`, `list workflows` | `controller` |
+| `交接包`, `上下文包`, `给子智能体的包`, `context pack`, `handoff packet` | `controller` |
+| `记录后台命令`, `记录日志`, `record run`, `background command` | `controller` |
 | `派发计划`, `子智能体执行计划`, `并行执行计划`, `dispatch plan`, `subagent plan` | `controller` |
 | `scorecard`, `验票`, `审计工作流证据`, `检查证据` | `controller` |
 | `生成看板`, `打开看板`, `workflow board`, `visual board` | `controller` |
@@ -40,6 +43,9 @@ $omykit 继续工作流
 $omykit 推进下一步
 $omykit 派发计划
 $omykit 子智能体执行计划
+$omykit 交接包
+$omykit 查看工作流列表
+$omykit 切换工作流：<workflow-id>
 $omykit 解除阻塞
 $omykit 阻塞已解决，继续执行
 $omykit 修 bug：登录后跳转错误
@@ -66,5 +72,20 @@ Ask the user to choose entry, project type, and mode only when the phrase cannot
 | `execute` | User wants work done, continued, or advanced | Create/resume workflow, start the ready node, perform node work, write handoff, then complete/reject/block |
 | `inspect` | User asks for status, next step, board, scorecard, validation, or templates | Run the direct controller command and summarize evidence |
 | `skeleton_only` | User explicitly says only create/init/skeleton/no execution | Create workflow files only and return the next command |
+
+## Canonical Controller Commands
+
+Use this table as the single command taxonomy; other docs may list aliases, but these are the stable controller actions.
+
+| Need | Codex chat | Terminal fallback |
+| --- | --- | --- |
+| Create and keep executing | `$omykit 开始执行：<任务>` | `node scripts/omykit-workflow.mjs init "<任务>"` then loop `resume/start/work/handoff/complete` |
+| Create skeleton only | `$omykit 只创建工作流：<任务>` | `node scripts/omykit-workflow.mjs init "<任务>"` |
+| Resume accurately after interruption | `$omykit 继续工作流` | `node scripts/omykit-workflow.mjs resume` |
+| Pick among multiple workflows | `$omykit 查看工作流列表` / `$omykit 切换工作流：<id>` | `node scripts/omykit-workflow.mjs workflows` / `workflows use <id>` |
+| Generate bounded worker context | `$omykit 交接包` | `node scripts/omykit-workflow.mjs context-pack <node-id>` |
+| Plan subagent dispatch | `$omykit 派发计划` | `node scripts/omykit-workflow.mjs dispatch-plan --json` |
+| Record a long-running command | `$omykit 记录后台命令` | `node scripts/omykit-workflow.mjs record-run <node-id> --id <id> --command "<cmd>" --status running --log <path> --resume "<cmd>"` |
+| View evidence board | `$omykit 生成看板并打开` | `node scripts/omykit-workflow.mjs board --open` |
 
 Creating a workflow is not completion. For long tasks, Codex should keep advancing nodes until delivery passes, a real blocker needs the user, or the user explicitly asks to stop.

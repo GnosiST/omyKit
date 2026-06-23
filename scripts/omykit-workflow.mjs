@@ -255,6 +255,17 @@ const BOARD_LABELS = {
     start: "Start",
     completeHandoff: "Complete",
     withHandoff: "with a structured handoff.",
+    handoffPackets: "Handoff Packets",
+    contextPack: "Context pack",
+    downstreamContext: "Downstream context",
+    commandRuns: "Command Runs",
+    activeCommandRuns: "Active command runs",
+    resumableCommandRuns: "Resumable command runs",
+    command: "Command",
+    label: "Label",
+    pid: "PID",
+    log: "Log",
+    resumeCommand: "Resume command",
   },
   "zh-CN": {
     pageTitle: "omyKit 看板",
@@ -452,6 +463,17 @@ const BOARD_LABELS = {
     start: "启动",
     completeHandoff: "完成",
     withHandoff: "并提交结构化 handoff。",
+    handoffPackets: "交接包",
+    contextPack: "上下文包",
+    downstreamContext: "下游上下文",
+    commandRuns: "后台命令",
+    activeCommandRuns: "运行中命令",
+    resumableCommandRuns: "可续接命令",
+    command: "命令",
+    label: "说明",
+    pid: "PID",
+    log: "日志",
+    resumeCommand: "续接命令",
   },
 };
 const DEFAULT_NODE_TRANSLATIONS = {
@@ -499,6 +521,26 @@ function dateStamp() {
 
 function workflowsRoot(cwd = process.cwd()) {
   return path.join(cwd, ".omykit", "workflows");
+}
+
+function omykitRoot(cwd = process.cwd()) {
+  return path.join(cwd, ".omykit");
+}
+
+function activeWorkflowFile(cwd = process.cwd()) {
+  return path.join(omykitRoot(cwd), "active-workflow");
+}
+
+function readActiveWorkflowId(cwd = process.cwd()) {
+  const file = activeWorkflowFile(cwd);
+  if (!fs.existsSync(file)) return null;
+  const id = fs.readFileSync(file, "utf8").trim();
+  return id || null;
+}
+
+function writeActiveWorkflowId(workflowId, cwd = process.cwd()) {
+  ensureDir(omykitRoot(cwd));
+  fs.writeFileSync(activeWorkflowFile(cwd), `${workflowId}\n`);
 }
 
 function slugify(value) {
@@ -1031,12 +1073,15 @@ function parseArgs(argv) {
 function commandHelp() {
   return `Usage:
   node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template change.standard] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs workflows [list|use <workflow-id>]
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--json]
+  node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs validate [--workflow workflow-id]
   node scripts/omykit-workflow.mjs scorecard [--workflow workflow-id] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs record-run <node-id> --id <run-id> --command <cmd> --status running|passed|failed|stopped [--log <path>] [--pid <pid>] [--resume <cmd>] [--workflow workflow-id]
   node scripts/omykit-workflow.mjs start <node-id> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs complete <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs reject <node-id> --to <node-id> --handoff <path> [--workflow workflow-id]
@@ -1051,6 +1096,8 @@ Codex chat intents:
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
   $omykit 继续工作流             resume, start the next ready node, and write handoffs as work completes
   $omykit 派发计划               show which ready nodes can be delegated and which model to recommend
+  $omykit 交接包                 generate the smallest context pack for the next node or worker
+  $omykit 查看工作流列表         list workflows and switch the active workflow when needed
   $omykit 解除阻塞               unblock a blocked node after the blocker is resolved
   $omykit 下一步                 show the next ready node
   $omykit 查看进度               show status, blockers, failed nodes, and the next command
@@ -1073,7 +1120,8 @@ function listWorkflowDirs(root = workflowsRoot()) {
 }
 
 function resolveWorkflowDir(options = {}) {
-  const root = workflowsRoot();
+  const cwd = process.cwd();
+  const root = workflowsRoot(cwd);
   if (options.workflow) {
     const workflowDir = path.join(root, String(options.workflow));
     if (!fs.existsSync(workflowDir)) {
@@ -1085,6 +1133,14 @@ function resolveWorkflowDir(options = {}) {
   const dirs = listWorkflowDirs(root);
   if (dirs.length === 0) {
     throw new Error("No omyKit workflow found. Run init first.");
+  }
+  const activeId = readActiveWorkflowId(cwd);
+  if (activeId) {
+    const activeDir = path.join(root, activeId);
+    if (fs.existsSync(path.join(activeDir, "graph.json"))) return activeDir;
+  }
+  if (dirs.length > 1) {
+    throw new Error(`Multiple omyKit workflows found and no active workflow is selected. Run "node scripts/omykit-workflow.mjs workflows" and then "node scripts/omykit-workflow.mjs workflows use <workflow-id>", or pass --workflow <workflow-id>.`);
   }
   return dirs[dirs.length - 1];
 }
@@ -1737,6 +1793,42 @@ function validateEvolutionCandidatesShape(value, label) {
   return errors;
 }
 
+function validateDownstreamContextShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (!value.summary || typeof value.summary !== "string") errors.push(`${label}.summary is required`);
+  if (!Array.isArray(value.target_nodes) || value.target_nodes.length === 0 || value.target_nodes.some((item) => typeof item !== "string" || !item)) {
+    errors.push(`${label}.target_nodes must contain at least one node id`);
+  }
+  for (const field of ["target_nodes", "required_inputs", "evidence", "carry_forward_risks"]) {
+    if (value[field] !== undefined && (!Array.isArray(value[field]) || value[field].some((item) => typeof item !== "string" || !item))) {
+      errors.push(`${label}.${field} must be an array of non-empty strings`);
+    }
+  }
+  if (value.context_budget !== undefined) {
+    if (!value.context_budget || typeof value.context_budget !== "object" || Array.isArray(value.context_budget)) {
+      errors.push(`${label}.context_budget must be an object`);
+    } else {
+      if (value.context_budget.level !== undefined && !CONTEXT_LEVELS.has(value.context_budget.level)) {
+        errors.push(`${label}.context_budget.level must be one of ${[...CONTEXT_LEVELS].join(", ")}`);
+      }
+      if (value.context_budget.max_source_files !== undefined && (!Number.isInteger(value.context_budget.max_source_files) || value.context_budget.max_source_files < 0)) {
+        errors.push(`${label}.context_budget.max_source_files must be a non-negative integer`);
+      }
+      if (value.context_budget.notes !== undefined && typeof value.context_budget.notes !== "string") {
+        errors.push(`${label}.context_budget.notes must be a string`);
+      }
+    }
+  }
+  if (value.handoff_contract !== undefined && typeof value.handoff_contract !== "string") {
+    errors.push(`${label}.handoff_contract must be a string`);
+  }
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -1755,6 +1847,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
   errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
+  errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -1991,16 +2084,16 @@ function statusAction(graph, state, language = "en") {
       command: `node scripts/omykit-workflow.mjs unblock ${blocked[0].id} --reason <resolved reason>`,
     };
   }
-  if (ready.length > 0) {
-    return {
-      summary: isZh ? `启动 ${ready[0].id}` : `start ${ready[0].id}`,
-      command: `node scripts/omykit-workflow.mjs start ${ready[0].id}`,
-    };
-  }
   if (running.length > 0) {
     return {
       summary: isZh ? `为 ${running[0].id} 提交 handoff` : `complete ${running[0].id} with a handoff`,
       command: `node scripts/omykit-workflow.mjs complete ${running[0].id} --handoff <path>`,
+    };
+  }
+  if (ready.length > 0) {
+    return {
+      summary: isZh ? `启动 ${ready[0].id}` : `start ${ready[0].id}`,
+      command: `node scripts/omykit-workflow.mjs start ${ready[0].id}`,
     };
   }
   return {
@@ -2059,6 +2152,61 @@ function readRecentLedger(workflowDir, limit = 3) {
     .split("\n")
     .filter(Boolean)
     .slice(-limit);
+}
+
+function readLedgerRecords(workflowDir, limit = 1000) {
+  return readRecentLedger(workflowDir, limit).map((line) => {
+    try {
+      return JSON.parse(line);
+    } catch {
+      return { raw: line };
+    }
+  });
+}
+
+function commandRunsFile(workflowDir) {
+  return path.join(workflowDir, "commands", "commands.jsonl");
+}
+
+function readCommandRuns(workflowDir) {
+  const file = commandRunsFile(workflowDir);
+  if (!fs.existsSync(file)) return [];
+  return fs.readFileSync(file, "utf8")
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return { raw: line, status: "invalid" };
+      }
+    });
+}
+
+function latestCommandRuns(records) {
+  const byId = new Map();
+  for (const record of records) {
+    const id = record.run_id || record.raw;
+    if (!id) continue;
+    byId.set(id, record);
+  }
+  return [...byId.values()];
+}
+
+function buildCommandRunProjection(records) {
+  const latest = latestCommandRuns(records);
+  return {
+    records: latest,
+    active: latest.filter((item) => ["running", "starting"].includes(item.status)),
+    resumable: latest.filter((item) => item.resume_command || item.log_path || item.pid),
+    by_node: Object.values(latest.reduce((acc, item) => {
+      const nodeId = item.node_id || "unassigned";
+      if (!acc[nodeId]) acc[nodeId] = { node_id: nodeId, records: [] };
+      acc[nodeId].records.push(item);
+      return acc;
+    }, {})),
+  };
 }
 
 function readTextIfExists(file) {
@@ -2256,6 +2404,7 @@ function collectEvidencePaths(handoff) {
   for (const item of handoff.verification || []) {
     if (item.evidence) paths.add(item.evidence);
   }
+  for (const value of handoff.downstream_context?.evidence || []) paths.add(value);
   return [...paths];
 }
 
@@ -2482,6 +2631,26 @@ function normalizeEvolutionCandidates(handoff) {
       };
     })
     .filter((item) => item?.lesson);
+}
+
+function normalizeDownstreamContext(handoff) {
+  const value = handoff?.downstream_context;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return {
+    target_nodes: Array.isArray(value.target_nodes) ? value.target_nodes : [],
+    summary: value.summary || null,
+    required_inputs: Array.isArray(value.required_inputs) ? value.required_inputs : [],
+    evidence: Array.isArray(value.evidence) ? value.evidence : [],
+    carry_forward_risks: Array.isArray(value.carry_forward_risks) ? value.carry_forward_risks : [],
+    context_budget: value.context_budget && typeof value.context_budget === "object" && !Array.isArray(value.context_budget)
+      ? {
+        level: value.context_budget.level || null,
+        max_source_files: Number.isInteger(value.context_budget.max_source_files) ? value.context_budget.max_source_files : null,
+        notes: value.context_budget.notes || null,
+      }
+      : null,
+    handoff_contract: value.handoff_contract || null,
+  };
 }
 
 function normalizeWorkItems(handoff) {
@@ -2757,6 +2926,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const evidence = evidenceItems(workflowDir, handoff);
   const intakeDecision = normalizeIntakeDecision(handoff);
   const evolutionCandidates = normalizeEvolutionCandidates(handoff);
+  const downstreamContext = normalizeDownstreamContext(handoff);
   const workItems = normalizeWorkItems(handoff);
   const changedFiles = normalizeChangedFiles(handoff);
   const agentActivity = normalizeAgentActivity(handoff);
@@ -2850,6 +3020,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     evidence_paths: collectEvidencePaths(handoff),
     evidence_items: evidence,
     intake_decision: intakeDecision,
+    downstream_context: downstreamContext,
     evolution_review_recorded: Array.isArray(handoff?.evolution_candidates),
     evolution_candidates: evolutionCandidates,
     work_items: workItems,
@@ -2890,8 +3061,8 @@ function nextRecommendedAction(graph, state, language = "en") {
   const failed = nodesWithStatus(graph, state, "failed");
   if (failed.length > 0) return `${text.resolveFailed} ${failed[0].id}.`;
   if (blocked.length > 0 && ready.length === 0) return `${text.unblock} ${blocked[0].id} ${text.recordBlocker}`;
-  if (ready.length > 0) return `${text.start} ${ready[0].id}.`;
   if (running.length > 0) return `${text.completeHandoff} ${running[0].id} ${text.withHandoff}`;
+  if (ready.length > 0) return `${text.start} ${ready[0].id}.`;
   return text.deliveryComplete;
 }
 
@@ -3308,6 +3479,116 @@ function buildEvolution(projectedNodes) {
   };
 }
 
+function dependencyHandoffSummaries(node, projectedNodes) {
+  const byId = new Map(projectedNodes.map((item) => [item.id, item]));
+  return (node.depends_on || []).map((dependency) => {
+    const source = byId.get(dependency);
+    return {
+      node_id: dependency,
+      status: source?.status || null,
+      handoff: source?.last_handoff || null,
+      summary: source?.handoff_summary || null,
+      work_items: (source?.work_items || []).map((item) => ({
+        title: item.title,
+        status: item.status,
+        detail: item.detail || null,
+      })),
+      outputs: source?.handoff_outputs || [],
+      evidence_paths: source?.evidence_paths || [],
+      downstream_context: source?.downstream_context || null,
+    };
+  });
+}
+
+function downstreamContextsForNode(projectedNodes, nodeId) {
+  return projectedNodes
+    .filter((node) => node.downstream_context)
+    .filter((node) => {
+      const targets = node.downstream_context.target_nodes || [];
+      return targets.length === 0 || targets.includes(nodeId);
+    })
+    .map((node) => ({
+      source_node_id: node.id,
+      source_handoff: node.last_handoff || null,
+      ...node.downstream_context,
+    }));
+}
+
+function buildContextPackPayload(board, nodeId) {
+  const nodes = Object.values(board.columns).flat();
+  const node = nodes.find((item) => item.id === nodeId);
+  if (!node) throw new Error(`Unknown node: ${nodeId}`);
+  const maxSourceFiles = Math.max(1, Math.min(8, node.context_level === "scan" ? 4 : 8));
+  return {
+    schema_version: SCHEMA_VERSION,
+    workflow_id: board.workflow_id,
+    generated_at: now(),
+    language: board.language,
+    controller: board.controller,
+    node: {
+      node_id: node.id,
+      title: node.display_title || node.title,
+      type: node.type,
+      status: node.status,
+      objective: node.display_objective || node.objective,
+      acceptance: node.display_acceptance || node.acceptance || [],
+      context_level: node.context_level,
+      worker_profile: node.worker_profile,
+      agent: node.agent || null,
+      model_tier: node.model_tier,
+      recommended_model: node.recommended_model || null,
+      recommended_model_reason: node.recommended_model_reason || node.model_selection_reason || null,
+    },
+    next_action: board.summary.next_recommended_action,
+    dependency_handoffs: dependencyHandoffSummaries(node, nodes),
+    downstream_contexts: downstreamContextsForNode(nodes, node.id),
+    handoff_contract: {
+      required: true,
+      output_path: `handoffs/${node.id}.json`,
+      record_work_items: true,
+      record_verification: ["passed"].includes(node.status) || ["implement", "verify", "review", "delivery"].includes(node.type),
+      record_skills_used_when_used: true,
+      record_agent_activity_when_delegated: true,
+      record_token_context_model_when_available: true,
+      language: board.language,
+    },
+    context_policy: {
+      level: node.context_level,
+      max_source_files: maxSourceFiles,
+      required_files: ["state.json", "graph.json", `nodes/${node.id}.json`],
+      dependency_files: (node.depends_on || []).map((dependency) => `handoffs/${dependency}.json or latest handoff summary`),
+      avoid: [
+        "Do not pass the whole conversation history to workers.",
+        "Do not load full source files unless this node needs exact edits, quotes, or failure root cause.",
+      ],
+    },
+    active_commands: board.commands?.active || [],
+    recent_events: (board.recent_events || []).filter((event) => !event.node_id || event.node_id === node.id || (node.depends_on || []).includes(event.node_id)).slice(-8),
+    resume_pointers: {
+      workflow_dir: board.project?.relative_workflow_dir || null,
+      state: "state.json",
+      graph: "graph.json",
+      node_card: `nodes/${node.id}.json`,
+      board: "board.json",
+    },
+  };
+}
+
+function buildHandoffPackets(projectedNodes) {
+  return {
+    by_node: projectedNodes.map((node) => ({
+      node_id: node.id,
+      status: node.status,
+      handoff: node.last_handoff || null,
+      handoff_target: node.handoff_target || null,
+      depends_on: node.depends_on || [],
+      dependency_handoffs: dependencyHandoffSummaries(node, projectedNodes),
+      downstream_context: node.downstream_context || null,
+      downstream_contexts_for_node: downstreamContextsForNode(projectedNodes, node.id),
+    })),
+  };
+}
+
 function buildProjectChanges(projectedNodes, gitStatus) {
   const byPath = new Map();
   for (const item of gitStatus || []) {
@@ -3331,7 +3612,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands = null, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -3421,6 +3702,18 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       isZh ? "看板已经能显示推荐模型，但缺少实际执行模型时，无法复盘成本和质量选择是否匹配。" : "The board can show recommended models, but actual model records are needed to audit cost and quality choices.",
       isZh ? "后续 handoff 或 agent_activity 记录 model；如果环境未暴露实际模型，保持缺失即可。" : "Record model in handoff or agent_activity when the runtime exposes it; leave it missing when unavailable.",
       models.missing_actual_nodes,
+    ));
+  }
+  if (commands?.active?.length > 0) {
+    items.push(recommendation(
+      "running-command-log",
+      "medium",
+      isZh ? "存在运行中的后台命令" : "Background commands are running",
+      isZh ? "运行中命令需要可找回的日志、PID 或续接命令，否则中断后难以判断状态。" : "Running commands need retrievable logs, PID, or resume commands so interruptions can be recovered.",
+      isZh
+        ? `查看日志或续接命令：${commands.active.map((item) => item.run_id).join(", ")}。`
+        : `Inspect logs or resume commands for: ${commands.active.map((item) => item.run_id).join(", ")}.`,
+      commands.active.map((item) => item.node_id),
     ));
   }
   if (evolution.generic_candidates.length > 0) {
@@ -3598,6 +3891,19 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
       const failing = terminalNodes.filter((node) => node.work_items.length === 0).map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录 work_items。" : "Terminal nodes did not record work_items.");
     }
+    case "downstream_context_recorded": {
+      const handoffNodes = passedNodes.filter((node) => node.handoff_target);
+      if (handoffNodes.length === 0) return pending();
+      const failing = handoffNodes
+        .filter((node) => {
+          const context = node.downstream_context;
+          if (!context?.summary) return true;
+          if (!Array.isArray(context.target_nodes) || context.target_nodes.length === 0) return true;
+          return !context.target_nodes.includes(node.handoff_target);
+        })
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "有下游目标的通过节点缺少 downstream_context，或没有指向 handoff_target。" : "Passed nodes with downstream targets are missing downstream_context, or it does not include handoff_target.");
+    }
     case "evolution_review_recorded": {
       const deliveryNodes = projectedNodes.filter((node) => node.type === "delivery" && TERMINAL_STATUSES.has(node.status));
       if (deliveryNodes.length === 0) return pending();
@@ -3746,11 +4052,13 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const models = buildModelUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
   const evolution = buildEvolution(projectedNodes);
+  const commands = buildCommandRunProjection(readCommandRuns(workflowDir));
+  const handoffPackets = buildHandoffPackets(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -3793,7 +4101,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
       intake_decisions: projectedNodes.filter((node) => node.intake_decision).length,
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
-      skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+    skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+      downstream_contexts: projectedNodes.filter((node) => node.downstream_context).length,
       evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
@@ -3822,6 +4131,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     context,
     skills,
     models,
+    commands,
+    handoff_packets: handoffPackets,
     evolution,
     timing,
     scorecard,
@@ -4146,6 +4457,26 @@ function renderIntakeDecision(decision, text) {
     ${questions}`;
 }
 
+function renderDownstreamContext(item, text) {
+  if (!item) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const targets = item.target_nodes?.length ? item.target_nodes.join(", ") : text.none;
+  const inputs = item.required_inputs?.length ? item.required_inputs.join(", ") : text.none;
+  const evidence = item.evidence?.length ? item.evidence.join(", ") : text.none;
+  const risks = item.carry_forward_risks?.length ? renderList(item.carry_forward_risks, text.none) : `<span class="muted">${escapeHtml(text.none)}</span>`;
+  const budget = item.context_budget
+    ? [item.context_budget.level, item.context_budget.max_source_files !== null && item.context_budget.max_source_files !== undefined ? `max_files=${item.context_budget.max_source_files}` : null, item.context_budget.notes].filter(Boolean).join(" · ")
+    : text.notRecorded;
+  return `<dl>
+      <dt>${escapeHtml(text.nodes)}</dt><dd>${escapeHtml(targets)}</dd>
+      <dt>${escapeHtml(text.handoffSummary)}</dt><dd>${escapeHtml(item.summary || text.none)}</dd>
+      <dt>${escapeHtml(text.contextPack)}</dt><dd>${escapeHtml(inputs)}</dd>
+      <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(evidence)}</dd>
+      <dt>${escapeHtml(text.contextUsage)}</dt><dd>${escapeHtml(budget)}</dd>
+      <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(item.handoff_contract || text.none)}</dd>
+    </dl>
+    <h5>${escapeHtml(text.openRisks)}</h5>${risks}`;
+}
+
 function renderEvolutionCandidates(items, text) {
   return renderObjectList(items, text.noEvolutionCandidates, (item) => {
     const node = item.node_id ? `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a>` : "";
@@ -4159,6 +4490,30 @@ function renderEvolutionCandidates(items, text) {
     const nextAction = item.next_action ? `<p><strong>${escapeHtml(text.nextAction)}:</strong> ${escapeHtml(item.next_action)}</p>` : "";
     const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
     return `${node} <strong>${escapeHtml(item.lesson)}</strong>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}${rationale}${nextAction}${evidence}`;
+  });
+}
+
+function renderCommandRuns(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    const meta = [
+      item.node_id ? `node=${item.node_id}` : null,
+      item.status ? `status=${item.status}` : null,
+      item.pid ? `${text.pid}=${item.pid}` : null,
+      item.log_path ? `${text.log}=${item.log_path}` : null,
+    ].filter(Boolean).join(" · ");
+    const command = item.command ? `<p><strong>${escapeHtml(text.command)}:</strong> <code>${escapeHtml(item.command)}</code></p>` : "";
+    const resume = item.resume_command ? `<p><strong>${escapeHtml(text.resumeCommand)}:</strong> <code>${escapeHtml(item.resume_command)}</code></p>` : "";
+    return `<strong>${escapeHtml(item.run_id || item.raw || "run")}</strong>${item.label ? ` ${escapeHtml(item.label)}` : ""}${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}${command}${resume}`;
+  });
+}
+
+function renderHandoffPackets(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    const dependencies = item.dependency_handoffs?.map((handoff) => `${handoff.node_id}:${handoff.status || "unknown"}`).join(", ") || text.none;
+    const downstream = item.downstream_context?.summary || text.notRecorded;
+    return `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a> <span class="muted">${escapeHtml(item.status)}</span>
+      <p><strong>${escapeHtml(text.dependsOn)}:</strong> ${escapeHtml(dependencies)}</p>
+      <p><strong>${escapeHtml(text.downstreamContext)}:</strong> ${escapeHtml(downstream)}</p>`;
   });
 }
 
@@ -4414,6 +4769,7 @@ function renderBoardHtml(board) {
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
         <section><h4>${escapeHtml(text.intakeDecision)}</h4>${renderIntakeDecision(node.intake_decision, text)}</section>
+        <section><h4>${escapeHtml(text.downstreamContext)}</h4>${renderDownstreamContext(node.downstream_context, text)}</section>
         <section><h4>${escapeHtml(text.workflowEvolution)}</h4>${renderEvolutionCandidates(node.evolution_candidates, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
@@ -4688,6 +5044,25 @@ function renderBoardHtml(board) {
       <p><strong>${escapeHtml(text.contextMissing)}:</strong> ${escapeHtml(board.context.missing_nodes.join(", ") || text.none)}</p>
     </section>
 
+    <section class="grid-2" id="handoff-commands">
+      <div class="panel">
+        <h2>${escapeHtml(text.handoffPackets)}</h2>
+        ${renderHandoffPackets(board.handoff_packets.by_node, text)}
+      </div>
+      <div class="panel">
+        <h2>${escapeHtml(text.commandRuns)}</h2>
+        <div class="metrics">
+          ${renderMetric(text.commandRuns, board.commands.records.length)}
+          ${renderMetric(text.activeCommandRuns, board.commands.active.length)}
+          ${renderMetric(text.resumableCommandRuns, board.commands.resumable.length)}
+        </div>
+        <h3>${escapeHtml(text.activeCommandRuns)}</h3>
+        ${renderCommandRuns(board.commands.active, text)}
+        <h3>${escapeHtml(text.resumableCommandRuns)}</h3>
+        ${renderCommandRuns(board.commands.resumable, text)}
+      </div>
+    </section>
+
     <section class="panel" id="node-details">
       <h2>${escapeHtml(text.nodeDetails)}</h2>
       ${detailsHtml}
@@ -4912,6 +5287,8 @@ function cmdInit(positional, options) {
 
   ensureDir(path.join(workflowDir, "nodes"));
   ensureDir(path.join(workflowDir, "handoffs"));
+  ensureDir(path.join(workflowDir, "context-packs"));
+  ensureDir(path.join(workflowDir, "commands"));
   ensureDir(path.join(workflowDir, "evidence", "screenshots"));
   writeJson(path.join(workflowDir, "graph.json"), graph);
   writeJson(path.join(workflowDir, "state.json"), initialState(graph));
@@ -4919,6 +5296,7 @@ function cmdInit(positional, options) {
   fs.writeFileSync(path.join(workflowDir, "decisions.md"), `# Decisions\n\nWorkflow: ${workflowId}\n\n`);
   fs.writeFileSync(path.join(workflowDir, "blockers.md"), `# Blockers\n\nWorkflow: ${workflowId}\n\n`);
   appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, language });
+  writeActiveWorkflowId(workflowId);
 
   const { graph: savedGraph, state } = loadWorkflow(workflowDir);
   console.log(`Workflow created: ${workflowId}`);
@@ -4999,6 +5377,36 @@ function cmdTemplates(positional, options) {
   }
 }
 
+function cmdWorkflows(positional) {
+  const action = positional[0] || "list";
+  const root = workflowsRoot();
+  if (action === "use") {
+    const workflowId = positional[1];
+    if (!workflowId) throw new Error("workflows use requires a workflow id");
+    const workflowDir = path.join(root, workflowId);
+    if (!fs.existsSync(path.join(workflowDir, "graph.json"))) throw new Error(`Cannot find workflow: ${workflowId}`);
+    writeActiveWorkflowId(workflowId);
+    console.log(`Active workflow set: ${workflowId}`);
+    return;
+  }
+  if (action !== "list") throw new Error(`Unknown workflows action: ${action}`);
+  const activeId = readActiveWorkflowId();
+  const dirs = listWorkflowDirs(root);
+  if (dirs.length === 0) {
+    console.log("No omyKit workflows found.");
+    return;
+  }
+  for (const dir of dirs) {
+    const graph = readJson(path.join(dir, "graph.json"));
+    const state = readJson(path.join(dir, "state.json"));
+    const id = graph.workflow_id || path.basename(dir);
+    const active = id === activeId ? "*" : " ";
+    const counts = statusCounts(graph.nodes.map((node) => ({ status: state.nodes[node.id]?.status || "missing" })));
+    const marker = id === activeId ? "active" : "inactive";
+    console.log(`${active} ${id} [${marker}] ${graph.mode} ready=${counts.ready || 0} running=${counts.running || 0} blocked=${counts.blocked || 0} failed=${counts.failed || 0} passed=${counts.passed || 0}`);
+  }
+}
+
 function cmdScorecard(options) {
   const workflowDir = resolveWorkflowDir(options);
   const errors = validateWorkflow(workflowDir);
@@ -5034,13 +5442,50 @@ function cmdDispatchPlan(options) {
   printDispatchPlan(plan);
 }
 
+function cmdContextPack(positional, options) {
+  const nodeId = positional[0];
+  if (!nodeId) throw new Error("context-pack requires a node id");
+  const workflowDir = resolveWorkflowDir(options);
+  const errors = validateWorkflow(workflowDir);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const { graph, state } = loadWorkflow(workflowDir);
+  requireNode(graph, nodeId);
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
+  const board = buildBoardProjection(workflowDir, graph, state, language);
+  const payload = buildContextPackPayload(board, nodeId);
+  const outputPath = path.join(workflowDir, "context-packs", `${nodeId}.json`);
+  writeJson(outputPath, payload);
+  console.log(`Context pack generated: ${nodeId}`);
+  console.log(`JSON: ${path.relative(process.cwd(), outputPath)}`);
+  console.log(`Next action: ${payload.next_action}`);
+}
+
 function cmdResume(options) {
   const workflowDir = resolveWorkflowDir(options);
   const { graph, state } = loadWorkflow(workflowDir);
   const errors = validateWorkflow(workflowDir);
   if (errors.length > 0) throw new Error(errors.join("\n"));
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
+  const board = buildBoardProjection(workflowDir, graph, state, language);
+  const running = board.columns.running;
+  const ready = board.columns.ready;
   console.log("Resume context:");
+  console.log(`Active workflow: ${graph.workflow_id}`);
   printStatus(graph, state);
+  const packTarget = running[0]?.id || ready[0]?.id || null;
+  if (packTarget) {
+    console.log(`Context pack command: node scripts/omykit-workflow.mjs context-pack ${packTarget} --workflow ${graph.workflow_id}`);
+  } else {
+    console.log("Context pack command: none");
+  }
+  console.log("Command runs:");
+  if (board.commands.records.length === 0) {
+    console.log("none");
+  } else {
+    for (const item of board.commands.records) {
+      console.log(`- ${item.run_id || "run"} ${item.status || "unknown"} node=${item.node_id || "none"} log=${item.log_path || "none"} resume=${item.resume_command || "none"}`);
+    }
+  }
   const recent = readRecentLedger(workflowDir);
   console.log("Recent ledger events:");
   if (recent.length === 0) {
@@ -5072,6 +5517,53 @@ function cmdBoard(options) {
       console.log(`Could not open the browser automatically. Open: ${htmlPath}`);
     }
   }
+}
+
+function cmdRecordRun(positional, options) {
+  const nodeId = positional[0];
+  if (!nodeId) throw new Error("record-run requires a node id");
+  const runId = options.id ? String(options.id) : null;
+  if (!runId) throw new Error("record-run requires --id <run-id>");
+  if (!/^[a-z0-9][a-z0-9._:-]{1,80}$/.test(runId)) {
+    throw new Error("--id must use lowercase letters, digits, dot, colon, underscore, or hyphen");
+  }
+  const command = options.command ? String(options.command) : null;
+  if (!command) throw new Error("record-run requires --command <cmd>");
+  const status = options.status ? String(options.status) : "running";
+  const allowedStatuses = new Set(["starting", "running", "passed", "failed", "stopped", "unknown"]);
+  if (!allowedStatuses.has(status)) throw new Error(`--status must be one of ${[...allowedStatuses].join(", ")}`);
+  const workflowDir = resolveWorkflowDir(options);
+  const { graph } = loadWorkflow(workflowDir);
+  requireNode(graph, nodeId);
+  const record = {
+    schema_version: SCHEMA_VERSION,
+    at: now(),
+    workflow_id: graph.workflow_id,
+    node_id: nodeId,
+    run_id: runId,
+    label: options.label ? String(options.label) : null,
+    command,
+    status,
+    pid: options.pid ? String(options.pid) : null,
+    log_path: options.log ? String(options.log) : null,
+    stdout_path: options.stdout ? String(options.stdout) : null,
+    stderr_path: options.stderr ? String(options.stderr) : null,
+    exit_code: options["exit-code"] !== undefined ? Number(options["exit-code"]) : null,
+    resume_command: options.resume ? String(options.resume) : null,
+    notes: options.notes ? String(options.notes) : null,
+  };
+  ensureDir(path.join(workflowDir, "commands"));
+  appendText(commandRunsFile(workflowDir), `${JSON.stringify(record)}\n`);
+  appendLedger(workflowDir, {
+    event: "command.record",
+    node_id: nodeId,
+    run_id: runId,
+    status,
+    log_path: record.log_path,
+  });
+  console.log(`Command run recorded: ${runId}`);
+  console.log(`Status: ${status}`);
+  console.log(`Log: ${record.log_path || "none"}`);
 }
 
 function cmdStart(positional, options) {
@@ -5230,6 +5722,9 @@ function main() {
     case "init":
       cmdInit(positional, options);
       return;
+    case "workflows":
+      cmdWorkflows(positional, options);
+      return;
     case "templates":
       cmdTemplates(positional, options);
       return;
@@ -5242,6 +5737,9 @@ function main() {
     case "dispatch-plan":
       cmdDispatchPlan(options);
       return;
+    case "context-pack":
+      cmdContextPack(positional, options);
+      return;
     case "validate":
       cmdValidate(options);
       return;
@@ -5253,6 +5751,9 @@ function main() {
       return;
     case "board":
       cmdBoard(options);
+      return;
+    case "record-run":
+      cmdRecordRun(positional, options);
       return;
     case "start":
       cmdStart(positional, options);

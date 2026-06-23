@@ -87,6 +87,40 @@ Passed delivery nodes must record `evolution_candidates`. Use an empty array whe
 
 Allowed `scope` values are `generic_omykit`, `project_local`, `one_off`, and `volatile_ecosystem`. Allowed `promotion_status` values are `candidate`, `promoted`, `not_promoted`, and `needs_review`. Real candidates require at least one evidence path.
 
+## Downstream Context
+
+When a downstream node or subagent needs facts from the current node, the handoff should record `downstream_context`. This is not a long recap; it is a low-token fact packet for the next node.
+
+```json
+{
+  "downstream_context": {
+    "target_nodes": [
+      "04-implement",
+      "05-verify"
+    ],
+    "summary": "The approach is decided: keep the existing API and only change the UI empty-state branch.",
+    "required_inputs": [
+      "nodes/03-plan.json",
+      "evidence/03-plan-summary.txt"
+    ],
+    "evidence": [
+      "evidence/03-plan-summary.txt"
+    ],
+    "carry_forward_risks": [
+      "Visual acceptance still needs a browser screenshot."
+    ],
+    "context_budget": {
+      "level": "focus",
+      "max_source_files": 6,
+      "notes": "Implementation should read only the plan summary and related UI files first."
+    },
+    "handoff_contract": "Downstream implementation must preserve the existing API and record screenshot evidence or a skip reason during verification."
+  }
+}
+```
+
+`downstream_context` must include at least one `target_nodes` entry and a `summary`. `context-pack <node-id>` reads dependency handoffs and these `downstream_context` records to generate the smallest context packet for a downstream node or subagent.
+
 ## Passed
 
 Use `passed` when the node completed and evidence is available.
@@ -126,6 +160,29 @@ Use `passed` when the node completed and evidence is available.
       "summary": "Added empty-state fallback."
     }
   ],
+  "downstream_context": {
+    "target_nodes": [
+      "04-verify"
+    ],
+    "summary": "The implementation kept the existing API and only changed the empty-state fallback branch; verification should focus on previous behavior and empty-state copy.",
+    "required_inputs": [
+      "src/foo.ts",
+      "tests/foo.test.ts",
+      "evidence/03-implement-test-output.txt"
+    ],
+    "evidence": [
+      "evidence/03-implement-test-output.txt"
+    ],
+    "carry_forward_risks": [
+      "Browser or focused tests still need to confirm the UI copy."
+    ],
+    "context_budget": {
+      "level": "focus",
+      "max_source_files": 4,
+      "notes": "Verification should read the changed files and test output first."
+    },
+    "handoff_contract": "Downstream verification must confirm the previous empty-state behavior did not regress."
+  },
   "verification": [
     {
       "command": "npm test -- foo",
@@ -276,6 +333,8 @@ Use `skipped` only when skipping is intentional and the remaining risk is explic
 - Do not let a blocked node stop unrelated ready nodes.
 - Keep evidence paths retrievable from the workflow directory or target project.
 - Keep user-facing summaries in the user's current language.
+- Put facts needed by downstream nodes in `downstream_context`; do not leave them only in the chat recap.
+- Prefer summaries and evidence paths in `downstream_context`; do not copy large logs, source files, or full conversations.
 - Record only skills that were actually used; include purpose and evidence when available.
 - Record actual model names only when the runtime exposes them; otherwise write `model_unavailable_reason` for subagent activity or leave node-level model records missing.
 - Keep token usage source-aware; when usage is unavailable, leave it missing instead of estimating zero.
