@@ -93,8 +93,10 @@ For app projects, local verification often needs middleware. Do not assume it ex
 Use this order:
 
 ```text
-already running service -> project compose/script -> testcontainer/in-memory path -> minimal temporary Docker command
+already running service -> compatible stopped container/local image -> project compose/script -> testcontainer/in-memory path -> minimal temporary Docker command
 ```
+
+Before pulling or building Docker images, reuse compatible local images or containers when the version difference is not material to the current verification.
 
 Never run destructive resets or migrations unless project docs or the user explicitly allow them.
 

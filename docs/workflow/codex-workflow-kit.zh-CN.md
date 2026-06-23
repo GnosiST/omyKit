@@ -93,8 +93,10 @@ Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handof
 按这个顺序处理：
 
 ```text
-already running service -> project compose/script -> testcontainer/in-memory path -> minimal temporary Docker command
+already running service -> compatible stopped container/local image -> project compose/script -> testcontainer/in-memory path -> minimal temporary Docker command
 ```
+
+拉取或构建 Docker 镜像前，先复用兼容的本地镜像或容器；只要版本差异不影响当前验证，就按本地实际版本为主。
 
 除非项目文档或用户明确允许，不要运行破坏性 reset 或 migration。
 
