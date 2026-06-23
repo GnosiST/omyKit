@@ -31,6 +31,132 @@ const COLLABORATION_FIELDS = [
   "handoff_target",
 ];
 const DEFAULT_MODE = "Standard";
+const BOARD_LABELS = {
+  en: {
+    pageTitle: "omyKit Board",
+    commandCenter: "Command Center",
+    complete: "complete",
+    next: "Next",
+    criticalPath: "Critical path",
+    total: "Total",
+    ready: "Ready",
+    running: "Running",
+    blocked: "Blocked",
+    failed: "Failed",
+    passed: "Passed",
+    skipped: "Skipped",
+    pending: "Pending",
+    flowMap: "Flow Map",
+    dependencies: "Dependencies",
+    rejectEdges: "Reject Edges",
+    noEdges: "No edges",
+    noRejectEdges: "No reject edges",
+    collaborationLanes: "Collaboration Lanes",
+    nodes: "Nodes",
+    counts: "Counts",
+    unclaimedReady: "Unclaimed ready",
+    claimedRunning: "Claimed running",
+    leases: "Leases",
+    workBoard: "Work Board",
+    empty: "empty",
+    none: "none",
+    nodeDetails: "Node Details",
+    objective: "Objective",
+    dependsOn: "Depends On",
+    acceptance: "Acceptance",
+    outputs: "Outputs",
+    requiredChecks: "Required Checks",
+    evidencePaths: "Evidence Paths",
+    openRisks: "Open Risks",
+    notes: "Notes",
+    riskPanel: "Risk And Decision Panel",
+    blockers: "Blockers",
+    failedHandoffs: "Failed Handoffs",
+    retryAlerts: "Retry Alerts",
+    skippedRequired: "Skipped Required",
+    decisions: "Decisions",
+    recentEvents: "Recent Events",
+    projection: "Board Projection",
+    generated: "generated",
+    type: "Type",
+    worker: "Worker",
+    claimed: "Claimed",
+    retry: "Retry",
+    handoff: "Handoff",
+    evidence: "Evidence",
+    unclaimed: "unclaimed",
+    missing: "missing",
+    deliveryComplete: "Delivery complete or no ready nodes.",
+    resolveFailed: "Resolve or reject from",
+    unblock: "Unblock",
+    recordBlocker: "or record a blocking handoff.",
+    start: "Start",
+    completeHandoff: "Complete",
+    withHandoff: "with a structured handoff.",
+  },
+  "zh-CN": {
+    pageTitle: "omyKit 看板",
+    commandCenter: "总控中心",
+    complete: "完成",
+    next: "下一步",
+    criticalPath: "关键路径",
+    total: "总数",
+    ready: "就绪",
+    running: "进行中",
+    blocked: "阻塞",
+    failed: "失败",
+    passed: "通过",
+    skipped: "跳过",
+    pending: "等待",
+    flowMap: "流程地图",
+    dependencies: "依赖边",
+    rejectEdges: "打回边",
+    noEdges: "无边",
+    noRejectEdges: "无打回边",
+    collaborationLanes: "协作泳道",
+    nodes: "节点",
+    counts: "计数",
+    unclaimedReady: "未认领就绪节点",
+    claimedRunning: "已认领进行中节点",
+    leases: "租约",
+    workBoard: "工作看板",
+    empty: "空",
+    none: "无",
+    nodeDetails: "节点详情",
+    objective: "目标",
+    dependsOn: "依赖",
+    acceptance: "验收条件",
+    outputs: "输出",
+    requiredChecks: "必要检查",
+    evidencePaths: "证据路径",
+    openRisks: "开放风险",
+    notes: "备注",
+    riskPanel: "风险与决策",
+    blockers: "阻塞项",
+    failedHandoffs: "失败交接",
+    retryAlerts: "重试告警",
+    skippedRequired: "跳过的必需节点",
+    decisions: "决策",
+    recentEvents: "最近事件",
+    projection: "看板投影数据",
+    generated: "生成于",
+    type: "类型",
+    worker: "Worker",
+    claimed: "负责人",
+    retry: "重试",
+    handoff: "交接",
+    evidence: "证据",
+    unclaimed: "未认领",
+    missing: "缺失",
+    deliveryComplete: "交付已完成，或没有就绪节点。",
+    resolveFailed: "处理或打回",
+    unblock: "解除阻塞",
+    recordBlocker: "或记录阻塞 handoff。",
+    start: "启动",
+    completeHandoff: "完成",
+    withHandoff: "并提交结构化 handoff。",
+  },
+};
 
 function now() {
   return new Date().toISOString();
@@ -105,7 +231,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs complete <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs reject <node-id> --to <node-id> --handoff <path> [--workflow workflow-id]
   node scripts/omykit-workflow.mjs block <node-id> --reason <text> [--workflow workflow-id]
-  node scripts/omykit-workflow.mjs board [--workflow workflow-id] [--open]
+  node scripts/omykit-workflow.mjs board [--workflow workflow-id] [--open] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs resume [--workflow workflow-id]`;
 }
 
@@ -617,8 +743,18 @@ function readMarkdownItems(file, limit = 8) {
   return readTextIfExists(file)
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("#"))
+    .filter((line) => line && !line.startsWith("#") && !/^Workflow:/i.test(line))
     .slice(-limit);
+}
+
+function normalizeBoardLanguage(value) {
+  const language = String(value || "en").toLowerCase();
+  if (["zh", "zh-cn", "cn", "chinese", "中文", "简体中文"].includes(language)) return "zh-CN";
+  return "en";
+}
+
+function boardText(language) {
+  return BOARD_LABELS[language] || BOARD_LABELS.en;
 }
 
 function readLedgerEvents(workflowDir, limit = 10) {
@@ -773,16 +909,17 @@ function completionPercent(counts, total) {
   return Math.round((((counts.passed || 0) + (counts.skipped || 0)) / total) * 100);
 }
 
-function nextRecommendedAction(graph, state) {
+function nextRecommendedAction(graph, state, language = "en") {
+  const text = boardText(language);
   const ready = readyNodes(graph, state);
   const running = nodesWithStatus(graph, state, "running");
   const blocked = nodesWithStatus(graph, state, "blocked");
   const failed = nodesWithStatus(graph, state, "failed");
-  if (failed.length > 0) return `Resolve or reject from ${failed[0].id}.`;
-  if (blocked.length > 0 && ready.length === 0) return `Unblock ${blocked[0].id} or record a blocking handoff.`;
-  if (ready.length > 0) return `Start ${ready[0].id}.`;
-  if (running.length > 0) return `Complete ${running[0].id} with a structured handoff.`;
-  return "Delivery complete or no ready nodes.";
+  if (failed.length > 0) return `${text.resolveFailed} ${failed[0].id}.`;
+  if (blocked.length > 0 && ready.length === 0) return `${text.unblock} ${blocked[0].id} ${text.recordBlocker}`;
+  if (ready.length > 0) return `${text.start} ${ready[0].id}.`;
+  if (running.length > 0) return `${text.completeHandoff} ${running[0].id} ${text.withHandoff}`;
+  return text.deliveryComplete;
 }
 
 function dependencyEdges(graph) {
@@ -939,7 +1076,7 @@ function buildRisks(workflowDir, graph, state, projectedNodes, handoffs) {
   };
 }
 
-function buildBoardProjection(workflowDir, graph, state) {
+function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const cards = loadNodeCards(workflowDir, graph);
   const handoffs = loadHandoffs(workflowDir);
   const projectedNodes = graph.nodes.map((node) => projectNode(state, cards, handoffs, node));
@@ -955,6 +1092,7 @@ function buildBoardProjection(workflowDir, graph, state) {
     workflow_id: graph.workflow_id,
     title: graph.title,
     mode: graph.mode,
+    language,
     generated_at: now(),
     summary: {
       total: projectedNodes.length,
@@ -966,7 +1104,7 @@ function buildBoardProjection(workflowDir, graph, state) {
       failed: counts.failed || 0,
       passed: counts.passed || 0,
       skipped: counts.skipped || 0,
-      next_recommended_action: nextRecommendedAction(graph, state),
+      next_recommended_action: nextRecommendedAction(graph, state, language),
       critical_path: critical,
       latest_ledger_event: recentEvents[recentEvents.length - 1] || null,
     },
@@ -1013,20 +1151,24 @@ function renderMetric(label, value) {
   return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
-function renderNodeCard(node) {
+function statusTitle(status, text) {
+  return text[status] || status;
+}
+
+function renderNodeCard(node, text) {
   return `<article class="node-card ${escapeHtml(node.status)}">
     <div class="node-head">
       <strong>${escapeHtml(node.id)}</strong>
-      <span class="status ${escapeHtml(node.status)}">${escapeHtml(node.status)}</span>
+      <span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span>
     </div>
     <div class="node-title">${escapeHtml(node.title)}</div>
     <dl>
-      <dt>Type</dt><dd>${escapeHtml(node.type)}</dd>
-      <dt>Worker</dt><dd>${escapeHtml(node.worker_profile)}</dd>
-      <dt>Claimed</dt><dd>${escapeHtml(node.claimed_by || "unclaimed")}</dd>
-      <dt>Retry</dt><dd>${escapeHtml(node.retry_count)}</dd>
-      <dt>Handoff</dt><dd>${escapeHtml(node.last_handoff || "missing")}</dd>
-      <dt>Evidence</dt><dd>${escapeHtml(node.evidence_status)}</dd>
+      <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
+      <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
+      <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
+      <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
+      <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(node.last_handoff || text.missing)}</dd>
+      <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(node.evidence_status)}</dd>
     </dl>
   </article>`;
 }
@@ -1039,10 +1181,11 @@ function renderEdgeList(edges, empty = "No edges") {
 }
 
 function renderBoardHtml(board) {
+  const text = boardText(board.language);
   const columnsHtml = COLUMN_STATUSES.map(
     (status) => `<section class="column">
-      <h3>${escapeHtml(status)} <span>${board.columns[status].length}</span></h3>
-      ${board.columns[status].length > 0 ? board.columns[status].map(renderNodeCard).join("") : '<p class="muted">empty</p>'}
+      <h3>${escapeHtml(statusTitle(status, text))} <span>${board.columns[status].length}</span></h3>
+      ${board.columns[status].length > 0 ? board.columns[status].map((node) => renderNodeCard(node, text)).join("") : `<p class="muted">${escapeHtml(text.empty)}</p>`}
     </section>`,
   ).join("");
 
@@ -1051,24 +1194,24 @@ function renderBoardHtml(board) {
     .map((node) => `<details class="detail">
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.title)}</summary>
       <div class="detail-grid">
-        <section><h4>Objective</h4><p>${escapeHtml(node.objective)}</p></section>
-        <section><h4>Depends On</h4>${renderList(node.depends_on)}</section>
-        <section><h4>Acceptance</h4>${renderList(node.acceptance)}</section>
-        <section><h4>Outputs</h4>${renderList(node.outputs)}</section>
-        <section><h4>Required Checks</h4>${renderList(node.required_checks)}</section>
-        <section><h4>Evidence Paths</h4>${renderList(node.evidence_paths)}</section>
-        <section><h4>Open Risks</h4>${renderList(node.open_risks)}</section>
-        <section><h4>Notes</h4>${renderList(node.non_blocking_notes)}</section>
+        <section><h4>${escapeHtml(text.objective)}</h4><p>${escapeHtml(node.objective)}</p></section>
+        <section><h4>${escapeHtml(text.dependsOn)}</h4>${renderList(node.depends_on, text.none)}</section>
+        <section><h4>${escapeHtml(text.acceptance)}</h4>${renderList(node.acceptance, text.none)}</section>
+        <section><h4>${escapeHtml(text.outputs)}</h4>${renderList(node.outputs, text.none)}</section>
+        <section><h4>${escapeHtml(text.requiredChecks)}</h4>${renderList(node.required_checks, text.none)}</section>
+        <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderList(node.evidence_paths, text.none)}</section>
+        <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList(node.open_risks, text.none)}</section>
+        <section><h4>${escapeHtml(text.notes)}</h4>${renderList(node.non_blocking_notes, text.none)}</section>
       </div>
     </details>`)
     .join("");
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(board.language === "zh-CN" ? "zh-CN" : "en")}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>omyKit Board - ${escapeHtml(board.workflow_id)}</title>
+  <title>${escapeHtml(text.pageTitle)} - ${escapeHtml(board.workflow_id)}</title>
   <style>
     :root {
       color-scheme: light;
@@ -1158,77 +1301,77 @@ function renderBoardHtml(board) {
 <body>
   <header>
     <h1>${escapeHtml(board.title)}</h1>
-    <p class="muted"><code>${escapeHtml(board.workflow_id)}</code> &middot; ${escapeHtml(board.mode)} &middot; generated ${escapeHtml(board.generated_at)}</p>
+    <p class="muted"><code>${escapeHtml(board.workflow_id)}</code> &middot; ${escapeHtml(board.mode)} &middot; ${escapeHtml(text.generated)} ${escapeHtml(board.generated_at)}</p>
   </header>
   <main>
     <section class="panel command">
       <div>
-        <h2>Command Center</h2>
+        <h2>${escapeHtml(text.commandCenter)}</h2>
         <div class="progress" aria-label="Completion ${escapeHtml(board.summary.completion_percent)} percent"><span style="width:${escapeHtml(board.summary.completion_percent)}%"></span></div>
-        <p><strong>${escapeHtml(board.summary.completion_percent)}%</strong> complete</p>
-        <p><strong>Next:</strong> ${escapeHtml(board.summary.next_recommended_action)}</p>
-        <p><strong>Critical path:</strong> ${escapeHtml(board.summary.critical_path.join(" -> ") || "none")}</p>
+        <p><strong>${escapeHtml(board.summary.completion_percent)}%</strong> ${escapeHtml(text.complete)}</p>
+        <p><strong>${escapeHtml(text.next)}:</strong> ${escapeHtml(board.summary.next_recommended_action)}</p>
+        <p><strong>${escapeHtml(text.criticalPath)}:</strong> ${escapeHtml(board.summary.critical_path.join(" -> ") || text.none)}</p>
       </div>
       <div class="metrics">
-        ${renderMetric("Total", board.summary.total)}
-        ${renderMetric("Ready", board.summary.ready)}
-        ${renderMetric("Running", board.summary.running)}
-        ${renderMetric("Blocked", board.summary.blocked)}
-        ${renderMetric("Failed", board.summary.failed)}
-        ${renderMetric("Passed", board.summary.passed)}
-        ${renderMetric("Skipped", board.summary.skipped)}
-        ${renderMetric("Pending", board.summary.pending)}
+        ${renderMetric(text.total, board.summary.total)}
+        ${renderMetric(text.ready, board.summary.ready)}
+        ${renderMetric(text.running, board.summary.running)}
+        ${renderMetric(text.blocked, board.summary.blocked)}
+        ${renderMetric(text.failed, board.summary.failed)}
+        ${renderMetric(text.passed, board.summary.passed)}
+        ${renderMetric(text.skipped, board.summary.skipped)}
+        ${renderMetric(text.pending, board.summary.pending)}
       </div>
     </section>
 
     <section class="grid-2">
       <div class="panel">
-        <h2>Flow Map</h2>
-        <h3>Dependencies</h3>
-        ${renderEdgeList(board.flow.dependency_edges)}
-        <h3>Reject Edges</h3>
-        ${renderEdgeList(board.flow.reject_edges, "No reject edges")}
+        <h2>${escapeHtml(text.flowMap)}</h2>
+        <h3>${escapeHtml(text.dependencies)}</h3>
+        ${renderEdgeList(board.flow.dependency_edges, text.noEdges)}
+        <h3>${escapeHtml(text.rejectEdges)}</h3>
+        ${renderEdgeList(board.flow.reject_edges, text.noRejectEdges)}
       </div>
       <div class="panel">
-        <h2>Collaboration Lanes</h2>
+        <h2>${escapeHtml(text.collaborationLanes)}</h2>
         <div class="lanes">
           ${board.collaboration.worker_profiles
-            .map((lane) => `<div class="lane"><h3>${escapeHtml(lane.profile)} <span>${escapeHtml(lane.nodes.length)}</span></h3><p><strong>Nodes:</strong> ${escapeHtml(lane.nodes.join(", "))}</p><p><strong>Counts:</strong> ${escapeHtml(JSON.stringify(lane.counts))}</p></div>`)
+            .map((lane) => `<div class="lane"><h3>${escapeHtml(lane.profile)} <span>${escapeHtml(lane.nodes.length)}</span></h3><p><strong>${escapeHtml(text.nodes)}:</strong> ${escapeHtml(lane.nodes.join(", "))}</p><p><strong>${escapeHtml(text.counts)}:</strong> ${escapeHtml(JSON.stringify(lane.counts))}</p></div>`)
             .join("")}
         </div>
-        <p><strong>Unclaimed ready:</strong> ${escapeHtml(board.collaboration.unclaimed_ready.join(", ") || "none")}</p>
-        <p><strong>Claimed running:</strong> ${escapeHtml(JSON.stringify(board.collaboration.claimed_running))}</p>
-        <p><strong>Leases:</strong> ${escapeHtml(JSON.stringify(board.collaboration.leases))}</p>
+        <p><strong>${escapeHtml(text.unclaimedReady)}:</strong> ${escapeHtml(board.collaboration.unclaimed_ready.join(", ") || text.none)}</p>
+        <p><strong>${escapeHtml(text.claimedRunning)}:</strong> ${escapeHtml(JSON.stringify(board.collaboration.claimed_running))}</p>
+        <p><strong>${escapeHtml(text.leases)}:</strong> ${escapeHtml(JSON.stringify(board.collaboration.leases))}</p>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Work Board</h2>
+      <h2>${escapeHtml(text.workBoard)}</h2>
       <div class="board">${columnsHtml}</div>
     </section>
 
     <section class="panel">
-      <h2>Node Details</h2>
+      <h2>${escapeHtml(text.nodeDetails)}</h2>
       ${detailsHtml}
     </section>
 
     <section class="grid-2">
       <div class="panel">
-        <h2>Risk And Decision Panel</h2>
-        <h3>Blockers</h3>${renderList(board.risks.blockers)}
-        <h3>Failed Handoffs</h3>${renderList(board.risks.failed_handoffs)}
-        <h3>Retry Alerts</h3>${renderList(board.risks.retry_alerts)}
-        <h3>Skipped Required</h3>${renderList(board.risks.skipped_required)}
-        <h3>Decisions</h3>${renderList(board.risks.decisions)}
+        <h2>${escapeHtml(text.riskPanel)}</h2>
+        <h3>${escapeHtml(text.blockers)}</h3>${renderList(board.risks.blockers, text.none)}
+        <h3>${escapeHtml(text.failedHandoffs)}</h3>${renderList(board.risks.failed_handoffs, text.none)}
+        <h3>${escapeHtml(text.retryAlerts)}</h3>${renderList(board.risks.retry_alerts, text.none)}
+        <h3>${escapeHtml(text.skippedRequired)}</h3>${renderList(board.risks.skipped_required, text.none)}
+        <h3>${escapeHtml(text.decisions)}</h3>${renderList(board.risks.decisions, text.none)}
       </div>
       <div class="panel">
-        <h2>Recent Events</h2>
-        ${renderList(board.recent_events)}
+        <h2>${escapeHtml(text.recentEvents)}</h2>
+        ${renderList(board.recent_events, text.none)}
       </div>
     </section>
 
     <section class="panel">
-      <h2>Board Projection</h2>
+      <h2>${escapeHtml(text.projection)}</h2>
       <pre>${escapeHtml(JSON.stringify(board, null, 2))}</pre>
     </section>
   </main>
@@ -1367,7 +1510,8 @@ function cmdBoard(options) {
     throw new Error(`${errors.join("\n")}\nRun validate and fix workflow artifacts before rendering the board.`);
   }
   const { graph, state } = loadWorkflow(workflowDir);
-  const board = buildBoardProjection(workflowDir, graph, state);
+  const language = normalizeBoardLanguage(options.lang);
+  const board = buildBoardProjection(workflowDir, graph, state, language);
   const { jsonPath, htmlPath } = writeBoard(workflowDir, board);
 
   console.log(`Workflow board generated: ${graph.workflow_id}`);

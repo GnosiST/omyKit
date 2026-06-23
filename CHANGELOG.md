@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Dogfooded the controller and visual board on the omyKit repository itself; ignored local `.omykit/` state, filtered template metadata out of risk panels, and added `board --lang zh-CN` so Codex-first Chinese board requests render Chinese dashboard labels.
 - Refreshed the `openai/codex` upstream baseline after reviewing compact-remote style/test and Codex Apps manager flag cleanup changes; no omyKit workflow rule was promoted.
 - Refreshed the `getsentry/sentry` upstream baseline after reviewing a Sentry app external-form rename; no omyKit workflow rule was promoted.
 - Added Codex-first install/update/controller usage guidance so users can ask Codex to install omyKit, update itself, inspect workflow status, resume workflows, and generate/open boards without manually running shell commands unless needed for fallback or automation.

@@ -68,7 +68,7 @@ node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-imp
 node scripts/omykit-workflow.mjs reject 04-verify --to 03-implement --handoff handoffs/04-verify-to-03-implement.reject.json
 node scripts/omykit-workflow.mjs block 02-design --reason "Waiting for user confirmation"
 node scripts/omykit-workflow.mjs board
-node scripts/omykit-workflow.mjs board --open
+node scripts/omykit-workflow.mjs board --open --lang zh-CN
 node scripts/omykit-workflow.mjs resume
 ```
 
@@ -80,6 +80,7 @@ node scripts/omykit-workflow.mjs resume
 
 ```bash
 node scripts/omykit-workflow.mjs board --workflow <workflow-id>
+node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --open
 ```
 
 它写入：
@@ -91,7 +92,7 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id>
 
 `board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示总控指标、状态列、依赖边、打回边、并行组、worker profile 分道、节点合同、blocker、decision、重试告警和最近 ledger 事件。
 
-使用 `--open` 可以让 controller 尝试用系统默认浏览器打开 HTML。如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
+使用 `--lang zh-CN` 可以生成简体中文看板标签。使用 `--open` 可以让 controller 尝试用系统默认浏览器打开 HTML。如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
 这个看板是静态视图，不启动 agent，不 claim 节点，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。
 

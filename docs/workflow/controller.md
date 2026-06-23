@@ -68,7 +68,7 @@ node scripts/omykit-workflow.mjs complete 03-implement --handoff handoffs/03-imp
 node scripts/omykit-workflow.mjs reject 04-verify --to 03-implement --handoff handoffs/04-verify-to-03-implement.reject.json
 node scripts/omykit-workflow.mjs block 02-design --reason "Waiting for user confirmation"
 node scripts/omykit-workflow.mjs board
-node scripts/omykit-workflow.mjs board --open
+node scripts/omykit-workflow.mjs board --open --lang zh-CN
 node scripts/omykit-workflow.mjs resume
 ```
 
@@ -80,6 +80,7 @@ The board command creates a local collaboration map for the active workflow:
 
 ```bash
 node scripts/omykit-workflow.mjs board --workflow <workflow-id>
+node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --open
 ```
 
 It writes:
@@ -91,7 +92,7 @@ It writes:
 
 `board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows command center metrics, status columns, dependency and reject edges, parallel groups, worker profile lanes, node contracts, blockers, decisions, retry alerts, and recent ledger events.
 
-Use `--open` to ask the controller to open the generated HTML with the system default browser. If the browser cannot be opened automatically, the files remain in place and the command prints the HTML path.
+Use `--lang zh-CN` to render Simplified Chinese board labels. Use `--open` to ask the controller to open the generated HTML with the system default browser. If the browser cannot be opened automatically, the files remain in place and the command prints the HTML path.
 
 The board is intentionally static. It does not start agents, claim nodes, run tests, poll files, sync remote state, or replace `validate`, `resume`, handoffs, or delivery gates.
 

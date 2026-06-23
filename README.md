@@ -99,10 +99,10 @@ $omykit 生成看板并打开
 Codex will run the controller internally and return the generated paths. Manual fallback from a project shell:
 
 ```bash
-node scripts/omykit-workflow.mjs board --open
+node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. It is a local static view, not a realtime service.
+This command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. Use `--lang zh-CN` for Simplified Chinese labels. It is a local static view, not a realtime service.
 
 ## What It Includes
 

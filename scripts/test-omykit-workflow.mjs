@@ -132,11 +132,12 @@ const resumeOutput = run(["resume"]);
 assert.match(resumeOutput, /Resume context:/);
 assert.match(resumeOutput, /Recent ledger events:/);
 
-const boardOutput = run(["board"]);
+const boardOutput = run(["board", "--lang", "zh-CN"]);
 assert.match(boardOutput, /Workflow board generated: feature-x/);
 assert.match(boardOutput, /board\.json/);
 assert.match(boardOutput, /board\.html/);
 const board = readJson(path.join(dir, "board.json"));
+assert.equal(board.language, "zh-CN");
 assert.equal(board.summary.total, 6);
 assert.ok(Array.isArray(board.columns.ready));
 assert.ok(Array.isArray(board.flow.dependency_edges));
@@ -149,9 +150,11 @@ assert.ok(board.flow.reject_edges.some((edge) => edge.from === "02-design" && ed
 assert.ok(board.collaboration.worker_profiles.some((lane) => lane.profile === "planner"));
 assert.ok(board.collaboration.worker_profiles.some((lane) => lane.profile === "unassigned" && lane.nodes.includes("03-plan")));
 assert.ok(board.collaboration.leases.some((lease) => lease.node_id === "02-design"));
+assert.ok(!board.risks.blockers.some((line) => /Workflow:/.test(line)));
+assert.ok(!board.risks.decisions.some((line) => /Workflow:/.test(line)));
 const boardHtml = fs.readFileSync(path.join(dir, "board.html"), "utf8");
-assert.match(boardHtml, /Command Center/);
-assert.match(boardHtml, /Collaboration Lanes/);
+assert.match(boardHtml, /总控中心/);
+assert.match(boardHtml, /协作泳道/);
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log("omykit workflow tests passed");

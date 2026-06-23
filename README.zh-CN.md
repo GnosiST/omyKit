@@ -99,10 +99,10 @@ $omykit 生成看板并打开
 Codex 会在内部运行 controller，并返回生成路径。项目终端中的手动 fallback：
 
 ```bash
-node scripts/omykit-workflow.mjs board --open
+node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-该命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。这是本地静态视图，不是实时服务。
+该命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。`--lang zh-CN` 会生成简体中文看板标签。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 

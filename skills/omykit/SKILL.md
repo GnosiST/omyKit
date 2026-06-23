@@ -37,7 +37,7 @@ Map user intent to commands:
 - next work -> `next`
 - continue after interruption -> `resume`
 - validate workflow files -> `validate`
-- generate or open board -> `board --open`
+- generate or open board -> `board --open --lang <user-language>`; use `zh-CN` for Simplified Chinese prompts and `en` otherwise
 
 If there are multiple workflows and no active/latest workflow is safe to infer, ask which workflow to use. If the controller script is missing, tell the user omyKit must be installed or reinstalled first.
 
