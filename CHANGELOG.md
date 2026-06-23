@@ -4,6 +4,8 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Synced controller overview docs and the `omykit` entry skill so skill-usage tracking is consistently described across README, task-graph, and workflow-kit docs.
+- Refreshed the Sentry upstream baseline after reviewing a dynamic-sampling generic-metrics volume change; no additional omyKit workflow rule was promoted.
 - Added workflow skill-usage traceability: handoffs can now record node-level and agent-level `skills_used`, the board exposes skill coverage and missing records, scorecards warn about missing terminal-node skill records, and docs/tests cover the contract.
 - Refreshed FFmpeg, Docker Compose, and Playwright upstream baselines after reviewing AMF requirement, compose-go/e2e cleanup, and worker leak-fix changes; no additional omyKit workflow rule was promoted.
 - Refreshed Context7, OpenAI Codex, and Sentry upstream baselines after reviewing enterprise API docs, MCP sandbox-state handling, and Sentry migration-flag changes; no additional omyKit workflow rule was promoted.

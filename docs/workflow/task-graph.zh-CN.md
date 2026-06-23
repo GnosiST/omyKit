@@ -76,7 +76,7 @@ pending -> ready -> running -> passed
 多 agent 工作要分两层理解：
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
-- handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据，以及可用时的 token 消耗、上下文用量和时间戳。
+- handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据、skill 使用记录，以及可用时的 token 消耗、上下文用量和时间戳。
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
 

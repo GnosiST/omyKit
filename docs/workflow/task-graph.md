@@ -76,7 +76,7 @@ These fields prevent similar capabilities from fighting by keeping responsibilit
 For multi-agent work, treat this as two layers:
 
 - `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
-- `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, token usage, context usage, and timestamps when available.
+- `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, skill usage, token usage, context usage, and timestamps when available.
 
 Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
 

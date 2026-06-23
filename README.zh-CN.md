@@ -144,7 +144,7 @@ Controller 是本地确定性机制。它不调用模型，不自动改代码，
 
 Controller 是模板驱动的。内置 YAML 模板把图拓扑、agent 角色、模型配置、运行配置、安全限位和 scorecard 分层定义；因此同类任务可以复用稳定流程，不同 issue 只改变输入、证据和产物。可以用 `templates list`、`templates show <id>` 和 `templates validate` 查看或校验已安装模板。
 
-`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、验证结果、证据是否存在、子智能体活动、模型档位策略、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。只有记录了来源的 token 与上下文才会聚合，缺失节点会明确展示，不会被当作 0。
+`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、子智能体活动、模型档位策略、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。token、上下文和 skill 使用只聚合有记录的证据，缺失节点会明确展示，不会被当作 0。
 
 ## 工作流模型
 
