@@ -174,6 +174,37 @@ writeJson(intakeHandoff, {
   model_tier: "standard",
   model_selection_reason: "测试夹具中的常规规划任务。",
   summary: "需求已固化：为 Feature X 创建项目化看板。",
+  intake_decision: {
+    goal: "为 Feature X 创建可追踪的项目化看板。",
+    route: {
+      entry: "change",
+      project_type: "maintenance/refactor",
+      mode: "Standard",
+      next_skill: "codex-change-workflow",
+    },
+    workflow: {
+      shape: "tracked controller workflow",
+      controller_enabled: true,
+      template_id: "change.standard",
+      reason: "任务需要多节点状态、看板和 compact 后续跑。",
+    },
+    assumptions: [
+      {
+        text: "用户希望看板反映真实项目信息。",
+        impact: "入口节点必须记录可审计的任务目标和路由。",
+      },
+    ],
+    questions: [
+      {
+        question: "看板是否需要中文展示？",
+        options: ["中文", "English"],
+        answer: "中文，并允许自定义答案。",
+        custom_answer_allowed: true,
+        resolved: true,
+      },
+    ],
+    custom_answers_allowed: true,
+  },
   work_items: [
     {
       title: "记录 Feature X 的目标和验收标准",
@@ -310,6 +341,43 @@ writeJson(badSkillHandoff, {
 });
 runFails(["validate"], /handoff\.skills_used\[0\]\.name is required/);
 fs.rmSync(badSkillHandoff);
+const badIntakeDecisionHandoff = path.join(dir, "handoffs", "01-intake-bad-intake-decision.json");
+writeJson(badIntakeDecisionHandoff, {
+  workflow_id: "feature-x",
+  node_id: "01-intake",
+  status: "passed",
+  summary: "Invalid fixture with missing custom-answer policy.",
+  intake_decision: {
+    goal: "Bad intake fixture.",
+    route: {
+      entry: "change",
+      project_type: "maintenance/refactor",
+      mode: "Standard",
+      next_skill: "codex-change-workflow",
+    },
+    workflow: {
+      shape: "tracked controller workflow",
+    },
+    assumptions: [],
+    questions: [
+      {
+        question: "Pick one fixed option?",
+        custom_answer_allowed: false,
+        resolved: true,
+      },
+    ],
+    custom_answers_allowed: false,
+  },
+  outputs: ["nodes/01-intake.json"],
+  verification: [
+    {
+      command: "manual intake check",
+      result: "passed",
+    },
+  ],
+});
+runFails(["validate"], /custom_answers_allowed must be true/);
+fs.rmSync(badIntakeDecisionHandoff);
 const completeOutput = run(["complete", "01-intake", "--handoff", "handoffs/01-intake-to-02-design.json"]);
 assert.match(completeOutput, /Ready nodes: 02-design design - Design, 02-research research - Research/);
 state = readJson(path.join(dir, "state.json"));
@@ -380,6 +448,7 @@ assert.equal(board.summary.total, 7);
 assert.equal(board.template.template_id, "change.standard");
 assert.equal(board.template.layers.model_profile, "balanced");
 assert.ok(Array.isArray(board.scorecard.checks));
+assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
 assert.ok(board.recommendations.some((item) => item.id === "scorecard-required-not-failed"));
 const projectedNodes = Object.values(board.columns).flat();
@@ -414,6 +483,11 @@ assert.ok(Array.isArray(board.recent_events));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake"));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && /需求已固化/.test(node.handoff_summary)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.work_items.some((item) => /Feature X/.test(item.title))));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.goal === "为 Feature X 创建可追踪的项目化看板。"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.route.entry === "change"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.workflow.template_id === "change.standard"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.custom_answers_allowed === true));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.questions.some((question) => question.custom_answer_allowed === true)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.changed_files.some((file) => file.path === "nodes/01-intake.json")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.token_usage.total_tokens === 140));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.context_usage.estimated_tokens === 300));
@@ -425,6 +499,7 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.ag
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skills_used.some((skill) => skill.name === "omykit")));
 assert.equal(board.summary.skills_used, 1);
 assert.equal(board.summary.actual_models, 1);
+assert.equal(board.summary.intake_decisions, 1);
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
 assert.ok(board.usage.missing_nodes.includes("02-research"));
@@ -462,6 +537,9 @@ assert.match(boardHtml, /总控中心/);
 assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
 assert.match(boardHtml, /任务追踪/);
+assert.match(boardHtml, /入口决策/);
+assert.match(boardHtml, /为 Feature X 创建可追踪的项目化看板/);
+assert.match(boardHtml, /允许自定义答案/);
 assert.match(boardHtml, /Token 消耗/);
 assert.match(boardHtml, /Skill 使用记录/);
 assert.match(boardHtml, /使用的 Skills/);

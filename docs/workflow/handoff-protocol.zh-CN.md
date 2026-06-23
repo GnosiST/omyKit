@@ -17,6 +17,51 @@
 
 `status` 必须是 `passed`、`failed`、`blocked` 或 `skipped`。
 
+## 入口决策
+
+通过的 intake 节点必须记录 `intake_decision`。这样路由、workflow 选择、关键假设和提问策略可以被审计，而不是只靠自然语言声明。
+
+```json
+{
+  "intake_decision": {
+    "goal": "实现可追踪的设置页变更。",
+    "route": {
+      "entry": "change",
+      "project_type": "app",
+      "mode": "Standard",
+      "next_skill": "codex-change-workflow"
+    },
+    "workflow": {
+      "shape": "tracked controller workflow",
+      "controller_enabled": true,
+      "template_id": "change.standard",
+      "reason": "任务是多节点工作，并且需要 compact 后续跑。"
+    },
+    "assumptions": [
+      {
+        "text": "使用项目已有测试命令。",
+        "impact": "验证保持项目原生。"
+      }
+    ],
+    "questions": [
+      {
+        "question": "使用哪种交付模式？",
+        "options": [
+          "Standard",
+          "Strict"
+        ],
+        "answer": "Standard，并补充自定义视觉验收说明。",
+        "custom_answer_allowed": true,
+        "resolved": true
+      }
+    ],
+    "custom_answers_allowed": true
+  }
+}
+```
+
+没有需要提问时，使用空的 `questions` 数组。确实需要提问时，限制在 1-3 个问题，并记录已允许自定义答案。
+
 ## Passed
 
 节点完成并有证据时使用 `passed`。
@@ -141,7 +186,7 @@
 }
 ```
 
-使用 `language`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier`、可选实际 `model` 和证据。
+使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、可选 `model_tier`、可选实际 `model` 和证据。
 
 token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model` 记录为执行事实。
 

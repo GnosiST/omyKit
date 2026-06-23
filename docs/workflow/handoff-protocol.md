@@ -17,6 +17,51 @@ Every controller node exits with a structured handoff. The handoff is the contra
 
 `status` must be `passed`, `failed`, `blocked`, or `skipped`.
 
+## Intake Decision
+
+Passed intake nodes must record `intake_decision`. This makes the route, workflow choice, assumptions, and question policy auditable instead of relying on a narrative claim.
+
+```json
+{
+  "intake_decision": {
+    "goal": "Implement the tracked settings-page change.",
+    "route": {
+      "entry": "change",
+      "project_type": "app",
+      "mode": "Standard",
+      "next_skill": "codex-change-workflow"
+    },
+    "workflow": {
+      "shape": "tracked controller workflow",
+      "controller_enabled": true,
+      "template_id": "change.standard",
+      "reason": "The task is multi-node and should survive compact."
+    },
+    "assumptions": [
+      {
+        "text": "Use the existing project test command.",
+        "impact": "Verification stays project-native."
+      }
+    ],
+    "questions": [
+      {
+        "question": "Which delivery mode should be used?",
+        "options": [
+          "Standard",
+          "Strict"
+        ],
+        "answer": "Standard with a custom visual QA note.",
+        "custom_answer_allowed": true,
+        "resolved": true
+      }
+    ],
+    "custom_answers_allowed": true
+  }
+}
+```
+
+Use an empty `questions` array when no question was needed. If questions are asked, keep them to 1-3 and record that custom answers were allowed.
+
 ## Passed
 
 Use `passed` when the node completed and evidence is available.
@@ -141,7 +186,7 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, optional actual `model`, and evidence.
+Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, optional `model_tier`, optional actual `model`, and evidence.
 
 Token, context, and model records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata through `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`.
 

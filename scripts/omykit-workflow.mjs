@@ -121,6 +121,17 @@ const BOARD_LABELS = {
     topLevel: "Top-level structure",
     workflowFiles: "Workflow files",
     handoffSummary: "Handoff Summary",
+    intakeDecision: "Intake Decision",
+    goal: "Goal",
+    route: "Route",
+    workflowShape: "Workflow shape",
+    controller: "Controller",
+    enabled: "enabled",
+    disabled: "disabled",
+    assumptions: "Assumptions",
+    questions: "Questions",
+    answer: "Answer",
+    customAnswersAllowed: "Custom answers allowed",
     verification: "Verification",
     noActiveChanges: "No active tracked changes",
     type: "Type",
@@ -294,6 +305,17 @@ const BOARD_LABELS = {
     topLevel: "顶层结构",
     workflowFiles: "工作流文件",
     handoffSummary: "交接摘要",
+    intakeDecision: "入口决策",
+    goal: "目标",
+    route: "路由",
+    workflowShape: "执行形态",
+    controller: "控制器",
+    enabled: "已启用",
+    disabled: "未启用",
+    assumptions: "关键假设",
+    questions: "问题",
+    answer: "答案",
+    customAnswersAllowed: "允许自定义答案",
     verification: "验证",
     noActiveChanges: "没有已跟踪改动",
     type: "类型",
@@ -1567,6 +1589,67 @@ function validateSkillsUsedShape(value, label) {
   return errors;
 }
 
+function validateIntakeDecisionShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (!value.goal || typeof value.goal !== "string") errors.push(`${label}.goal is required`);
+  const route = value.route;
+  if (!route || typeof route !== "object" || Array.isArray(route)) {
+    errors.push(`${label}.route is required`);
+  } else {
+    for (const field of ["entry", "project_type", "mode", "next_skill"]) {
+      if (!route[field] || typeof route[field] !== "string") errors.push(`${label}.route.${field} is required`);
+    }
+  }
+  const workflow = value.workflow;
+  if (!workflow || typeof workflow !== "object" || Array.isArray(workflow)) {
+    errors.push(`${label}.workflow is required`);
+  } else if (!workflow.shape || typeof workflow.shape !== "string") {
+    errors.push(`${label}.workflow.shape is required`);
+  }
+  if (!Array.isArray(value.assumptions)) {
+    errors.push(`${label}.assumptions must be an array`);
+  } else {
+    value.assumptions.forEach((item, index) => {
+      if (typeof item === "string") {
+        if (!item) errors.push(`${label}.assumptions[${index}] must be a non-empty string`);
+        return;
+      }
+      if (!item || typeof item !== "object" || Array.isArray(item) || !item.text) {
+        errors.push(`${label}.assumptions[${index}].text is required`);
+      }
+    });
+  }
+  if (value.custom_answers_allowed !== true) {
+    errors.push(`${label}.custom_answers_allowed must be true`);
+  }
+  if (value.questions !== undefined) {
+    if (!Array.isArray(value.questions)) {
+      errors.push(`${label}.questions must be an array`);
+    } else {
+      if (value.questions.length > 3) errors.push(`${label}.questions must contain at most 3 items`);
+      value.questions.forEach((item, index) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.push(`${label}.questions[${index}] must be an object`);
+          return;
+        }
+        if (!item.question || typeof item.question !== "string") errors.push(`${label}.questions[${index}].question is required`);
+        if (item.custom_answer_allowed !== true) errors.push(`${label}.questions[${index}].custom_answer_allowed must be true`);
+        if (item.options !== undefined && (!Array.isArray(item.options) || item.options.some((option) => typeof option !== "string" || !option))) {
+          errors.push(`${label}.questions[${index}].options must be an array of non-empty strings`);
+        }
+        if (!item.answer && item.resolved !== true) {
+          errors.push(`${label}.questions[${index}] must record answer or resolved=true`);
+        }
+      });
+    }
+  }
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -1580,6 +1663,7 @@ function validateTaskTrackingFields(handoff) {
   if (handoff.model_tier !== undefined && !MODEL_TIERS.has(handoff.model_tier)) {
     errors.push(`handoff.model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
   }
+  errors.push(...validateIntakeDecisionShape(handoff.intake_decision, "handoff.intake_decision"));
   errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
@@ -1653,6 +1737,7 @@ function validateTaskTrackingFields(handoff) {
 function validateHandoff(graph, handoff) {
   const errors = [];
   const map = nodeMap(graph);
+  const node = map.get(handoff.node_id);
   if (handoff.workflow_id !== graph.workflow_id) errors.push("handoff.workflow_id must match graph.workflow_id");
   if (!map.has(handoff.node_id)) errors.push(`handoff node does not exist: ${handoff.node_id}`);
   if (!HANDOFF_STATUSES.has(handoff.status)) errors.push(`invalid handoff status: ${handoff.status}`);
@@ -1667,6 +1752,9 @@ function validateHandoff(graph, handoff) {
       if (!["passed", "failed", "skipped"].includes(item.result)) {
         errors.push(`verification result must be passed, failed, or skipped: ${item.result}`);
       }
+    }
+    if (node?.type === "intake" && !handoff.intake_decision) {
+      errors.push("passed intake handoff requires intake_decision");
     }
   }
   if (handoff.status === "failed") {
@@ -2175,6 +2263,64 @@ function normalizeTiming(handoff, timeline, entry, estimatedMinutes) {
   };
 }
 
+function normalizeAssumptions(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return { text: item, impact: null };
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      return {
+        text: item.text || item.summary || null,
+        impact: item.impact || null,
+      };
+    })
+    .filter((item) => item?.text);
+}
+
+function normalizeIntakeQuestions(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      return {
+        question: item.question || null,
+        answer: item.answer || null,
+        options: Array.isArray(item.options) ? item.options : [],
+        custom_answer_allowed: item.custom_answer_allowed === true,
+        blocking: item.blocking === true,
+        resolved: item.resolved === true || Boolean(item.answer),
+        reason: item.reason || null,
+        index,
+      };
+    })
+    .filter((item) => item?.question);
+}
+
+function normalizeIntakeDecision(handoff) {
+  const decision = handoff?.intake_decision;
+  if (!decision || typeof decision !== "object" || Array.isArray(decision)) return null;
+  const route = decision.route && typeof decision.route === "object" && !Array.isArray(decision.route) ? decision.route : {};
+  const workflow = decision.workflow && typeof decision.workflow === "object" && !Array.isArray(decision.workflow) ? decision.workflow : {};
+  return {
+    goal: decision.goal || null,
+    route: {
+      entry: route.entry || null,
+      project_type: route.project_type || null,
+      mode: route.mode || null,
+      next_skill: route.next_skill || null,
+    },
+    workflow: {
+      shape: workflow.shape || null,
+      controller_enabled: workflow.controller_enabled === true,
+      template_id: workflow.template_id || null,
+      reason: workflow.reason || null,
+    },
+    assumptions: normalizeAssumptions(decision.assumptions),
+    questions: normalizeIntakeQuestions(decision.questions),
+    custom_answers_allowed: decision.custom_answers_allowed === true,
+  };
+}
+
 function normalizeWorkItems(handoff) {
   const items = Array.isArray(handoff?.work_items) ? handoff.work_items : [];
   if (items.length > 0) {
@@ -2444,6 +2590,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const retry = retryInfoForNode(state, node.id);
   const display = localizedNodeText(node, card, language);
   const evidence = evidenceItems(workflowDir, handoff);
+  const intakeDecision = normalizeIntakeDecision(handoff);
   const workItems = normalizeWorkItems(handoff);
   const changedFiles = normalizeChangedFiles(handoff);
   const agentActivity = normalizeAgentActivity(handoff);
@@ -2536,6 +2683,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     handoff_outputs: handoff?.outputs || [],
     evidence_paths: collectEvidencePaths(handoff),
     evidence_items: evidence,
+    intake_decision: intakeDecision,
     work_items: workItems,
     changed_files: changedFiles,
     skills_used: skillsUsed,
@@ -3200,6 +3348,22 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
   const fail = (nodes, detail) => scorecardResult(check, failStatus, language, nodes, detail);
 
   switch (evidence.type) {
+    case "intake_decision_recorded": {
+      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && TERMINAL_STATUSES.has(node.status));
+      if (intakeNodes.length === 0) return pending();
+      const failing = intakeNodes
+        .filter((node) => {
+          const decision = node.intake_decision;
+          if (!decision?.goal) return true;
+          if (!decision.route?.entry || !decision.route?.project_type || !decision.route?.mode || !decision.route?.next_skill) return true;
+          if (!decision.workflow?.shape) return true;
+          if (decision.custom_answers_allowed !== true) return true;
+          if (decision.questions.length > 3) return true;
+          return decision.questions.some((question) => question.custom_answer_allowed !== true || (!question.answer && question.resolved !== true));
+        })
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "入口节点缺少完整 intake_decision、路由、执行形态或自定义答案记录。" : "Intake nodes are missing complete intake_decision, route, execution shape, or custom-answer records.");
+    }
     case "terminal_handoff_summary": {
       if (terminalNodes.length === 0) return pending();
       const failing = terminalNodes.filter((node) => !node.handoff_summary).map((node) => node.id);
@@ -3383,6 +3547,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       passed: counts.passed || 0,
       skipped: counts.skipped || 0,
       work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
+      intake_decisions: projectedNodes.filter((node) => node.intake_decision).length,
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
       skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
@@ -3539,6 +3704,43 @@ function renderTiming(timing, text) {
     [text.source, timing.source],
   ].filter(([, value]) => value !== null && value !== undefined);
   return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>`;
+}
+
+function renderIntakeDecision(decision, text) {
+  if (!decision) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const route = [
+    decision.route?.entry ? `entry=${decision.route.entry}` : null,
+    decision.route?.project_type ? `project_type=${decision.route.project_type}` : null,
+    decision.route?.mode ? `mode=${decision.route.mode}` : null,
+    decision.route?.next_skill ? `next_skill=${decision.route.next_skill}` : null,
+  ].filter(Boolean).join(" · ");
+  const workflow = [
+    decision.workflow?.shape,
+    decision.workflow?.template_id ? `template=${decision.workflow.template_id}` : null,
+    `${text.controller}=${decision.workflow?.controller_enabled ? text.enabled : text.disabled}`,
+  ].filter(Boolean).join(" · ");
+  const assumptions = decision.assumptions?.length
+    ? `<h5>${escapeHtml(text.assumptions)}</h5>${renderObjectList(decision.assumptions, text.none, (item) => {
+      const impact = item.impact ? `<p class="muted">${escapeHtml(item.impact)}</p>` : "";
+      return `${escapeHtml(item.text)}${impact}`;
+    })}`
+    : `<p><strong>${escapeHtml(text.assumptions)}:</strong> ${escapeHtml(text.none)}</p>`;
+  const questions = decision.questions?.length
+    ? `<h5>${escapeHtml(text.questions)}</h5>${renderObjectList(decision.questions, text.none, (item) => {
+      const options = item.options?.length ? `<p class="muted">${escapeHtml(item.options.join(" / "))}</p>` : "";
+      const answer = item.answer ? `<p><strong>${escapeHtml(text.answer)}:</strong> ${escapeHtml(item.answer)}</p>` : "";
+      return `${escapeHtml(item.question)}${options}${answer}<p class="muted">${escapeHtml(text.customAnswersAllowed)}: ${escapeHtml(String(item.custom_answer_allowed))}</p>`;
+    })}`
+    : `<p><strong>${escapeHtml(text.questions)}:</strong> ${escapeHtml(text.none)}</p>`;
+  return `<dl>
+      <dt>${escapeHtml(text.goal)}</dt><dd>${escapeHtml(decision.goal || text.none)}</dd>
+      <dt>${escapeHtml(text.route)}</dt><dd>${escapeHtml(route || text.none)}</dd>
+      <dt>${escapeHtml(text.workflowShape)}</dt><dd>${escapeHtml(workflow || text.none)}</dd>
+      <dt>${escapeHtml(text.customAnswersAllowed)}</dt><dd>${escapeHtml(String(decision.custom_answers_allowed))}</dd>
+    </dl>
+    ${decision.workflow?.reason ? `<p class="muted">${escapeHtml(decision.workflow.reason)}</p>` : ""}
+    ${assumptions}
+    ${questions}`;
 }
 
 function renderWorkItems(items, text) {
@@ -3789,6 +3991,7 @@ function renderBoardHtml(board) {
     .map((node) => `<details class="detail" id="node-${escapeHtml(node.id)}" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.display_title || node.title)} · ${escapeHtml(statusTitle(node.status, text))}</summary>
       <div class="detail-grid">
+        <section><h4>${escapeHtml(text.intakeDecision)}</h4>${renderIntakeDecision(node.intake_decision, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
@@ -3953,6 +4156,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.skipped, board.summary.skipped, { filterStatus: "skipped" })}
         ${renderMetric(text.pending, board.summary.pending, { filterStatus: "pending" })}
         ${renderMetric(text.workItems, board.summary.work_items, "#task-tracker")}
+        ${renderMetric(text.intakeDecision, board.summary.intake_decisions, "#node-details")}
         ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
@@ -4046,7 +4250,7 @@ function renderBoardHtml(board) {
       <p><strong>${escapeHtml(text.contextMissing)}:</strong> ${escapeHtml(board.context.missing_nodes.join(", ") || text.none)}</p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="node-details">
       <h2>${escapeHtml(text.nodeDetails)}</h2>
       ${detailsHtml}
     </section>

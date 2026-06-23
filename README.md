@@ -21,7 +21,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
-- **Scorecard audit:** check real handoffs, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
+- **Scorecard audit:** check real handoffs, intake decisions, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node and show the actual recorded model when the runtime exposes it.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
@@ -149,7 +149,7 @@ The controller is local and deterministic. It does not call models, edit code by
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
 
 ## Workflow Model
 

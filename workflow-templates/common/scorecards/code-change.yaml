@@ -7,6 +7,13 @@ description:
   en: Evidence checks for ordinary implementation work.
   zh-CN: 面向常规实现工作的证据检查。
 checks:
+  - id: intake-decision-recorded
+    title:
+      en: Intake decision records route and custom-answer policy
+      zh-CN: 入口决策记录路由和自定义答案策略
+    severity: required
+    evidence:
+      type: intake_decision_recorded
   - id: terminal-handoff-summary
     title:
       en: Terminal nodes have handoff summaries
