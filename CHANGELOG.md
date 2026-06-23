@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Removed low-star visual/UI community specialist sources from default routing and upstream tracking; added a 10k+ visual/UI community skill admission floor and admitted the user's high-signal PM, taste, UI/UX, and shadcn references as optional, non-default sources.
+- Refreshed the GitHub MCP upstream baseline after reviewing dependabot updates to checkout, golang, node build dependencies, and an indirect `hono` dependency; no additional omyKit workflow rule was promoted.
+- Refreshed the OpenAI Codex upstream baseline after reviewing a bridged-log persistence fix; no additional omyKit workflow rule was promoted.
 - Added model traceability to tracked workflows: model profiles now map tiers to recommended concrete models, board projections show recommended versus actual recorded models, scorecards warn about missing terminal-node actual-model records, and docs/schemas/tests cover the contract.
 - Refreshed the Sentry upstream baseline after reviewing a low-value span issue UI revert and feature-flag guard removal; no additional omyKit workflow rule was promoted.
 - Synced controller overview docs and the `omykit` entry skill so skill-usage tracking is consistently described across README, task-graph, and workflow-kit docs.

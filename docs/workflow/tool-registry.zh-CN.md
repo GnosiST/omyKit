@@ -6,7 +6,7 @@
 
 `来源标记` 和 `已验证来源` 两列说明每个条目是 omyKit 核心项、本地已安装 skill、官方上游 skill、平台工具、OpenAI bundled 工具、成熟基础设施参考，还是仓库本地机制。只有对路由或来源完整性有实质影响的 GitHub 来源才进入 `upstream-sources.json`。不要用同名 fork、marketplace 镜像或二次打包 skill 替代已验证来源，除非用户明确要求使用那个替代来源。
 
-默认注册表保持保守。只接纳 omyKit 自有路由、一方平台/工具来源、官方上游 skill、成熟交付基础设施，或已安装且职责狭窄、不和主工作流重叠的 specialist skill。Stars 只是辅助信号，不是准入证明。社区 PM、审美、资源目录或 meta-UX 类 skill 不进入默认路由，除非用户为当前任务明确要求并已安装。
+默认注册表保持保守。只接纳 omyKit 自有路由、一方平台/工具来源、官方上游 skill、成熟交付基础设施，或高信号且职责不重叠的 specialist skill。视觉/UI 类社区 skill 的默认准入线是 GitHub 10k+ stars，并且必须是非 fork、活跃、来源已核验；低星本地安装可以继续存在于用户 Codex 环境中，但不应列入本表，也不由 omyKit 默认路由调用。Stars 只是辅助信号，不是准入证明。社区 PM、审美、资源目录或 meta-UX 类 skill 是按需参考，不是默认 route，除非用户为当前任务明确要求。
 
 | Tool | 来源标记 | 已验证来源 | 角色 | 使用场景 | 避免场景 |
 | --- | --- | --- | --- | --- | --- |
@@ -16,26 +16,25 @@
 | [Superpowers](https://github.com/obra/Superpowers) | 已跟踪上游参考 | [obra/Superpowers](https://github.com/obra/Superpowers) (235,582★) | 执行纪律 | Brainstorming、planning、debugging、TDD、verification、review。 | 不作为 spec source 或项目事实来源。 |
 | [Spec-Kit](https://github.com/github/spec-kit) | 官方上游参考 | [github/spec-kit](https://github.com/github/spec-kit) (114,714★) | 项目 constitution 和 strict SDD | 新的持久项目或重大产品基础。 | 小变更或已有轻量 spec system 的项目。 |
 | [OpenSpec](https://github.com/Fission-AI/openspec) | 已跟踪上游参考 | [Fission-AI/openspec](https://github.com/Fission-AI/openspec) (55,971★) | 变更管理 | 标准 feature/bug/refactor proposal 和 archived deltas。 | 一次性临时交付物。 |
+| [PM Skills](https://github.com/phuryn/pm-skills) | 高信号可选 PM 参考 | [phuryn/pm-skills](https://github.com/phuryn/pm-skills) (20,661★) | PM 方法结构 | 用户明确要求 PM-specialist workflow，或交付物主要是 PRD、launch、pre-mortem、acceptance、product discovery。 | 默认工程变更、小修复，或 omyKit 内置 PM pattern 已足够时。 |
 | [CodeGraph](https://github.com/colbymchenry/codegraph) | 已跟踪上游参考 | [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph) (52,991★) | 代码地图和影响分析 | 现有代码结构、callers/callees、blast radius。 | 替代测试、源码确认或运行时检查。 |
 | [Context7](https://github.com/upstash/context7) | 已跟踪上游参考 | [upstash/context7](https://github.com/upstash/context7) (57,852★) | 当前库文档 | 精确 API/framework 用法问题。 | 仓库里已有的一般项目事实。 |
-| [Figma MCP](https://github.com/GLips/Figma-Context-MCP) | 已跟踪上游参考 | [GLips/Figma-Context-MCP](https://github.com/GLips/Figma-Context-MCP) (15,188★) | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
-| teach-impeccable | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 持久设计上下文采集 | 一次性把稳定产品/设计上下文写入 AI 配置，供后续会话使用。 | 一次性视觉微调，或不属于稳定设计指导的项目事实。 |
-| [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | 官方上游 skill 参考 | [anthropics/skills](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) (153,760★) | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
-| critique | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | UX 评审 | 视觉层级、信息架构、认知负担或用户体验评审。 | 实现或代码级修复。 |
-| audit | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 技术 UI 审计 | 可访问性、性能、主题、响应式和 UI 反模式审查。 | 创意方向或产品策略。 |
-| baseline-ui | 已安装狭窄 specialist | [ibelick/ui-skills](https://github.com/ibelick/ui-skills) (3,302★) | 基线 UI 检查 | Tailwind UI scale、typography、animation duration、component accessibility 或常见 UI 反模式检查。 | 大范围创意方向或产品策略。 |
-| adapt | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 响应式适配 | 断点、流式布局、触控目标、设备/平台适配或跨上下文布局修复。 | 品牌方向、内容策略或非布局工作。 |
-| fixing-accessibility | 已安装狭窄 specialist | [ibelick/ui-skills](https://github.com/ibelick/ui-skills) (3,302★) | 可访问性修复 | ARIA、键盘导航、焦点管理、对比度、表单、对话框或 WCAG-oriented 修复。 | 通用视觉打磨或布局探索。 |
-| clarify | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | UX 文案清晰度 | 让用户困惑的标签、错误、microcopy、空状态文案或说明。 | 视觉布局、架构或界面外文案。 |
-| harden | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 界面韧性 | 错误状态、i18n、文本溢出、边界情况和生产韧性。 | 纯视觉构思或后端加固。 |
-| onboard | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 引导和首次使用体验 | 首次使用流程、空状态、激活或 time-to-value 优化。 | 不涉及 onboarding 的成熟重复使用流程。 |
-| extract | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | 设计系统提取 | 可复用组件、设计令牌和需要沉淀成系统的重复 UI patterns。 | 一次性页面或未经验证的视觉实验。 |
-| optimize | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,159★) | UI 性能 | 加载、渲染、动画、图片、包体积和感知速度。 | 非 UI 性能或视觉品味工作。 |
-| fixing-metadata | 已安装狭窄 specialist | [ibelick/ui-skills](https://github.com/ibelick/ui-skills) (3,302★) | HTML metadata 和预览 | title、description、canonical、Open Graph、Twitter cards、favicon、JSON-LD、robots 或分享预览。 | 应用内文案、布局或后端 SEO 策略。 |
-| better-icons | 已安装狭窄 specialist | [better-auth/better-icons](https://github.com/better-auth/better-icons) (1,105★) | 图标策略 | 图标语义、风格一致性、库选择、fallback 策略或图标密集工具栏。 | 整屏重设计或非图标 UI 工作。 |
-| motion-ai-kit | 已安装狭窄 specialist / 官方文档 | [Motion AI Kit](https://motion.dev/docs/ai-kit) / [motiondivision/motion](https://github.com/motiondivision/motion) (32,454★) | 动效系统 | 微交互、页面转场、onboarding animation、状态反馈或动效编排。 | 静态 UI 任务，或没有动效需求的性能敏感工作。 |
-| fixing-motion-performance | 已安装狭窄 specialist | [ibelick/ui-skills](https://github.com/ibelick/ui-skills) (3,302★) | 动效性能修复 | 布局抖动、合成层安全动画、滚动联动性能、模糊成本或动画流畅度问题。 | 动效概念设计或静态 UI 工作。 |
-| [gsap-* skills](https://github.com/greensock/gsap-skills) | 官方上游 skill 参考 | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) (9,719★) | GSAP 实现 | 已选择或明确要求 GSAP 时，处理 timeline、ScrollTrigger、React/framework 集成、plugins、utils 或性能调优。 | 通用动效策略、CSS-only 动画，或未使用 GSAP 的项目。 |
+| [Figma MCP](https://github.com/GLips/Figma-Context-MCP) | 已跟踪上游参考 | [GLips/Figma-Context-MCP](https://github.com/GLips/Figma-Context-MCP) (15,204★) | 设计源 | 现有设计文件、frames、components、tokens。 | 在无访问时猜设计。 |
+| teach-impeccable | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 持久设计上下文采集 | 一次性把稳定产品/设计上下文写入 AI 配置，供后续会话使用。 | 一次性视觉微调，或不属于稳定设计指导的项目事实。 |
+| [frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) | 官方上游 skill 参考 | [anthropics/skills](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md) (154,163★) | UI 创建和实现方向 | 构建或重设计具体 frontend screens、components、landing pages、portfolios 或 product UI。 | 纯研究、仅可访问性修复或后端/docs 工作。 |
+| design-taste-frontend | 高信号视觉 specialist | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) (49,367★) | 审美判断和反通用 UI | UI 输出显得通用、品牌表达或视觉判断会实质影响结果，或用户明确要求 Taste Skill。 | 仅可访问性、仅 metadata、后端、文档或机械代码修复。 |
+| ui-ux-pro-max | 高信号视觉 specialist | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (95,324★) | 高阶 UI/UX 设计智能 | 复杂 redesign、多平台 UI、高风险产品 UI，或更强视觉 specialist 会改变结果时。 | 小修复、常规实现检查，或 `frontend-design` 加项目上下文已足够时。 |
+| critique | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | UX 评审 | 视觉层级、信息架构、认知负担或用户体验评审。 | 实现或代码级修复。 |
+| audit | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 技术 UI 审计 | 可访问性、性能、主题、响应式和 UI 反模式审查。 | 创意方向或产品策略。 |
+| adapt | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 响应式适配 | 断点、流式布局、触控目标、设备/平台适配或跨上下文布局修复。 | 品牌方向、内容策略或非布局工作。 |
+| clarify | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | UX 文案清晰度 | 让用户困惑的标签、错误、microcopy、空状态文案或说明。 | 视觉布局、架构或界面外文案。 |
+| harden | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 界面韧性 | 错误状态、i18n、文本溢出、边界情况和生产韧性。 | 纯视觉构思或后端加固。 |
+| onboard | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 引导和首次使用体验 | 首次使用流程、空状态、激活或 time-to-value 优化。 | 不涉及 onboarding 的成熟重复使用流程。 |
+| extract | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | 设计系统提取 | 可复用组件、设计令牌和需要沉淀成系统的重复 UI patterns。 | 一次性页面或未经验证的视觉实验。 |
+| optimize | 已安装狭窄 specialist | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (40,513★) | UI 性能 | 加载、渲染、动画、图片、包体积和感知速度。 | 非 UI 性能或视觉品味工作。 |
+| motion-ai-kit | 已安装狭窄 specialist / 官方文档 | [Motion AI Kit](https://motion.dev/docs/ai-kit) / [motiondivision/motion](https://github.com/motiondivision/motion) (32,471★) | 动效系统 | 微交互、页面转场、onboarding animation、状态反馈或动效编排。 | 静态 UI 任务，或没有动效需求的性能敏感工作。 |
+| [gsap-* skills](https://github.com/greensock/gsap-skills) | 官方上游 skill 参考 | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) (9,788★) | GSAP 实现 | 已选择或明确要求 GSAP 时，处理 timeline、ScrollTrigger、React/framework 集成、plugins、utils 或性能调优。 | 通用动效策略、CSS-only 动画，或未使用 GSAP 的项目。 |
+| [awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) | 高信号生态参考 | [birobirobiro/awesome-shadcn-ui](https://github.com/birobirobiro/awesome-shadcn-ui) (19,896★) | shadcn/ui 生态发现 | 检查项目依赖和官方文档后，仍需要当前 shadcn 示例、组件选项或生态研究。 | 默认 UI 路由、复制目录内容，或替代项目原生组件决策。 |
 | imagegen | OpenAI 第一方工具 | [OpenAI Images docs](https://platform.openai.com/docs/guides/images) | 位图资产生成/编辑 | Bitmap visuals、moodboards、slide images、thumbnails、hero images、cutouts。 | SVG/icon systems、确定性 UI code、已有 vector assets。 |
 | Canva | 平台连接器 | 已安装 Canva connector/plugin；omyKit 不跟踪低信号 skill repo | 设计/deck 生产 | Canva-native presentations、social formats、brand kits。 | Code-native UI 或本地 editable files。 |
 | presentations | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | Deck 创建/编辑 | PPTX/slide artifacts 和 rendered verification。 | App UI 或非 slide docs。 |
@@ -58,9 +57,9 @@
 
 只有当前 omyKit route 出现匹配信号时才应用：
 
-- Product/PM 方法工作：在当前 brief/change workflow 中加入 discovery、PRD、launch、pre-mortem、acceptance 或 test-scenario 结构，默认使用 omyKit 自有模式；只有用户明确要求时才使用特定外部 PM skill。
-- 视觉前端工作：加入层级、品牌适配、布局韧性、响应式、基础可访问性和视觉 QA 检查。
-- shadcn/ui 生态工作：只有任务需要当前示例、组件选项或生态研究时，才查询当前项目依赖和官方/当前来源；默认不路由到社区目录型 skill。
+- Product/PM 方法工作：在当前 brief/change workflow 中加入 discovery、PRD、launch、pre-mortem、acceptance 或 test-scenario 结构，默认使用 omyKit 自有模式；只有用户明确要求时才使用 `phuryn/pm-skills` 这类高信号外部 PM skill。
+- 视觉前端工作：加入层级、品牌适配、布局韧性、响应式、基础可访问性和视觉 QA 检查；只有高信号视觉 specialist 会实质改变方向时才调用。
+- shadcn/ui 生态工作：只有任务需要当前示例、组件选项或生态研究时，才查询当前项目依赖、官方/当前来源或 `awesome-shadcn-ui`；不要把目录内容持久化进 omyKit。
 - Workflow controller 工作：只有持久任务图状态、结构化 handoff、打回循环、阻塞项或 compact 后恢复能实质提高可靠性时，才在当前 change route 内使用；不要创建单独 route，也不要强加给 Lite 任务。
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
@@ -75,25 +74,25 @@
 
 | 能力线 | 优先选择 | 仅在这些情况补充 |
 | --- | --- | --- |
-| Product/PM 方法 | omyKit 内置 PM pattern。 | 只有用户明确要求外部 PM skill，且交付物主要是 PRD、discovery、launch、pre-mortem 或 acceptance design 时才使用。 |
-| UI 创建 | `frontend-design`。 | 实现检查时补 `baseline-ui`；确认存在独立缺口时才补 focused UI skill。 |
+| Product/PM 方法 | omyKit 内置 PM pattern。 | 只有用户明确要求外部 PM skill，且交付物主要是 PRD、discovery、launch、pre-mortem 或 acceptance design 时才使用 `phuryn/pm-skills`。 |
+| UI 创建 | `frontend-design`。 | 只有确有独立缺口时，才补 `design-taste-frontend` 做审美/反通用判断，或补 `ui-ux-pro-max` 做高风险复杂 UI。 |
 | UX 评审/研究 | `critique`。 | 结果必须落成具体 UI 时才补 `frontend-design`；需要技术检查时才补 `audit`。 |
-| 视觉质量 | 创建用 `frontend-design`，评审用 `critique`。 | 只有用户明确要求外部视觉 specialist，且新颖性/品牌表达对任务有实质价值时才补。 |
+| 视觉质量 | 创建用 `frontend-design`，评审用 `critique`。 | 只有新颖性、品牌表达或高阶视觉判断对任务有实质价值时，才补 `design-taste-frontend` 或 `ui-ux-pro-max`。 |
 | 设计上下文采集 | `teach-impeccable`。 | 只在稳定设计指导需要跨会话保留时使用；不要用于一次性页面微调。 |
-| 技术 UI 审计 | `audit`。 | 已确认具体问题时才补 focused fixing skill。 |
-| UI 实现基线 | `baseline-ui`。 | 需要覆盖更宽的可访问性、性能、主题或响应式问题时才补 `audit`。 |
+| 技术 UI 审计 | `audit`。 | 已确认具体问题时，使用项目原生定向修复和验证。 |
+| UI 实现 QA | 项目原生 browser checks 加 `audit`。 | 视觉方向改变时才补 `frontend-design`。 |
 | 响应式适配 | `adapt`。 | 文本溢出/i18n 边界情况明显时补 `harden`。 |
-| 可访问性加固 | `fixing-accessibility`。 | 需要更宽的组件基线检查时补 `baseline-ui`。 |
+| 可访问性加固 | `audit` 加项目原生 browser/accessibility checks。 | 做直接代码修复和验证；默认不路由到低星 accessibility specialist skill。 |
 | UX 文案 | `clarify`。 | 文案属于首次使用激活时才补 `onboard`。 |
 | 界面韧性 | `harden`。 | 设备特定布局问题时才补 `adapt`。 |
 | Onboarding | `onboard`。 | 需要 microcopy 时补 `clarify`，需要有意义引导动效时补 `motion-ai-kit`。 |
 | 设计系统提取 | `extract`。 | 提取后的 pattern 必须实现时才补 `frontend-design`。 |
-| UI 性能 | `optimize`。 | 动画性能问题才补 `fixing-motion-performance`。 |
-| Metadata 和预览 | `fixing-metadata`。 | 需要确认渲染页面输出时才补 browser checks。 |
-| 图标系统 | `better-icons`。 | 图标决策影响整体布局时才补 UI 创建或审计 skill。 |
-| 动效 | `motion-ai-kit`。 | 动画成本或流畅度有风险时才补 `fixing-motion-performance`。 |
-| GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；只有确认性能风险时才补 `fixing-motion-performance`。 |
-| shadcn/ui 资源 | 先看项目依赖和当前官方/source material。 | 任务需要当前示例、组件选项或 library discovery；不要把社区目录内容持久化进 omyKit。 |
+| UI 性能 | `optimize`。 | 确认是动画性能问题时，才补 browser profiling、`motion-ai-kit` 或匹配的 `gsap-*`。 |
+| Metadata 和预览 | 项目原生 metadata checks 加 browser verification。 | 页面级 UI 质量也在范围内时才补 `audit`。 |
+| 图标系统 | 现有项目图标库、设计系统或当前官方来源。 | 图标决策影响整体布局时才补 UI 创建或审计 skill。 |
+| 动效 | `motion-ai-kit`。 | 已选择或明确要求 GSAP 时才补匹配的 `gsap-*`。 |
+| GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；确认性能风险时使用 browser profiling 和定向代码修复。 |
+| shadcn/ui 资源 | 先看项目依赖和官方文档。 | 只有需要当前生态发现时才补 `awesome-shadcn-ui`；不要把社区目录内容持久化进 omyKit。 |
 | 上下文压缩 | 先用 `codex-context-budget`：避免读取、索引、聚焦、紧凑输出，再摘要。 | 只有大型重复内容仍有价值、可取回原文，且路径是本地可信时，才使用可选本地压缩。 |
 | 持久 workflow 状态 | 当前 `codex-change-workflow` 加 Workflow Controller。 | 只用于多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作；不要把它当单独 route。 |
 | Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |

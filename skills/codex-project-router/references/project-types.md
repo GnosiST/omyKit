@@ -8,7 +8,7 @@ Route by deliverable, not by repository technology.
 | `maintenance` | bug, regression, refactor, migration | reproduce -> impact -> minimal fix -> regression check | CodeGraph, Superpowers debugging/TDD, tests |
 | `deck` | slides, keynote, pptx, canva, presentation | brief -> outline -> storyboard -> deck -> render QA | presentations, Canva, imagegen, pdf render |
 | `video` | script, timeline, clips, remotion, export | brief -> script -> shot list -> render -> frame QA | Remotion, ffmpeg, imagegen, Computer Use |
-| `design` | UI, prototype, brand, image, Figma, selected design source | brief -> selected source/frame -> design system -> prototype -> visual QA | Figma, frontend-design, critique/audit, focused UI specialists, imagegen |
+| `design` | UI, prototype, brand, image, Figma, selected design source | brief -> selected source/frame -> design system -> prototype -> visual QA | Figma, frontend-design, critique/audit, high-signal visual specialists, imagegen |
 | `research` | report, citations, market/tool analysis | question -> source plan -> research -> synthesis -> cite | web, Notion/Drive, hv-analysis, PDF/doc tools |
 | `data` | spreadsheet, CSV, metrics, chart | question -> schema -> clean -> analyze -> visualize -> export | spreadsheets, Python/Node, charts |
 | `mixed` | multiple artifact classes | split into separate deliverable tracks | router plus per-type skills |
@@ -37,5 +37,5 @@ Include `codex-version-readiness` when the task touches releases, migrations, de
 
 - Do not stack same-lane skills by default; choose one primary capability, then add a narrower secondary only when it covers a separate gap.
 - Product or PM-method work: add discovery, PRD, launch, pre-mortem, acceptance, or test-scenario structure inside the active workflow; use PM-specialist skills only when the PM deliverable is primary.
-- Visual frontend work: use `frontend-design` for concrete UI creation, `critique` for UX/pattern judgment, `audit` for technical UI checks, `teach-impeccable` only for stable design-context capture, and focused UI skills such as `adapt`, `baseline-ui`, `fixing-accessibility`, `clarify`, `harden`, `onboard`, `extract`, `optimize`, `fixing-metadata`, `better-icons`, `motion-ai-kit`, `fixing-motion-performance`, or matching `gsap-*` skills for their specific lanes.
+- Visual frontend work: use `frontend-design` for concrete UI creation, `critique` for UX/pattern judgment, `audit` for technical UI checks, `teach-impeccable` only for stable design-context capture, high-signal visual specialists such as `design-taste-frontend` or `ui-ux-pro-max` only when they materially change visual direction, and project-native checks for accessibility, metadata, icons, and performance.
 - shadcn/ui ecosystem research: consult current project dependencies or current external sources only when examples or ecosystem options are needed; do not copy fast-changing resource lists into omyKit.

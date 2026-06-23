@@ -27,7 +27,7 @@ Load only the section for the current deliverable.
 - Start with audience, use case, brand personality, platform, constraints.
 - Use Figma or selected design-source context before full design docs.
 - Use `frontend-design` for concrete UI creation, `critique` for UX/pattern judgment, and `audit` when technical UI checks are required.
-- For visually important frontend, choose one primary UI capability first; add narrow skills only for separate gaps such as audit, responsive adaptation, accessibility, copy, hardening, onboarding, durable design-context capture, design-system extraction, metadata, icons, motion, GSAP implementation, performance, or implementation baseline checks.
+- For visually important frontend, choose one primary UI capability first; add high-signal visual specialists only for separate gaps such as taste/anti-generic judgment, complex UI/UX direction, audit, responsive adaptation, copy, hardening, onboarding, durable design-context capture, design-system extraction, motion, or GSAP implementation. Handle accessibility, metadata, icons, and performance through project-native checks and targeted code fixes unless the user explicitly requests a trusted specialist.
 - Use imagegen only for bitmap assets or visual references.
 - Verify responsive layout, text overflow, accessibility, and visual consistency.
 

@@ -9,7 +9,7 @@
     "verification_source": "GitHub repository API",
     "officiality_meaning": "Exact upstream or home repository tracked for the capability; not repository-owner endorsement of omyKit.",
     "stars_are_snapshot": true,
-    "specialist_skill_bar": "Admit only omyKit-owned skills, first-party platform/tool sources, official upstream skill sources, or installed narrow specialist skills with clear non-overlapping value. Public stars are supporting evidence, not sufficient admission proof; community skill repos that duplicate omyKit lanes stay out of default routing unless the user explicitly requests them."
+    "specialist_skill_bar": "Admit only omyKit-owned skills, first-party platform/tool sources, official upstream skill sources, mature infrastructure, or high-signal specialist references with clear non-overlapping value. Visual/UI community skill repos below 10000 stars stay out of omyKit routing and source tracking even if locally installed. Public stars are supporting evidence, not sufficient admission proof; PM, taste, catalog, or meta-UX references stay optional unless the user explicitly requests them."
   },
   "sources": [
     {
@@ -55,6 +55,21 @@
         "fork": false,
         "archived": false,
         "reference_scope": "Proposal and archived-delta change-management pattern; no CLI or templates bundled."
+      }
+    },
+    {
+      "id": "pm-skills",
+      "repo": "phuryn/pm-skills",
+      "url": "https://github.com/phuryn/pm-skills.git",
+      "baseline": "a0cd730d4c61e519ca8568b172334402257a74a9",
+      "role": "High-signal PM skills reference for discovery, PRD, launch, pre-mortem, acceptance, and PM shipping workflow cues",
+      "verification": {
+        "owner": "phuryn",
+        "owner_type": "User",
+        "stars": 20661,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Optional PM-method reference when user explicitly requests PM specialist support; no templates or bodies copied."
       }
     },
     {
@@ -118,6 +133,51 @@
       }
     },
     {
+      "id": "taste-skill",
+      "repo": "Leonxlnx/taste-skill",
+      "url": "https://github.com/Leonxlnx/taste-skill.git",
+      "baseline": "06d6028b5c623016c59ce8536f578e5a1127b499",
+      "role": "High-signal taste-skill reference for anti-generic frontend visual judgment and brand expression",
+      "verification": {
+        "owner": "Leonxlnx",
+        "owner_type": "User",
+        "stars": 49367,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Optional visual-taste reference for design-taste-frontend routing; no skill body copied."
+      }
+    },
+    {
+      "id": "ui-ux-pro-max-skill",
+      "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+      "baseline": "1518fec29d19ce905cd0c689255137b9dcab7ccc",
+      "role": "High-signal UI/UX specialist reference for advanced UI/UX design intelligence",
+      "verification": {
+        "owner": "nextlevelbuilder",
+        "owner_type": "Organization",
+        "stars": 95324,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Optional high-stakes UI/UX specialist reference for ui-ux-pro-max routing; no skill body copied."
+      }
+    },
+    {
+      "id": "awesome-shadcn-ui",
+      "repo": "birobirobiro/awesome-shadcn-ui",
+      "url": "https://github.com/birobirobiro/awesome-shadcn-ui.git",
+      "baseline": "18d73098bac79c4a13e123ba31d8af1462b23d98",
+      "role": "High-signal shadcn/ui ecosystem reference for current component examples and ecosystem discovery",
+      "verification": {
+        "owner": "birobirobiro",
+        "owner_type": "User",
+        "stars": 19896,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Optional current ecosystem discovery reference; omyKit does not persist catalog contents."
+      }
+    },
+    {
       "id": "gsap-skills",
       "repo": "greensock/gsap-skills",
       "url": "https://github.com/greensock/gsap-skills.git",
@@ -136,7 +196,7 @@
       "id": "openai-codex",
       "repo": "openai/codex",
       "url": "https://github.com/openai/codex.git",
-      "baseline": "d2484697b1f9ce33d1d818ccad859ca3a4d721c6",
+      "baseline": "63f8f547c0b95800f3c61ee172a2a833b75faf3f",
       "role": "Official OpenAI Codex source reference for the Codex control plane and terminal coding agent",
       "verification": {
         "owner": "openai",
@@ -160,36 +220,6 @@
         "fork": false,
         "archived": false,
         "reference_scope": "Installed local design-skill family reference; omyKit records routing boundaries and does not copy additional upstream text."
-      }
-    },
-    {
-      "id": "ui-skills",
-      "repo": "ibelick/ui-skills",
-      "url": "https://github.com/ibelick/ui-skills.git",
-      "baseline": "4d766c65fc3c63c611ecbc375882231152dea8c4",
-      "role": "UI Skills reference for baseline UI checks, accessibility repair, metadata repair, and motion-performance repair",
-      "verification": {
-        "owner": "ibelick",
-        "owner_type": "User",
-        "stars": 3302,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Installed local UI-engineering skill family reference; no upstream body copied into omyKit."
-      }
-    },
-    {
-      "id": "better-icons",
-      "repo": "better-auth/better-icons",
-      "url": "https://github.com/better-auth/better-icons.git",
-      "baseline": "033316ecb8f4982235af4111a2257e80231f5ab1",
-      "role": "Better Icons reference for icon search, retrieval, and icon-system strategy",
-      "verification": {
-        "owner": "better-auth",
-        "owner_type": "Organization",
-        "stars": 1105,
-        "fork": false,
-        "archived": false,
-        "reference_scope": "Installed local icon-strategy reference; omyKit does not vendor CLI or MCP code."
       }
     },
     {
@@ -301,7 +331,7 @@
       "id": "github-mcp-server",
       "repo": "github/github-mcp-server",
       "url": "https://github.com/github/github-mcp-server.git",
-      "baseline": "a37837027f6ac03560ebebd9f51f9f1f898b28c4",
+      "baseline": "7613599bd6d5c51744808031b3a2151da2adfaf8",
       "role": "Official GitHub MCP server reference for GitHub connector workflows",
       "verification": {
         "owner": "github",
