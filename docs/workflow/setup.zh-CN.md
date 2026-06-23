@@ -12,7 +12,7 @@
 帮我安装 omyKit：https://github.com/GnosiST/omyKit
 ```
 
-Codex 应该 clone 仓库、运行 `./scripts/install-global.sh`、返回 install manifest，并提醒你打开新的 Codex 线程刷新 skill 列表。
+Codex 应该 clone 仓库、运行 `./scripts/install-global.sh`、返回 install manifest，并提醒你打开新的 Codex 线程刷新 skill 列表。全局安装会复制真实文件，不用 symlink 安装 Codex skills。
 
 安装后，日常使用 `$omykit`：
 

@@ -63,6 +63,7 @@ flowchart TD
 | Documentation or research artifact | `codex-change-workflow` | `codex-context-budget`, `codex-delivery-gate`; version readiness only when the work is durable or release-bound. |
 | Release preparation | `codex-delivery-gate` | `codex-version-readiness`, runtime checks, artifact-specific gates. |
 | Milestone knowledge cleanup | `codex-delivery-gate` | `neat-freak` only when docs, AGENTS/CLAUDE rules, or memory may be stale; otherwise record `knowledge_sync.status=not_needed`. |
+| User dissatisfaction with a specialist output | Active primary workflow | Inspect node `skill_decisions[].fallback_policy`; route only the dissatisfied quality dimension to the better same-lane or narrower skill for rework. |
 | Repeated workflow friction | `codex-workflow-evolution` | `codex-context-budget`, relevant owner skill, validation scripts. |
 
 ## Conflict Prevention
@@ -74,6 +75,7 @@ flowchart TD
 - **Change workflow vs delivery gate:** change workflow builds the deliverable; delivery gate verifies evidence before completion.
 - **Delivery gate vs neat-freak:** delivery gate decides completion evidence; neat-freak reconciles knowledge surfaces only when needed and records `knowledge_sync`.
 - **Delivery gate vs workflow evolution:** delivery gate captures evidence; workflow evolution decides whether that evidence becomes a generic omyKit change.
+- **skills_used vs skill_decisions:** `skills_used` records actual calls; `skill_decisions` records why the skill was selected, which alternatives were skipped, and how to switch if the user is dissatisfied. It does not replace the router or force fake records when no same-lane choice exists.
 - **Context budget vs every other skill:** context budget limits reading and tool output; it never overrides the specialist workflow.
 
 If a task appears to need many skills, start with the primary workflow and add only the supporting checks that change the next decision.

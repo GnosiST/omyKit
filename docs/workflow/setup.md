@@ -12,7 +12,7 @@ For first-time install, `$omykit` is not available yet. Ask Codex in plain langu
 Install omyKit from https://github.com/GnosiST/omyKit
 ```
 
-Codex should clone the repository, run `./scripts/install-global.sh`, report the install manifest, and tell you to open a fresh Codex thread so the skill list refreshes.
+Codex should clone the repository, run `./scripts/install-global.sh`, report the install manifest, and tell you to open a fresh Codex thread so the skill list refreshes. Global install copies real files and does not install Codex skills as symlinks.
 
 After install, use `$omykit` for normal operation:
 

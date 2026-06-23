@@ -234,6 +234,45 @@
       ]
     }
   ],
+  "skill_decisions": [
+    {
+      "capability": "UI 创建",
+      "selected": "frontend-design",
+      "rationale": "当前节点要产出具体页面，主缺口是高质量 UI 创建，而不是单纯审美评审或技术审计。",
+      "selection_basis": [
+        "交付物是可运行前端界面",
+        "用户对视觉质量有明确要求",
+        "项目已有组件体系需要落地实现"
+      ],
+      "alternatives": [
+        {
+          "name": "design-taste-frontend",
+          "decision": "next_retry",
+          "reason": "如果用户认为结果太普通，下一轮用它做审美和反通用修改。",
+          "strength": "视觉判断"
+        },
+        {
+          "name": "audit",
+          "decision": "backup",
+          "reason": "实现后用于技术 UI 审查，不作为第一创作 skill。",
+          "strength": "技术审计"
+        }
+      ],
+      "fallback_policy": {
+        "when": "用户不满意视觉方向、品牌表达或精致度",
+        "next_skill": "design-taste-frontend",
+        "action": "保留已验证功能，重做视觉层级、布局节奏和品牌表达。"
+      },
+      "user_feedback": {
+        "status": "not_reviewed",
+        "summary": "尚未收到用户对产物的质量反馈。"
+      },
+      "outcome": "not_evaluated",
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ]
+    }
+  ],
   "agent_activity": [
     {
       "agent_id": "agent-1",
@@ -301,7 +340,9 @@
 }
 ```
 
-使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
+使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`skill_decisions`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`skill_decisions` 记录同类能力选择依据、候选替代、fallback 和用户反馈；没有同类竞争或没有使用 specialist skill 时可以省略。`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
+
+如果用户对产物不满意，不要盲目叠加所有同类 skill。先查看对应节点的 `skill_decisions[].fallback_policy`；若已有 `next_skill`，保留已验证事实和功能，只把不满意的质量维度交给下一个更擅长的 skill 重做或修改。重做后把 `user_feedback.status`、`outcome` 和新证据写回 handoff。反复有效或反复失败的选择经验，作为 delivery `evolution_candidates` 交给 `codex-workflow-evolution` 判断是否进入通用 omyKit 规则。
 
 token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。若子智能体运行时隐藏实际模型，记录 `agent_activity[].model_unavailable_reason`。
 

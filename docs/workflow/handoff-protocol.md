@@ -234,6 +234,45 @@ Use `passed` when the node completed and evidence is available.
       ]
     }
   ],
+  "skill_decisions": [
+    {
+      "capability": "UI creation",
+      "selected": "frontend-design",
+      "rationale": "The node needs to produce concrete screens, so the primary gap is high-quality UI creation rather than taste critique or technical audit alone.",
+      "selection_basis": [
+        "deliverable is a runnable frontend interface",
+        "user has explicit visual-quality expectations",
+        "the existing component system must be implemented"
+      ],
+      "alternatives": [
+        {
+          "name": "design-taste-frontend",
+          "decision": "next_retry",
+          "reason": "Use it in the next pass if the user says the result is too generic.",
+          "strength": "visual judgment"
+        },
+        {
+          "name": "audit",
+          "decision": "backup",
+          "reason": "Use after implementation for technical UI review, not as the first creation skill.",
+          "strength": "technical audit"
+        }
+      ],
+      "fallback_policy": {
+        "when": "the user is dissatisfied with visual direction, brand expression, or polish",
+        "next_skill": "design-taste-frontend",
+        "action": "Keep verified functionality and rework hierarchy, layout rhythm, and brand expression."
+      },
+      "user_feedback": {
+        "status": "not_reviewed",
+        "summary": "No user quality feedback has been recorded yet."
+      },
+      "outcome": "not_evaluated",
+      "evidence": [
+        "evidence/03-implement-test-output.txt"
+      ]
+    }
+  ],
   "agent_activity": [
     {
       "agent_id": "agent-1",
@@ -301,7 +340,9 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `knowledge_sync`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
+Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `skill_decisions`, `knowledge_sync`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Use node-level `skills_used` for skills that shaped the node as a whole, and `skill_decisions` for same-lane selection rationale, alternatives, fallback, and user feedback. Omit it when there was no same-lane choice or no specialist skill use. Use `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
+
+When the user is dissatisfied with an output, do not blindly stack every same-lane skill. Inspect `skill_decisions[].fallback_policy` for the node. If it names a `next_skill`, keep verified facts and functionality, then route the dissatisfied quality dimension to the next skill for rework. After the rework, update `user_feedback.status`, `outcome`, and evidence in the handoff. Repeatedly effective or ineffective selection lessons should become delivery `evolution_candidates` for `codex-workflow-evolution` to decide whether the generic omyKit rules should change.
 
 Token, context, and model records must be source-aware. If a `token_usage` or `context_usage` object is present, `source` is required. Record exact provider/tool-reported usage when available; otherwise use `manual`, `estimated`, or omit the record. Do not invent Codex Desktop or chat token counts when the environment does not expose them. Use `model_tier` as a supplier-independent policy (`fast`, `standard`, `frontier`); record the actual provider/model only as observed execution metadata through `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, `agent_activity[].model_provider`, or `agent_activity[].token_usage.model`. If a subagent runtime hides the actual model, record `agent_activity[].model_unavailable_reason`.
 

@@ -34,6 +34,9 @@ const EVOLUTION_PROMOTION_STATUSES = new Set(["candidate", "promoted", "not_prom
 const EXECUTION_SURFACES = new Set(["main-thread", "subagent", "background_thread", "thread_worktree"]);
 const ASSIGNMENT_STATUSES = new Set(["planned", "running", "handoff_received", "passed", "failed", "blocked", "cancelled"]);
 const KNOWLEDGE_SYNC_STATUSES = new Set(["completed", "not_needed", "deferred"]);
+const SKILL_DECISION_OUTCOMES = new Set(["effective", "needs_revision", "switched", "not_evaluated"]);
+const SKILL_FEEDBACK_STATUSES = new Set(["accepted", "needs_revision", "rejected", "not_reviewed"]);
+const SKILL_ALTERNATIVE_DECISIONS = new Set(["backup", "rejected", "next_retry", "selected"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
@@ -163,6 +166,18 @@ const BOARD_LABELS = {
     skillCoverage: "Skill coverage",
     skillRecorded: "Recorded nodes",
     skillMissing: "Missing skill records",
+    skillDecisions: "Skill Decisions",
+    skillDecisionCoverage: "Skill decision coverage",
+    skillDecisionRecorded: "Decision records",
+    skillDecisionMissing: "Missing skill decisions",
+    capability: "Capability",
+    selectedSkill: "Selected skill",
+    alternatives: "Alternatives",
+    fallbackPolicy: "Fallback policy",
+    userFeedback: "User feedback",
+    outcome: "Outcome",
+    selectionBasis: "Selection basis",
+    noSkillDecisions: "No skill decisions recorded",
     tokenUsage: "Token Usage",
     tokenTotal: "Total tokens",
     tokenRecorded: "Recorded nodes",
@@ -384,6 +399,18 @@ const BOARD_LABELS = {
     skillCoverage: "Skill 覆盖率",
     skillRecorded: "已记录节点",
     skillMissing: "未记录 skill 的节点",
+    skillDecisions: "Skill 选择决策",
+    skillDecisionCoverage: "Skill 决策覆盖率",
+    skillDecisionRecorded: "已记录决策",
+    skillDecisionMissing: "缺少 skill 决策",
+    capability: "能力线",
+    selectedSkill: "选用 Skill",
+    alternatives: "候选替代",
+    fallbackPolicy: "替换策略",
+    userFeedback: "用户反馈",
+    outcome: "结果",
+    selectionBasis: "选择依据",
+    noSkillDecisions: "未记录 skill 选择决策",
     tokenUsage: "Token 消耗",
     tokenTotal: "总 token",
     tokenRecorded: "已记录节点",
@@ -1733,6 +1760,87 @@ function validateSkillsUsedShape(value, label) {
   return errors;
 }
 
+function validateStringArrayShape(value, label) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !entry)) {
+    return [`${label} must be an array of non-empty strings`];
+  }
+  return [];
+}
+
+function validateSkillDecisionsShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!Array.isArray(value)) return [`${label} must be an array`];
+  value.forEach((item, index) => {
+    const prefix = `${label}[${index}]`;
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push(`${prefix} must be an object`);
+      return;
+    }
+    for (const field of ["capability", "selected", "rationale"]) {
+      if (!item[field] || typeof item[field] !== "string") {
+        errors.push(`${prefix}.${field} is required`);
+      }
+    }
+    if (item.outcome !== undefined && !SKILL_DECISION_OUTCOMES.has(item.outcome)) {
+      errors.push(`${prefix}.outcome must be one of ${[...SKILL_DECISION_OUTCOMES].join(", ")}`);
+    }
+    errors.push(...validateStringArrayShape(item.selection_basis, `${prefix}.selection_basis`));
+    errors.push(...validateStringArrayShape(item.evidence, `${prefix}.evidence`));
+    if (item.alternatives !== undefined) {
+      if (!Array.isArray(item.alternatives)) {
+        errors.push(`${prefix}.alternatives must be an array`);
+      } else {
+        item.alternatives.forEach((alternative, altIndex) => {
+          const altPrefix = `${prefix}.alternatives[${altIndex}]`;
+          if (!alternative || typeof alternative !== "object" || Array.isArray(alternative)) {
+            errors.push(`${altPrefix} must be an object`);
+            return;
+          }
+          if (!alternative.name || typeof alternative.name !== "string") errors.push(`${altPrefix}.name is required`);
+          if (alternative.decision !== undefined && !SKILL_ALTERNATIVE_DECISIONS.has(alternative.decision)) {
+            errors.push(`${altPrefix}.decision must be one of ${[...SKILL_ALTERNATIVE_DECISIONS].join(", ")}`);
+          }
+          for (const field of ["reason", "strength"]) {
+            if (alternative[field] !== undefined && (typeof alternative[field] !== "string" || !alternative[field])) {
+              errors.push(`${altPrefix}.${field} must be a non-empty string`);
+            }
+          }
+        });
+      }
+    }
+    if (item.fallback_policy !== undefined) {
+      if (!item.fallback_policy || typeof item.fallback_policy !== "object" || Array.isArray(item.fallback_policy)) {
+        errors.push(`${prefix}.fallback_policy must be an object`);
+      } else {
+        for (const field of ["when", "next_skill", "action"]) {
+          if (item.fallback_policy[field] !== undefined && (typeof item.fallback_policy[field] !== "string" || !item.fallback_policy[field])) {
+            errors.push(`${prefix}.fallback_policy.${field} must be a non-empty string`);
+          }
+        }
+      }
+    }
+    if (item.user_feedback !== undefined) {
+      if (!item.user_feedback || typeof item.user_feedback !== "object" || Array.isArray(item.user_feedback)) {
+        errors.push(`${prefix}.user_feedback must be an object`);
+      } else {
+        if (!item.user_feedback.status || !SKILL_FEEDBACK_STATUSES.has(item.user_feedback.status)) {
+          errors.push(`${prefix}.user_feedback.status must be one of ${[...SKILL_FEEDBACK_STATUSES].join(", ")}`);
+        }
+        if (item.user_feedback.summary !== undefined && (typeof item.user_feedback.summary !== "string" || !item.user_feedback.summary)) {
+          errors.push(`${prefix}.user_feedback.summary must be a non-empty string`);
+        }
+        errors.push(...validateStringArrayShape(item.user_feedback.evidence, `${prefix}.user_feedback.evidence`));
+      }
+    }
+    if (["needs_revision", "switched"].includes(item.outcome) && !item.fallback_policy?.next_skill) {
+      errors.push(`${prefix}.fallback_policy.next_skill is required when outcome is ${item.outcome}`);
+    }
+  });
+  return errors;
+}
+
 function validateIntakeDecisionShape(value, label) {
   const errors = [];
   if (value === undefined) return errors;
@@ -1903,6 +2011,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateContextUsageShape(handoff.context_usage, "handoff.context_usage"));
   errors.push(...validateTimingShape(handoff.timing, "handoff.timing"));
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
+  errors.push(...validateSkillDecisionsShape(handoff.skill_decisions, "handoff.skill_decisions"));
   errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
   errors.push(...validateKnowledgeSyncShape(handoff.knowledge_sync, "handoff.knowledge_sync"));
   errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
@@ -2919,6 +3028,49 @@ function mergeSkillRecords(...skillLists) {
   return [...map.values()];
 }
 
+function normalizeSkillDecisions(value) {
+  const decisions = Array.isArray(value) ? value : [];
+  return decisions
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      const selected = item.selected || item.skill || item.name;
+      if (!item.capability || !selected) return null;
+      return {
+        capability: item.capability,
+        selected,
+        rationale: item.rationale || item.reason || null,
+        selection_basis: Array.isArray(item.selection_basis) ? item.selection_basis : [],
+        alternatives: Array.isArray(item.alternatives)
+          ? item.alternatives
+            .filter((alternative) => alternative?.name)
+            .map((alternative) => ({
+              name: alternative.name,
+              decision: alternative.decision || null,
+              reason: alternative.reason || null,
+              strength: alternative.strength || null,
+            }))
+          : [],
+        fallback_policy: item.fallback_policy && typeof item.fallback_policy === "object" && !Array.isArray(item.fallback_policy)
+          ? {
+            when: item.fallback_policy.when || null,
+            next_skill: item.fallback_policy.next_skill || null,
+            action: item.fallback_policy.action || null,
+          }
+          : null,
+        user_feedback: item.user_feedback && typeof item.user_feedback === "object" && !Array.isArray(item.user_feedback)
+          ? {
+            status: item.user_feedback.status || null,
+            summary: item.user_feedback.summary || null,
+            evidence: Array.isArray(item.user_feedback.evidence) ? item.user_feedback.evidence : [],
+          }
+          : null,
+        outcome: item.outcome || null,
+        evidence: Array.isArray(item.evidence) ? item.evidence : [],
+      };
+    })
+    .filter(Boolean);
+}
+
 function normalizeAgentActivity(handoff) {
   const activity = Array.isArray(handoff?.agent_activity) ? handoff.agent_activity : [];
   return activity.map((item, index) => ({
@@ -3101,6 +3253,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     normalizeSkillsUsed(handoff?.skills_used),
     agentActivity.flatMap((activity) => activity.skills_used || []),
   );
+  const skillDecisions = normalizeSkillDecisions(handoff?.skill_decisions);
   const explicitTokenUsage = normalizeTokenUsage(handoff?.token_usage);
   const tokenUsage = explicitTokenUsage.recorded ? explicitTokenUsage : deriveTokenUsageFromAgents(agentActivity);
   const timeline = readNodeLedgerEvents(allEvents, node.id);
@@ -3195,6 +3348,8 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     work_items: workItems,
     changed_files: changedFiles,
     skills_used: skillsUsed,
+    skill_decisions: skillDecisions,
+    skill_decision_reviewed: skillsUsed.length === 0 || skillDecisions.length > 0,
     agent_activity: agentActivity,
     token_usage: tokenUsage,
     context_usage: contextUsage,
@@ -3583,6 +3738,10 @@ function buildContextUsage(projectedNodes) {
 function buildSkillUsage(projectedNodes) {
   const byNode = [];
   const bySkill = new Map();
+  const decisionNodes = [];
+  const decisionMissingNodes = [];
+  const byCapability = new Map();
+  const needsRevision = [];
   const byAgent = new Map();
   const missingNodes = [];
   for (const node of projectedNodes) {
@@ -3598,6 +3757,32 @@ function buildSkillUsage(projectedNodes) {
         if (skill.source) entry.sources.add(skill.source);
         if (skill.path) entry.paths.add(skill.path);
         if (skill.purpose) entry.purposes.add(skill.purpose);
+      }
+      if (node.skill_decisions.length > 0) {
+        decisionNodes.push({ node_id: node.id, decisions: node.skill_decisions });
+        for (const decision of node.skill_decisions) {
+          const key = decision.capability;
+          if (!byCapability.has(key)) {
+            byCapability.set(key, { capability: key, nodes: [], selected: new Set(), outcomes: new Set(), next_retries: new Set() });
+          }
+          const entry = byCapability.get(key);
+          entry.nodes.push(node.id);
+          if (decision.selected) entry.selected.add(decision.selected);
+          if (decision.outcome) entry.outcomes.add(decision.outcome);
+          if (decision.fallback_policy?.next_skill) entry.next_retries.add(decision.fallback_policy.next_skill);
+          if (["needs_revision", "rejected"].includes(decision.user_feedback?.status) || ["needs_revision", "switched"].includes(decision.outcome)) {
+            needsRevision.push({
+              node_id: node.id,
+              capability: decision.capability,
+              selected: decision.selected,
+              feedback: decision.user_feedback?.summary || null,
+              next_skill: decision.fallback_policy?.next_skill || null,
+              action: decision.fallback_policy?.action || null,
+            });
+          }
+        }
+      } else {
+        decisionMissingNodes.push(node.id);
       }
     } else {
       missingNodes.push(node.id);
@@ -3624,6 +3809,9 @@ function buildSkillUsage(projectedNodes) {
     recorded_nodes: byNode.length,
     missing_nodes: missingNodes,
     coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
+    selection_recorded_nodes: decisionNodes.length,
+    selection_missing_nodes: decisionMissingNodes,
+    selection_coverage_percent: byNode.length === 0 ? 100 : Math.round((decisionNodes.length / byNode.length) * 100),
     by_node: byNode,
     by_skill: [...bySkill.values()].map((entry) => ({
       name: entry.name,
@@ -3632,6 +3820,15 @@ function buildSkillUsage(projectedNodes) {
       paths: [...entry.paths],
       purposes: [...entry.purposes],
     })),
+    decisions_by_node: decisionNodes,
+    by_capability: [...byCapability.values()].map((entry) => ({
+      capability: entry.capability,
+      nodes: [...new Set(entry.nodes)],
+      selected: [...entry.selected],
+      outcomes: [...entry.outcomes],
+      next_retries: [...entry.next_retries],
+    })),
+    needs_revision: needsRevision,
     by_agent: [...byAgent.values()].map((entry) => ({
       agent_id: entry.agent_id,
       role: entry.role,
@@ -3987,6 +4184,29 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       skills.missing_nodes,
     ));
   }
+  if (skills.selection_missing_nodes?.length > 0) {
+    items.push(recommendation(
+      "missing-skill-decision",
+      "low",
+      isZh ? "同类 Skill 选择缺少决策记录" : "Skill selection decisions are missing",
+      isZh ? "节点已经记录了 skills_used，但没有说明为什么选这个同类 skill、哪些候选没用、用户不满意时怎么换。" : "Nodes recorded skills_used but did not explain why the selected same-lane skill was chosen, which alternatives were skipped, or how to switch if the user is dissatisfied.",
+      isZh ? "后续 handoff 记录 skill_decisions；没有同类竞争或不需要 specialist 时可不记录。" : "Record skill_decisions in future handoffs; leave it absent when there is no same-lane choice or specialist use.",
+      skills.selection_missing_nodes,
+    ));
+  }
+  if (skills.needs_revision?.length > 0) {
+    const nodeIds = skills.needs_revision.map((item) => item.node_id);
+    items.push(recommendation(
+      "skill-rework-needed",
+      "medium",
+      isZh ? "有产物反馈要求换 Skill 修改" : "Output feedback requests skill-based rework",
+      isZh ? "已有 skill_decisions 记录用户不满意、需要修改或已经切换，下一步应按 fallback_policy 重做或定向修改。" : "skill_decisions recorded dissatisfaction, revision need, or a switch; the next step should follow fallback_policy for rework.",
+      isZh
+        ? `优先处理：${skills.needs_revision.map((item) => `${item.node_id}:${item.next_skill || item.selected}`).join(", ")}。`
+        : `Prioritize: ${skills.needs_revision.map((item) => `${item.node_id}:${item.next_skill || item.selected}`).join(", ")}.`,
+      nodeIds,
+    ));
+  }
   if (models.missing_actual_nodes.length > 0) {
     items.push(recommendation(
       "missing-model-usage",
@@ -4315,6 +4535,14 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
       const failing = terminalNodes.filter((node) => node.skills_used.length === 0).map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录使用过的 skills。" : "Terminal nodes did not record skills_used.");
     }
+    case "skill_selection_decision_recorded": {
+      const skillNodes = terminalNodes.filter((node) => node.skills_used.length > 0);
+      if (skillNodes.length === 0) return pending();
+      const failing = skillNodes
+        .filter((node) => node.skill_decisions.length === 0 || node.skill_decisions.some((decision) => !decision.capability || !decision.selected || !decision.rationale))
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "使用 skill 的终态节点缺少 skill_decisions，无法复盘同类能力选择和 fallback。" : "Terminal nodes that used skills are missing skill_decisions, so same-lane selection and fallback cannot be audited.");
+    }
     case "model_tier_policy": {
       const failing = projectedNodes
         .filter((node) => node.task_complexity === "expert" && node.model_tier !== "frontier")
@@ -4453,7 +4681,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       work_items: projectedNodes.reduce((sum, node) => sum + node.work_items.length, 0),
       intake_decisions: projectedNodes.filter((node) => node.intake_decision).length,
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
-    skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+      skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
+      skill_decisions: projectedNodes.reduce((sum, node) => sum + node.skill_decisions.length, 0),
       downstream_contexts: projectedNodes.filter((node) => node.downstream_context).length,
       evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
       knowledge_sync_reviews: projectedNodes.filter((node) => node.knowledge_sync_reviewed).length,
@@ -4955,6 +5184,26 @@ function renderSkillsUsed(items, text) {
   });
 }
 
+function renderSkillDecisions(items, text) {
+  return renderObjectList(items, text.noSkillDecisions, (item) => {
+    const basis = item.selection_basis?.length ? `<p><strong>${escapeHtml(text.selectionBasis)}:</strong> ${escapeHtml(item.selection_basis.join("; "))}</p>` : "";
+    const alternatives = item.alternatives?.length
+      ? `<p><strong>${escapeHtml(text.alternatives)}:</strong> ${escapeHtml(item.alternatives.map((alternative) => {
+        const parts = [alternative.name, alternative.decision, alternative.reason].filter(Boolean);
+        return parts.join(" - ");
+      }).join("; "))}</p>`
+      : "";
+    const fallback = item.fallback_policy
+      ? `<p><strong>${escapeHtml(text.fallbackPolicy)}:</strong> ${escapeHtml([item.fallback_policy.when, item.fallback_policy.next_skill, item.fallback_policy.action].filter(Boolean).join(" -> ") || text.none)}</p>`
+      : "";
+    const feedback = item.user_feedback
+      ? `<p><strong>${escapeHtml(text.userFeedback)}:</strong> ${escapeHtml([item.user_feedback.status, item.user_feedback.summary].filter(Boolean).join(" - ") || text.notRecorded)}</p>`
+      : "";
+    const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
+    return `<strong>${escapeHtml(item.capability)}</strong><dl><dt>${escapeHtml(text.selectedSkill)}</dt><dd>${escapeHtml(item.selected || text.none)}</dd><dt>${escapeHtml(text.outcome)}</dt><dd>${escapeHtml(item.outcome || text.notRecorded)}</dd></dl><p class="muted">${escapeHtml(item.rationale || "")}</p>${basis}${alternatives}${fallback}${feedback}${evidence}`;
+  });
+}
+
 function renderModelRecords(items, text) {
   return renderObjectList(items, text.noModelsRecorded, (item) => {
     const meta = [item.provider, item.model_tier, item.source, item.agent_id].filter(Boolean).join(" · ");
@@ -5021,6 +5270,17 @@ function renderSkillGroups(groups, text) {
       group.paths?.length ? `${text.files}: ${group.paths.join(", ")}` : null,
     ].filter(Boolean).join(" · ");
     return `<strong>${escapeHtml(group.name)}</strong><p>${escapeHtml(text.nodes)}: ${renderNodeLinks(group.nodes, text)}</p>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}`;
+  });
+}
+
+function renderSkillDecisionGroups(groups, text) {
+  return renderObjectList(groups, text.noSkillDecisions, (group) => {
+    const meta = [
+      group.selected?.length ? `${text.selectedSkill}: ${group.selected.join(", ")}` : null,
+      group.outcomes?.length ? `${text.outcome}: ${group.outcomes.join(", ")}` : null,
+      group.next_retries?.length ? `${text.fallbackPolicy}: ${group.next_retries.join(", ")}` : null,
+    ].filter(Boolean).join(" · ");
+    return `<strong>${escapeHtml(group.capability)}</strong><p>${escapeHtml(text.nodes)}: ${renderNodeLinks(group.nodes, text)}</p>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}`;
   });
 }
 
@@ -5107,6 +5367,7 @@ function renderNodeCard(node, text) {
       <span>${escapeHtml(text.files)} ${escapeHtml(node.changed_files.length)}</span>
       <span>${escapeHtml(text.checks)} ${escapeHtml(node.required_checks.length)}</span>
       <span>${escapeHtml(text.skillsUsed)} ${escapeHtml(node.skills_used.length)}</span>
+      <span>${escapeHtml(text.skillDecisions)} ${escapeHtml(node.skill_decisions.length)}</span>
       <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
       <span>${escapeHtml(text.evolutionCandidates)} ${escapeHtml(node.evolution_candidates.length)}</span>
       <span>${escapeHtml(text.knowledgeSync)} ${escapeHtml(node.knowledge_sync?.status || text.notRecorded)}</span>
@@ -5122,6 +5383,7 @@ function renderNodeCard(node, text) {
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
       <dt>${escapeHtml(text.skillsUsed)}</dt><dd>${escapeHtml(node.skills_used.map((skill) => skill.name).join(", ") || text.none)}</dd>
+      <dt>${escapeHtml(text.skillDecisions)}</dt><dd>${escapeHtml(node.skill_decisions.map((decision) => `${decision.capability}:${decision.selected}`).join(", ") || text.none)}</dd>
       <dt>${escapeHtml(text.knowledgeSync)}</dt><dd>${escapeHtml(node.knowledge_sync?.status || text.notRecorded)}</dd>
       <dt>${escapeHtml(text.handoff)}</dt><dd>${escapeHtml(node.last_handoff || text.missing)}</dd>
       <dt>${escapeHtml(text.evidence)}</dt><dd>${escapeHtml(node.evidence_status)}</dd>
@@ -5192,6 +5454,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.knowledgeSync)}</h4>${renderKnowledgeSync(node.knowledge_sync, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
+        <section><h4>${escapeHtml(text.skillDecisions)}</h4>${renderSkillDecisions(node.skill_decisions, text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
         <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
@@ -5356,6 +5619,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.workItems, board.summary.work_items, "#task-tracker")}
         ${renderMetric(text.intakeDecision, board.summary.intake_decisions, "#node-details")}
         ${renderMetric(text.skillsUsed, board.summary.skills_used, "#skill-usage")}
+        ${renderMetric(text.skillDecisions, board.summary.skill_decisions, "#skill-usage")}
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
         ${renderMetric(text.assignments, board.summary.assignments, "#agent-roster")}
         ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates, "#workflow-evolution")}
@@ -5419,10 +5683,15 @@ function renderBoardHtml(board) {
         ${renderMetric(text.skillRecorded, board.skills.recorded_nodes)}
         ${renderMetric(text.skillMissing, board.skills.missing_nodes.length)}
         ${renderMetric(text.skillCoverage, `${board.skills.coverage_percent}%`)}
+        ${renderMetric(text.skillDecisions, board.summary.skill_decisions || 0)}
+        ${renderMetric(text.skillDecisionCoverage, `${board.skills.selection_coverage_percent}%`)}
       </div>
       <p><strong>${escapeHtml(text.skillMissing)}:</strong> ${escapeHtml(board.skills.missing_nodes.join(", ") || text.none)}</p>
+      <p><strong>${escapeHtml(text.skillDecisionMissing)}:</strong> ${escapeHtml(board.skills.selection_missing_nodes.join(", ") || text.none)}</p>
       <h3>${escapeHtml(text.skillsUsed)}</h3>
       ${renderSkillGroups(board.skills.by_skill, text)}
+      <h3>${escapeHtml(text.skillDecisions)}</h3>
+      ${renderSkillDecisionGroups(board.skills.by_capability, text)}
     </section>
 
     <section class="panel" id="model-usage">

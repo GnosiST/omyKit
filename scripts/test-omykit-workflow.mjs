@@ -278,6 +278,34 @@ writeJson(intakeHandoff, {
       evidence: ["evidence/01-intake-summary.txt"],
     },
   ],
+  skill_decisions: [
+    {
+      capability: "workflow orchestration",
+      selected: "omykit",
+      rationale: "用户以 $omykit 触发可追踪工作流，当前任务需要入口路由、controller 状态和看板投影。",
+      selection_basis: ["explicit user trigger", "tracked workflow requested", "board output required"],
+      alternatives: [
+        {
+          name: "codex-change-workflow",
+          decision: "backup",
+          reason: "适合执行具体变更，但不负责统一入口和看板生成。",
+          strength: "implementation workflow",
+        },
+      ],
+      fallback_policy: {
+        when: "如果 controller 对当前任务过重或用户只要一次性执行结果",
+        next_skill: "codex-change-workflow",
+        action: "降级到普通 change workflow，并只保留必要 handoff 摘要。",
+      },
+      user_feedback: {
+        status: "accepted",
+        summary: "测试夹具确认入口选择有效。",
+        evidence: ["evidence/01-intake-summary.txt"],
+      },
+      outcome: "effective",
+      evidence: ["evidence/01-intake-summary.txt"],
+    },
+  ],
   token_usage: {
     source: "manual",
     provider: "openai",
@@ -388,6 +416,29 @@ writeJson(badSkillHandoff, {
 });
 runFails(["validate"], /handoff\.skills_used\[0\]\.name is required/);
 fs.rmSync(badSkillHandoff);
+const badSkillDecisionHandoff = path.join(dir, "handoffs", "01-intake-bad-skill-decision.json");
+writeJson(badSkillDecisionHandoff, {
+  workflow_id: "feature-x",
+  node_id: "01-intake",
+  status: "passed",
+  summary: "Invalid fixture with missing skill decision capability.",
+  outputs: ["nodes/01-intake.json"],
+  skills_used: ["omykit"],
+  skill_decisions: [
+    {
+      selected: "omykit",
+      rationale: "Missing capability.",
+    },
+  ],
+  verification: [
+    {
+      command: "manual intake check",
+      result: "passed",
+    },
+  ],
+});
+runFails(["validate"], /handoff\.skill_decisions\[0\]\.capability is required/);
+fs.rmSync(badSkillDecisionHandoff);
 const badIntakeDecisionHandoff = path.join(dir, "handoffs", "01-intake-bad-intake-decision.json");
 writeJson(badIntakeDecisionHandoff, {
   workflow_id: "feature-x",
@@ -739,6 +790,7 @@ assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-r
 assert.ok(board.scorecard.checks.some((check) => check.id === "downstream-context-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "knowledge-sync-reviewed" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "skill-selection-decision-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "subagent-model-recorded-or-explained" && check.status === "pending"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-handoff-coverage" && check.status === "warning"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "assignment-write-scope-conflicts" && check.status === "passed"));
@@ -765,6 +817,8 @@ assert.ok(Array.isArray(board.context.by_agent));
 assert.ok(Array.isArray(board.skills.by_node));
 assert.ok(Array.isArray(board.skills.by_skill));
 assert.ok(Array.isArray(board.skills.by_agent));
+assert.ok(Array.isArray(board.skills.decisions_by_node));
+assert.ok(Array.isArray(board.skills.by_capability));
 assert.ok(Array.isArray(board.models.by_node));
 assert.ok(Array.isArray(board.models.recommended_by_model));
 assert.ok(Array.isArray(board.models.actual_by_model));
@@ -801,8 +855,10 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.re
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.actual_models.some((model) => model.model === "GPT-5.4")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.agent_activity.some((activity) => activity.agent_id === "main-codex" && activity.scope)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skills_used.some((skill) => skill.name === "omykit")));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.skill_decisions.some((decision) => decision.selected === "omykit" && decision.fallback_policy?.next_skill === "codex-change-workflow")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.downstream_context?.target_nodes.includes("02-design")));
 assert.equal(board.summary.skills_used, 1);
+assert.equal(board.summary.skill_decisions, 1);
 assert.equal(board.summary.actual_models, 1);
 assert.equal(board.summary.intake_decisions, 1);
 assert.equal(board.summary.evolution_candidates, 1);
@@ -826,6 +882,9 @@ assert.ok(board.context.missing_nodes.includes("02-research"));
 assert.ok(board.skills.by_skill.some((skill) => skill.name === "omykit" && skill.nodes.includes("01-intake")));
 assert.ok(board.skills.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.skill === "omykit"));
 assert.ok(board.skills.missing_nodes.includes("02-research"));
+assert.equal(board.skills.selection_recorded_nodes, 1);
+assert.equal(board.skills.selection_missing_nodes.length, 0);
+assert.ok(board.skills.by_capability.some((entry) => entry.capability === "workflow orchestration" && entry.selected.includes("omykit")));
 assert.equal(board.models.actual_recorded_nodes, 1);
 assert.ok(board.models.actual_by_model.some((model) => model.model === "GPT-5.4" && model.nodes.includes("01-intake")));
 assert.ok(board.models.recommended_by_model.some((model) => model.model === "GPT-5.5" && model.nodes.includes("03-plan")));
@@ -861,6 +920,8 @@ assert.match(boardHtml, /允许自定义答案/);
 assert.match(boardHtml, /Token 消耗/);
 assert.match(boardHtml, /Skill 使用记录/);
 assert.match(boardHtml, /使用的 Skills/);
+assert.match(boardHtml, /Skill 选择决策/);
+assert.match(boardHtml, /codex-change-workflow/);
 assert.match(boardHtml, /模型使用记录/);
 assert.match(boardHtml, /交接包/);
 assert.match(boardHtml, /后台命令/);

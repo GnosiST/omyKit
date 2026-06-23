@@ -94,7 +94,7 @@ For Chinese user prompts, `$omykit` should initialize tracked workflows with `--
 
 - Keep templates generic. Do not put target-project ports, credentials, product rules, or stack-specific assumptions into omyKit templates.
 - Add a new template when the graph topology differs meaningfully.
-- Add or edit a scorecard when evidence expectations differ but flow stays the same. Common tracked delivery scorecards require `evolution_candidates` and `knowledge_sync` so workflow learning and docs/memory cleanup are both reviewed.
+- Add or edit a scorecard when evidence expectations differ but flow stays the same. Common tracked delivery scorecards require `evolution_candidates` and `knowledge_sync`, and recommend `skill_decisions` when specialist skills are used, so workflow learning, docs/memory cleanup, and same-lane skill selection are reviewable.
 - Add a runtime profile when verification setup differs but graph topology does not.
 - Add a model profile when cost/quality policy or concrete model recommendation differs but node responsibilities stay the same.
 - Keep third-party skill ideas as scoped references; do not copy third-party skill bodies, templates, badges, images, or branding into omyKit.

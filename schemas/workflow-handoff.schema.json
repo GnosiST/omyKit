@@ -379,6 +379,164 @@
         ]
       }
     },
+    "skill_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capability",
+          "selected",
+          "rationale"
+        ],
+        "properties": {
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "selected": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "selection_basis": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision": {
+                  "type": "string",
+                  "enum": [
+                    "backup",
+                    "rejected",
+                    "next_retry",
+                    "selected"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "strength": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "fallback_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "when": {
+                "type": "string",
+                "minLength": 1
+              },
+              "next_skill": {
+                "type": "string",
+                "minLength": 1
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "user_feedback": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "accepted",
+                  "needs_revision",
+                  "rejected",
+                  "not_reviewed"
+                ]
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "effective",
+              "needs_revision",
+              "switched",
+              "not_evaluated"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "outcome"
+              ],
+              "properties": {
+                "outcome": {
+                  "enum": [
+                    "needs_revision",
+                    "switched"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "fallback_policy"
+              ],
+              "properties": {
+                "fallback_policy": {
+                  "required": [
+                    "next_skill"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
     "context_usage": {
       "type": "object",
       "additionalProperties": false,

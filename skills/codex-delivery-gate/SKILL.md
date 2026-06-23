@@ -29,6 +29,7 @@ Use this gate at handoff, export, commit, PR, release, or when making a completi
    - rollback path or missing rollback gap
    - controller workflow status, failed/blocked nodes, handoff evidence, and skipped required gates, if `.omykit/workflows/` is active
    - generated `board.json` / `board.html` paths when a controller board was used for review
+   - `skill_decisions` when specialist skills were used and same-lane alternatives were reasonable
    - for passed delivery nodes in tracked workflows, `evolution_candidates`; use an empty array only after reviewing and finding no reusable lesson
    - for passed delivery nodes in tracked workflows, `knowledge_sync`; use `completed`, `not_needed`, or `deferred` with a reason
 7. If durable docs, README, AGENTS, workflow rules, or agent memory may be stale, run `neat-freak` or an equivalent knowledge cleanup pass before final handoff. Do not run it after every node.

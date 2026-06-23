@@ -61,7 +61,7 @@ For first-time install, you do not have `$omykit` yet. Ask Codex in plain langua
 Install omyKit from https://github.com/GnosiST/omyKit
 ```
 
-Codex can clone the repository, run the installer, and report the install manifest. After installation, open a fresh Codex thread so the skill list refreshes.
+Codex can clone the repository, run the installer, and report the install manifest. The installer copies real files and does not install Codex skills as symlinks. After installation, open a fresh Codex thread so the skill list refreshes.
 
 Manual fallback:
 
@@ -184,6 +184,7 @@ Operational rules:
 - For multi-agent work, use `dispatch-plan` first; keep the main thread on its current model as orchestrator-observer, and pass a model override only to subagents when the runtime supports it.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
+- When multiple same-lane specialist skills could apply, record `skill_decisions`: why one was selected, which alternatives were skipped, which skill to use for dissatisfied-user rework, and the actual feedback outcome.
 - For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.
 - Also record delivery `knowledge_sync`: `completed` when README/docs/AGENTS or memory were reconciled, `not_needed` when no durable knowledge changed, or `deferred` with a reason.
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
@@ -258,7 +259,7 @@ After changing skill files:
 2. Run `node scripts/test-omykit-workflow.mjs` when controller scripts or schemas changed.
 3. Run `node ./scripts/validate-docs.mjs`.
 4. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
-5. Run `./scripts/install-global.sh` to update the global Codex skill copy and controller files.
+5. Run `./scripts/install-global.sh` to update the global Codex skill copy and controller files; installed outputs must be real files/directories, not symlinks.
 6. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`.
 7. Review `git diff --check`.
 8. Commit and push only after the local and global copies are verified.

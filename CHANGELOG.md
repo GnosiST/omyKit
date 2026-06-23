@@ -4,6 +4,10 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added same-lane skill selection tracking: handoffs can record `skill_decisions` with rationale, alternatives, fallback policy, user feedback, and outcome; boards and scorecards now surface missing selection records and skill-based rework needs.
+- Added a global-install no-symlink invariant after reviewing Spec-Kit's Codex dev skill file-install update; omyKit install now rejects symlinked installed outputs.
+- Refreshed the Spec-Kit upstream baseline after reviewing Codex dev skill file-install behavior.
+- Refreshed the Sentry upstream baseline after reviewing cell-specific API gateway rollout, issue-search recommended ranking boosts, and consistent empty-description rendering; no additional omyKit workflow rule was promoted.
 - Added tracked-delivery knowledge sync review: delivery handoffs now record `knowledge_sync`, controller validation and scorecards audit it, boards show the result, and docs explain when to use installed `neat-freak` versus recording `not_needed`.
 - Refreshed OpenAI Codex and Sentry upstream baselines after reviewing dependency security updates, Sentry agent run-option inheritance, issue-search relevance, tracing shim changes, and a log-row unpin hover-state reset; no additional omyKit workflow rule was promoted.
 - Added thread/worktree assignment tracking for controller workflows: `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster board projection, assignment scorecard checks, assignment schema, tests, and English/Chinese docs.

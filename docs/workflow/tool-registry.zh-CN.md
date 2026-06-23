@@ -71,6 +71,8 @@
 
 当某个模式实质影响决策时，记录应用了哪个模式、哪个决策因此改变、是否调用了 specialist skill 或当前来源，以及是否复制了 licensed third-party content；如有，包含 license 和 attribution。
 
+当节点实际使用 specialist skill，且同类能力存在多个合理候选时，在 handoff `skill_decisions` 记录：能力线、选用 skill、选择依据、未选候选、用户不满意时的 `fallback_policy`、用户反馈和结果。用户不满意时，先按 `fallback_policy.next_skill` 做定向重做或修改；不要把同类 skill 全部叠加。反复有效或反复失败的选择经验进入 delivery `evolution_candidates`，由 `codex-workflow-evolution` 决定是否调整通用路由。
+
 ## 同类能力选择
 
 默认不要叠加调用同类 skill。先为下一步决策选择一个主能力；只有存在独立缺口时，才补一个更窄的次能力。
@@ -107,4 +109,4 @@
 
 ## 默认选择规则
 
-使用能回答下一个问题的最窄工具。如果某个工具会增加大量上下文但不改变下一步决策，就跳过它。
+使用能回答下一个问题的最窄工具。如果某个工具会增加大量上下文但不改变下一步决策，就跳过它。选择同类 skill 时按任务信号、交付物类型、风险、项目上下文、来源可信度和历史反馈综合判断；stars 和官方来源是准入/可信信号，不是自动优先级。

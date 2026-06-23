@@ -63,6 +63,7 @@ flowchart TD
 | 文档或研究交付物 | `codex-change-workflow` | `codex-context-budget`、`codex-delivery-gate`；只有持久或发布相关时才用 version readiness。 |
 | 发布准备 | `codex-delivery-gate` | `codex-version-readiness`、运行时检查、交付物类型门禁。 |
 | 阶段知识收口 | `codex-delivery-gate` | 只有 docs、AGENTS/CLAUDE 规则或记忆可能过期时才用 `neat-freak`；否则记录 `knowledge_sync.status=not_needed`。 |
+| 用户不满意 specialist 产物 | 当前主 workflow | 查看节点 `skill_decisions[].fallback_policy`，只把不满意的质量维度交给更合适的同类或窄能力 skill 重做。 |
 | 反复出现的 workflow 摩擦 | `codex-workflow-evolution` | `codex-context-budget`、相关 owner skill、validation scripts。 |
 
 ## 防冲突原则
@@ -74,6 +75,7 @@ flowchart TD
 - **change workflow vs delivery gate：**change workflow 产出交付物，delivery gate 在完成前验证证据。
 - **delivery gate vs neat-freak：**delivery gate 判断交付证据；neat-freak 只在需要时同步知识面，并记录 `knowledge_sync`。
 - **delivery gate vs workflow evolution：**delivery gate 捕获证据，workflow evolution 判断证据是否应进入通用 omyKit。
+- **skills_used vs skill_decisions：**`skills_used` 记录实际调用，`skill_decisions` 记录为什么这样选、没选谁和用户不满意时如何换；它不替代路由器，也不要求没有同类竞争的节点伪造记录。
 - **context budget vs 其他 skill：**context budget 限制读取和工具输出，不覆盖 specialist workflow。
 
 如果一个任务看起来需要很多 skills，先确定主 workflow，再只加入会影响下一步决策的支持检查。

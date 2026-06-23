@@ -84,6 +84,13 @@ checks:
     severity: recommended
     evidence:
       type: skills_used_recorded
+  - id: skill-selection-decision-recorded
+    title:
+      en: Terminal nodes explain same-lane skill selection and fallback
+      zh-CN: 终态节点说明同类 skill 选择和替换策略
+    severity: recommended
+    evidence:
+      type: skill_selection_decision_recorded
   - id: required-not-failed
     title:
       en: Required nodes are not failed or blocked

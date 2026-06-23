@@ -71,6 +71,8 @@ Use an installed specialist skill directly inside the current route only when it
 
 When a pattern materially changes a decision, record which pattern was applied, what decision changed, whether a specialist skill or current source was used, and whether any licensed third-party content was copied with license and attribution.
 
+When a node uses a specialist skill and multiple same-lane candidates would be reasonable, record handoff `skill_decisions`: capability lane, selected skill, selection basis, skipped alternatives, `fallback_policy` for user dissatisfaction, user feedback, and outcome. If the user is dissatisfied, follow `fallback_policy.next_skill` for targeted rework; do not stack every same-lane skill. Repeatedly effective or ineffective selection lessons become delivery `evolution_candidates` for `codex-workflow-evolution` to decide whether generic routing should change.
+
 ## Same-Lane Selection
 
 Do not stack same-lane skills by default. Choose one primary capability for the next decision, then add a narrower secondary capability only when it covers a separate gap.
@@ -107,4 +109,4 @@ Use `codex-version-readiness` when a target project needs traceable history, rel
 
 ## Default Selection Rule
 
-Use the narrowest tool that can answer the next question. If a tool would add broad context but not change the next decision, skip it.
+Use the narrowest tool that can answer the next question. If a tool would add broad context but not change the next decision, skip it. For same-lane skills, weigh task signals, deliverable type, risk, project context, source trust, and historical feedback; stars and official sources are admission/trust signals, not automatic priority.

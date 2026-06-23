@@ -30,12 +30,13 @@ Passed delivery nodes must include `evolution_candidates`. An empty array means 
 
 The board shows candidates and turns `generic_omykit` candidates into improvement actions. Scorecards require delivery nodes to record the review but do not require every delivery to produce a generic lesson.
 
-This is separate from delivery `knowledge_sync`: `evolution_candidates` decide whether omyKit itself should change; `knowledge_sync` records whether README, docs, AGENTS/CLAUDE rules, or memory were reconciled for the current project handoff.
+This is separate from delivery `knowledge_sync` and node-level `skill_decisions`: `evolution_candidates` decide whether omyKit itself should change; `knowledge_sync` records whether README, docs, AGENTS/CLAUDE rules, or memory were reconciled for the current project handoff; `skill_decisions` record same-lane skill selection, fallback, and user feedback. Promote only repeated effective or ineffective selection lessons into generic candidates.
 
 ## Evidence Sources
 
 - repeated user feedback
 - repeated missed route or tool choice
+- repeated dissatisfaction, improved fallback, or same-lane skill-selection misses recorded in `skill_decisions`
 - stale docs found during handoff
 - validation failure or recurring broken links
 - delivery gate miss

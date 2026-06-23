@@ -37,6 +37,22 @@ if [ ! -d "$source_root/workflow-templates" ]; then
   exit 1
 fi
 
+assert_no_symlinks() {
+  local target="$1"
+  if [ -L "$target" ]; then
+    echo "Installed omyKit target must be a real file or directory, not a symlink: $target" >&2
+    exit 1
+  fi
+  if [ -d "$target" ]; then
+    local first_link
+    first_link="$(find "$target" -type l -print -quit)"
+    if [ -n "$first_link" ]; then
+      echo "Installed omyKit target contains a symlink: $first_link" >&2
+      exit 1
+    fi
+  fi
+}
+
 "$repo_root/scripts/validate-skills.sh" "$source_root"
 node "$source_root/scripts/omykit-workflow.mjs" templates validate >/dev/null
 
@@ -132,6 +148,7 @@ for skill_dir in "$source_root"/skills/*; do
     mv "$target_skill" "$backup_skill"
   fi
   if mv "$tmp_skill" "$target_skill"; then
+    assert_no_symlinks "$target_skill"
     rm -rf "$backup_skill"
   else
     if [ -e "$backup_skill" ]; then
@@ -149,6 +166,7 @@ if [ -e "$target_prompt" ]; then
   mv "$target_prompt" "$backup_prompt"
 fi
 if mv "$tmp_prompt" "$target_prompt"; then
+  assert_no_symlinks "$target_prompt"
   rm -f "$backup_prompt"
 else
   if [ -e "$backup_prompt" ]; then
@@ -166,6 +184,7 @@ if [ -e "$target_controller" ]; then
 fi
 if mv "$tmp_controller" "$target_controller"; then
   chmod +x "$target_controller"
+  assert_no_symlinks "$target_controller"
   rm -f "$backup_controller"
 else
   if [ -e "$backup_controller" ]; then
@@ -183,6 +202,7 @@ if [ -d "$codex_home/omykit/schemas" ]; then
   mv "$codex_home/omykit/schemas" "$backup_schema_dir"
 fi
 if mv "$tmp_schema_dir" "$codex_home/omykit/schemas"; then
+  assert_no_symlinks "$codex_home/omykit/schemas"
   rm -rf "$backup_schema_dir"
 else
   if [ -d "$backup_schema_dir" ]; then
@@ -199,6 +219,7 @@ if [ -d "$codex_home/omykit/workflow-templates" ]; then
   mv "$codex_home/omykit/workflow-templates" "$backup_template_dir"
 fi
 if mv "$tmp_template_dir" "$codex_home/omykit/workflow-templates"; then
+  assert_no_symlinks "$codex_home/omykit/workflow-templates"
   rm -rf "$backup_template_dir"
 else
   if [ -d "$backup_template_dir" ]; then

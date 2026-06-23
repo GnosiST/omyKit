@@ -31,7 +31,7 @@
       "id": "spec-kit",
       "repo": "github/spec-kit",
       "url": "https://github.com/github/spec-kit.git",
-      "baseline": "59ffa918df3b621439fd58a6646dc9f73998b682",
+      "baseline": "0c975bbef79e307b360e7946aa0551c2938443ea",
       "role": "Official Spec Kit reference for project constitution, specification-driven development, and strict durable-project workflow",
       "verification": {
         "owner": "github",
@@ -361,7 +361,7 @@
       "id": "sentry",
       "repo": "getsentry/sentry",
       "url": "https://github.com/getsentry/sentry.git",
-      "baseline": "9d64c67291d7ede98eb887a5bf1b0fcc06ccbbdf",
+      "baseline": "5b1e731f9fb950e7ecf76b2f07186e8b69c97756",
       "role": "Official Sentry source reference for observability and deployed-runtime failure investigation",
       "verification": {
         "owner": "getsentry",
