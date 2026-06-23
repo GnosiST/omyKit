@@ -139,7 +139,7 @@ For long or Strict work, omyKit can persist a task graph under `.omykit/workflow
 
 The controller is local and deterministic. It does not call models, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows status columns, dependency flow, reject edges, worker lanes, node contracts, blockers, decisions, retries, and recent ledger events without introducing a server or database.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows project snapshot, Git branch/commit/status, active changes, key files, recent commits, status columns, dependency flow, reject edges, worker lanes, node handoff summaries, verification evidence, blockers, decisions, retries, and recent ledger events without introducing a server or database.
 
 ## Workflow Model
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -78,6 +78,21 @@ const BOARD_LABELS = {
     recentEvents: "Recent Events",
     projection: "Board Projection",
     generated: "generated",
+    projectSnapshot: "Project Snapshot",
+    projectPath: "Project path",
+    gitBranch: "Git branch",
+    gitCommit: "Git commit",
+    gitDirty: "Working tree",
+    dirty: "dirty",
+    clean: "clean",
+    activeChanges: "Active changes",
+    recentCommits: "Recent commits",
+    keyFiles: "Key files",
+    topLevel: "Top-level structure",
+    workflowFiles: "Workflow files",
+    handoffSummary: "Handoff Summary",
+    verification: "Verification",
+    noActiveChanges: "No active tracked changes",
     type: "Type",
     worker: "Worker",
     claimed: "Claimed",
@@ -140,6 +155,21 @@ const BOARD_LABELS = {
     recentEvents: "最近事件",
     projection: "看板投影数据",
     generated: "生成于",
+    projectSnapshot: "项目快照",
+    projectPath: "项目路径",
+    gitBranch: "Git 分支",
+    gitCommit: "Git 提交",
+    gitDirty: "工作区",
+    dirty: "有改动",
+    clean: "干净",
+    activeChanges: "当前改动",
+    recentCommits: "最近提交",
+    keyFiles: "关键文件",
+    topLevel: "顶层结构",
+    workflowFiles: "工作流文件",
+    handoffSummary: "交接摘要",
+    verification: "验证",
+    noActiveChanges: "没有已跟踪改动",
     type: "类型",
     worker: "Worker",
     claimed: "负责人",
@@ -184,6 +214,15 @@ function ensureDir(dir) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function readJsonIfExists(file) {
+  if (!fs.existsSync(file)) return null;
+  try {
+    return readJson(file);
+  } catch {
+    return null;
+  }
 }
 
 function writeJson(file, value) {
@@ -265,6 +304,10 @@ function resolveWorkflowDir(options = {}) {
 function relativeToWorkflow(workflowDir, file) {
   const relative = path.relative(workflowDir, file);
   return relative.startsWith("..") ? file : relative;
+}
+
+function projectRootFromWorkflow(workflowDir) {
+  return path.dirname(path.dirname(path.dirname(workflowDir)));
 }
 
 function loadWorkflow(workflowDir) {
@@ -739,6 +782,101 @@ function readTextIfExists(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
 }
 
+function runOptional(command, args, cwd) {
+  try {
+    return execFileSync(command, args, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function parseGitStatus(output) {
+  if (!output) return [];
+  return output
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      const normalized = line[2] === " " ? line : ` ${line}`;
+      return {
+        status: normalized.slice(0, 2).trim() || "modified",
+        path: normalized.slice(3).trim(),
+      };
+    });
+}
+
+function firstMarkdownHeading(file) {
+  const text = readTextIfExists(file);
+  const heading = text.split(/\r?\n/).find((line) => /^#\s+/.test(line));
+  return heading ? heading.replace(/^#\s+/, "").trim() : null;
+}
+
+function listExistingFiles(root, candidates) {
+  return candidates
+    .filter((candidate) => fs.existsSync(path.join(root, candidate)))
+    .map((candidate) => {
+      const absolute = path.join(root, candidate);
+      return { path: candidate, type: fs.statSync(absolute).isDirectory() ? "dir" : "file" };
+    });
+}
+
+function topLevelEntries(root, limit = 24) {
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => ![".git", ".omykit", "node_modules", ".venv", "dist", "build", "coverage"].includes(entry.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, limit)
+    .map((entry) => ({ name: entry.name, type: entry.isDirectory() ? "dir" : "file" }));
+}
+
+function buildProjectSnapshot(workflowDir, graph) {
+  const root = projectRootFromWorkflow(workflowDir);
+  const packageJson = readJsonIfExists(path.join(root, "package.json"));
+  const status = parseGitStatus(runOptional("git", ["status", "--short"], root));
+  const recentCommits = (runOptional("git", ["log", "--oneline", "-5"], root) || "")
+    .split(/\r?\n/)
+    .filter(Boolean);
+
+  return {
+    name: packageJson?.name || firstMarkdownHeading(path.join(root, "README.md")) || path.basename(root),
+    description: packageJson?.description || null,
+    root,
+    relative_workflow_dir: path.relative(root, workflowDir),
+    workflow_id: graph.workflow_id,
+    workflow_title: graph.title,
+    git: {
+      branch: runOptional("git", ["rev-parse", "--abbrev-ref", "HEAD"], root),
+      commit: runOptional("git", ["rev-parse", "--short", "HEAD"], root),
+      remote: runOptional("git", ["config", "--get", "remote.origin.url"], root),
+      dirty: status.length > 0,
+      status,
+      recent_commits: recentCommits,
+    },
+    key_files: listExistingFiles(root, [
+      "AGENTS.md",
+      "README.md",
+      "README.zh-CN.md",
+      "CHANGELOG.md",
+      "VERSION",
+      "package.json",
+      "pnpm-lock.yaml",
+      "package-lock.json",
+      "pyproject.toml",
+      "Cargo.toml",
+      "go.mod",
+      "docs",
+      "skills",
+      "scripts",
+      "schemas",
+    ]),
+    top_level: topLevelEntries(root),
+  };
+}
+
 function readMarkdownItems(file, limit = 8) {
   return readTextIfExists(file)
     .split(/\r?\n/)
@@ -873,6 +1011,7 @@ function projectNode(state, cards, handoffs, node) {
     retry_outgoing: retry.outgoing,
     last_handoff: entry.last_handoff || handoff?.path || null,
     handoff_status: handoff?.status || null,
+    handoff_summary: handoff?.summary || null,
     evidence_status: evidenceStatus(entry, handoff),
     objective: card.objective || nodeObjective(node),
     depends_on: node.depends_on || [],
@@ -886,6 +1025,7 @@ function projectNode(state, cards, handoffs, node) {
       evidence: item.evidence || null,
     })),
     outputs: card.allowed_outputs || [],
+    handoff_outputs: handoff?.outputs || [],
     evidence_paths: collectEvidencePaths(handoff),
     open_risks: ["failed", "blocked"].includes(entry.status) && entry.reason ? [entry.reason] : [],
     non_blocking_notes: [],
@@ -1094,6 +1234,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     mode: graph.mode,
     language,
     generated_at: now(),
+    project: buildProjectSnapshot(workflowDir, graph),
     summary: {
       total: projectedNodes.length,
       completion_percent: completionPercent(counts, projectedNodes.length),
@@ -1151,6 +1292,23 @@ function renderMetric(label, value) {
   return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
+function renderInlineItems(items, empty) {
+  if (!items || items.length === 0) return `<span class="muted">${escapeHtml(empty)}</span>`;
+  return items.map((item) => `<code>${escapeHtml(item)}</code>`).join(" ");
+}
+
+function renderStatusItems(items, empty) {
+  if (!items || items.length === 0) return `<p class="muted">${escapeHtml(empty)}</p>`;
+  return `<div class="status-list">${items
+    .map((item) => `<div><code>${escapeHtml(item.status)}</code> ${escapeHtml(item.path)}</div>`)
+    .join("")}</div>`;
+}
+
+function truncateText(value, limit = 150) {
+  const text = String(value || "");
+  return text.length > limit ? `${text.slice(0, limit - 1)}...` : text;
+}
+
 function statusTitle(status, text) {
   return text[status] || status;
 }
@@ -1162,6 +1320,7 @@ function renderNodeCard(node, text) {
       <span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span>
     </div>
     <div class="node-title">${escapeHtml(node.title)}</div>
+    ${node.handoff_summary ? `<p class="node-summary">${escapeHtml(truncateText(node.handoff_summary))}</p>` : ""}
     <dl>
       <dt>${escapeHtml(text.type)}</dt><dd>${escapeHtml(node.type)}</dd>
       <dt>${escapeHtml(text.worker)}</dt><dd>${escapeHtml(node.worker_profile)}</dd>
@@ -1195,9 +1354,10 @@ function renderBoardHtml(board) {
       <summary><strong>${escapeHtml(node.id)}</strong> ${escapeHtml(node.title)}</summary>
       <div class="detail-grid">
         <section><h4>${escapeHtml(text.objective)}</h4><p>${escapeHtml(node.objective)}</p></section>
+        <section><h4>${escapeHtml(text.handoffSummary)}</h4><p>${escapeHtml(node.handoff_summary || text.none)}</p></section>
         <section><h4>${escapeHtml(text.dependsOn)}</h4>${renderList(node.depends_on, text.none)}</section>
         <section><h4>${escapeHtml(text.acceptance)}</h4>${renderList(node.acceptance, text.none)}</section>
-        <section><h4>${escapeHtml(text.outputs)}</h4>${renderList(node.outputs, text.none)}</section>
+        <section><h4>${escapeHtml(text.outputs)}</h4>${renderList(node.handoff_outputs.length > 0 ? node.handoff_outputs : node.outputs, text.none)}</section>
         <section><h4>${escapeHtml(text.requiredChecks)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderList(node.evidence_paths, text.none)}</section>
         <section><h4>${escapeHtml(text.openRisks)}</h4>${renderList(node.open_risks, text.none)}</section>
@@ -1205,6 +1365,10 @@ function renderBoardHtml(board) {
       </div>
     </details>`)
     .join("");
+  const project = board.project || {};
+  const git = project.git || {};
+  const keyFileItems = (project.key_files || []).map((item) => item.path);
+  const topLevelItems = (project.top_level || []).map((item) => `${item.type === "dir" ? "/" : ""}${item.name}`);
 
   return `<!doctype html>
 <html lang="${escapeHtml(board.language === "zh-CN" ? "zh-CN" : "en")}">
@@ -1269,6 +1433,7 @@ function renderBoardHtml(board) {
     .node-card.skipped { border-left-color: var(--skipped); }
     .node-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
     .node-title { color: var(--muted); margin: 4px 0 8px; }
+    .node-summary { margin: 0 0 8px; color: var(--ink); overflow-wrap: anywhere; }
     .status { border-radius: 999px; color: #fff; font-size: 11px; padding: 2px 7px; background: var(--pending); }
     .status.ready { background: var(--ready); }
     .status.running { background: var(--running); }
@@ -1280,6 +1445,7 @@ function renderBoardHtml(board) {
     dt { color: var(--muted); }
     dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
     .edge-list { display: grid; gap: 6px; }
+    .status-list { display: grid; gap: 5px; }
     .edge { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; background: #fbfcfe; }
     .edge small { margin-left: auto; color: var(--muted); }
     .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
@@ -1321,6 +1487,39 @@ function renderBoardHtml(board) {
         ${renderMetric(text.passed, board.summary.passed)}
         ${renderMetric(text.skipped, board.summary.skipped)}
         ${renderMetric(text.pending, board.summary.pending)}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>${escapeHtml(text.projectSnapshot)}</h2>
+      <div class="detail-grid">
+        <section>
+          <h4>${escapeHtml(project.name || text.projectSnapshot)}</h4>
+          <p class="muted">${escapeHtml(project.description || project.workflow_title || "")}</p>
+          <dl>
+            <dt>${escapeHtml(text.projectPath)}</dt><dd>${escapeHtml(project.root || text.none)}</dd>
+            <dt>${escapeHtml(text.workflowFiles)}</dt><dd>${escapeHtml(project.relative_workflow_dir || text.none)}</dd>
+            <dt>${escapeHtml(text.gitBranch)}</dt><dd>${escapeHtml(git.branch || text.none)}</dd>
+            <dt>${escapeHtml(text.gitCommit)}</dt><dd>${escapeHtml(git.commit || text.none)}</dd>
+            <dt>${escapeHtml(text.gitDirty)}</dt><dd>${escapeHtml(git.dirty ? text.dirty : text.clean)}</dd>
+          </dl>
+        </section>
+        <section>
+          <h4>${escapeHtml(text.activeChanges)}</h4>
+          ${renderStatusItems(git.status, text.noActiveChanges)}
+        </section>
+        <section>
+          <h4>${escapeHtml(text.keyFiles)}</h4>
+          <p>${renderInlineItems(keyFileItems, text.none)}</p>
+        </section>
+        <section>
+          <h4>${escapeHtml(text.recentCommits)}</h4>
+          ${renderList(git.recent_commits, text.none)}
+        </section>
+        <section>
+          <h4>${escapeHtml(text.topLevel)}</h4>
+          <p>${renderInlineItems(topLevelItems, text.none)}</p>
+        </section>
       </div>
     </section>
 

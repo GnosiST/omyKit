@@ -90,7 +90,7 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示总控指标、状态列、依赖边、打回边、并行组、worker profile 分道、节点合同、blocker、decision、重试告警和最近 ledger 事件。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示总控指标、项目快照、Git 分支/提交/状态、当前改动、关键文件、最近提交、状态列、依赖边、打回边、并行组、worker profile 分道、节点合同、handoff 摘要、验证证据、blocker、decision、重试告警和最近 ledger 事件。
 
 使用 `--lang zh-CN` 可以生成简体中文看板标签。使用 `--open` 可以让 controller 尝试用系统默认浏览器打开 HTML。如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 

@@ -33,6 +33,8 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+fs.writeFileSync(path.join(tmpRoot, "README.md"), "# Feature X Project\n\nTemporary project context.\n");
+
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
 assert.match(initOutput, /Workflow created: feature-x/);
 
@@ -139,12 +141,17 @@ assert.match(boardOutput, /board\.html/);
 const board = readJson(path.join(dir, "board.json"));
 assert.equal(board.language, "zh-CN");
 assert.equal(board.summary.total, 6);
+assert.equal(board.project.name, "Feature X Project");
+assert.equal(board.project.workflow_id, "feature-x");
+assert.ok(Array.isArray(board.project.key_files));
+assert.ok(Array.isArray(board.project.git.status));
 assert.ok(Array.isArray(board.columns.ready));
 assert.ok(Array.isArray(board.flow.dependency_edges));
 assert.ok(Array.isArray(board.collaboration.worker_profiles));
 assert.ok(Array.isArray(board.risks.retry_alerts));
 assert.ok(Array.isArray(board.recent_events));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && /Intake captured/.test(node.handoff_summary)));
 assert.ok(board.columns.blocked.some((node) => node.id === "02-design"));
 assert.ok(board.flow.reject_edges.some((edge) => edge.from === "02-design" && edge.to === "01-intake"));
 assert.ok(board.collaboration.worker_profiles.some((lane) => lane.profile === "planner"));
@@ -154,7 +161,9 @@ assert.ok(!board.risks.blockers.some((line) => /Workflow:/.test(line)));
 assert.ok(!board.risks.decisions.some((line) => /Workflow:/.test(line)));
 const boardHtml = fs.readFileSync(path.join(dir, "board.html"), "utf8");
 assert.match(boardHtml, /总控中心/);
+assert.match(boardHtml, /项目快照/);
 assert.match(boardHtml, /协作泳道/);
+assert.match(boardHtml, /Intake captured/);
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log("omykit workflow tests passed");

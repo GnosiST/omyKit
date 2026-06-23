@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Upgraded the visual board from a generic workflow status view into a project-aware collaboration map with project snapshot, Git state, active changes, key files, recent commits, node handoff summaries, and verification evidence.
 - Dogfooded the controller and visual board on the omyKit repository itself; ignored local `.omykit/` state, filtered template metadata out of risk panels, and added `board --lang zh-CN` so Codex-first Chinese board requests render Chinese dashboard labels.
 - Refreshed the `openai/codex` upstream baseline after reviewing compact-remote style/test and Codex Apps manager flag cleanup changes; no omyKit workflow rule was promoted.
 - Refreshed the `getsentry/sentry` upstream baseline after reviewing a Sentry app external-form rename; no omyKit workflow rule was promoted.

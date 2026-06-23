@@ -90,7 +90,7 @@ It writes:
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows command center metrics, status columns, dependency and reject edges, parallel groups, worker profile lanes, node contracts, blockers, decisions, retry alerts, and recent ledger events.
+`board.json` is a stable projection for tools and tests. `board.html` is a self-contained dashboard you can open in a browser. It shows command center metrics, project snapshot, Git branch/commit/status, active changes, key files, recent commits, status columns, dependency and reject edges, parallel groups, worker profile lanes, node contracts, handoff summaries, verification evidence, blockers, decisions, retry alerts, and recent ledger events.
 
 Use `--lang zh-CN` to render Simplified Chinese board labels. Use `--open` to ask the controller to open the generated HTML with the system default browser. If the browser cannot be opened automatically, the files remain in place and the command prints the HTML path.
 
