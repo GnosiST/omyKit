@@ -24,6 +24,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node and show the actual recorded model when the runtime exposes it.
+- **Subagent dispatch planning:** keep the main Codex thread as an orchestrator-observer, dispatch bounded workers from ready nodes, and use model overrides only when the subagent runtime exposes them.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -82,6 +83,7 @@ $omykit 开始一个需求
 $omykit 开始执行：<long task>
 $omykit 只创建工作流：<task>
 $omykit 继续工作流
+$omykit 派发计划
 $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 查看工作流状态
@@ -150,7 +152,7 @@ See [Skill coordination](docs/workflow/skill-coordination.md) for what each inte
 
 For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, generate a static collaboration board, and support compact recovery.
 
-The controller is local and deterministic. It does not call models, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
@@ -169,6 +171,7 @@ Operational rules:
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - Creating a tracked workflow is not task completion; for long work, continue `start -> work -> handoff -> complete/reject/block/unblock -> next/resume` until delivery passes or a real blocker is recorded.
+- For multi-agent work, use `dispatch-plan` first; keep the main thread on its current model as orchestrator-observer, and pass a model override only to subagents when the runtime supports it.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
 - For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.

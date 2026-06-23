@@ -14,6 +14,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `只创建工作流`, `只初始化 workflow`, `先建骨架`, `不要执行`, `skeleton only` | `controller` skeleton only |
 | `使用 bugfix 模板`, `使用 UI 模板`, `查看 workflow 模板`, `templates list` | `controller` |
 | `查看进度`, `工作流状态`, `下一步`, `当前节点`, `继续工作流`, `解除阻塞`, `resume workflow`, `unblock workflow` | `controller` |
+| `派发计划`, `子智能体执行计划`, `并行执行计划`, `dispatch plan`, `subagent plan` | `controller` |
 | `scorecard`, `验票`, `审计工作流证据`, `检查证据` | `controller` |
 | `生成看板`, `打开看板`, `workflow board`, `visual board` | `controller` |
 | `初始化项目`, `新项目`, `从零开始`, `start new project` | `init` |
@@ -37,6 +38,8 @@ $omykit 创建并执行工作流：测试 MVP1 角色权限
 $omykit 只创建工作流：整理发布计划
 $omykit 继续工作流
 $omykit 推进下一步
+$omykit 派发计划
+$omykit 子智能体执行计划
 $omykit 解除阻塞
 $omykit 阻塞已解决，继续执行
 $omykit 修 bug：登录后跳转错误

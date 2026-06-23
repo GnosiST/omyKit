@@ -38,6 +38,7 @@ Map user intent to commands:
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
 - progress/status -> `status`
 - next work -> `next`
+- subagent dispatch planning -> `dispatch-plan --lang <user-language>`; use `--json` when you need a machine-readable plan for spawning agents
 - continue after interruption -> `resume`
 - validate workflow files -> `validate`
 - scorecard audit -> `scorecard --lang <user-language>`
@@ -68,6 +69,7 @@ Include these concise groups:
 - execute long work: `$omykit 开始执行：<任务>`, `$omykit 创建并执行工作流：<任务>`, `$omykit 继续工作流`, `$omykit 推进下一步`
 - skeleton only: `$omykit 只创建工作流：<任务>`, `$omykit 只初始化 workflow：<任务>`
 - tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`
+- subagents: `$omykit 派发计划`, `$omykit 子智能体执行计划`, `$omykit 并行执行计划`
 - task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
@@ -148,7 +150,11 @@ Read [commands.md](references/commands.md) for supported natural-language entry 
 
 ## Agent And Cost Signals
 
-Use subagents only when work can be split into independent, bounded scopes. Name each agent clearly in handoff `agent_activity`, record role/scope/task/status, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Let the active workflow `model_profile` provide concrete model recommendations, but record actual provider/model only when the runtime exposes it through handoff `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, or `agent_activity[].token_usage.model`. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If exact token, context, or actual-model metrics are unavailable, leave them missing; do not invent usage numbers.
+Use subagents only when work can be split into independent, bounded scopes. For tracked long work, keep the main Codex thread as an orchestrator-observer: it reads workflow state, creates or reads a dispatch plan, starts/blocks/completes nodes, integrates handoffs, audits scorecards, and escalates only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main context. Spawn subagents with bounded node context instead.
+
+When the runtime exposes subagent tools with a `model` parameter, map the node's `recommended_model` to the lowest sufficient model override and pass it to the subagent. When the runtime does not expose model override, omit the override, inherit the main model, and record the recommendation/actual-model gap. The controller recommends models but does not call or switch models by itself.
+
+Name each agent clearly in handoff `agent_activity`, record role/scope/task/status/mode, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Let the active workflow `model_profile` provide concrete model recommendations, but record actual provider/model only when the runtime exposes it through handoff `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, `agent_activity[].model_provider`, or `agent_activity[].token_usage.model`. If the runtime hides the actual model, write `agent_activity[].model_unavailable_reason` instead of inventing a value. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
 
 ## Workflow Templates And Scorecards
 

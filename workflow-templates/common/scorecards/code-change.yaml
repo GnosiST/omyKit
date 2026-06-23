@@ -91,6 +91,13 @@ checks:
     severity: recommended
     evidence:
       type: model_usage_recorded
+  - id: subagent-model-recorded-or-explained
+    title:
+      en: Subagent activities record or explain actual model usage
+      zh-CN: 子智能体活动记录或说明实际模型
+    severity: recommended
+    evidence:
+      type: subagent_model_recorded_or_explained
   - id: board-language
     title:
       en: Board language follows workflow language

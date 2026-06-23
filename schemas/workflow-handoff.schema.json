@@ -548,7 +548,15 @@
             "type": "string",
             "minLength": 1
           },
+          "model_provider": {
+            "type": "string",
+            "minLength": 1
+          },
           "model_selection_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_unavailable_reason": {
             "type": "string",
             "minLength": 1
           },

@@ -79,10 +79,11 @@ pending -> ready -> running -> passed
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
 - handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据、skill 使用记录，以及可用时的 token 消耗、上下文用量和时间戳。
+- `dispatch-plan` 是两者之间的桥：它读取就绪节点和模型策略，返回一个有边界的子智能体派发计划，供 Codex 在子智能体工具可用时执行。
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
 
-用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。
+用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。如果 Codex 子智能体工具暴露 `model` 参数，主控可以把派发计划里的 override 传给子智能体；否则子智能体继承主模型，并在实际模型元数据被隐藏时记录 `model_unavailable_reason`。
 
 ## 重试限制
 

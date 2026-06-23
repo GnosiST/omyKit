@@ -79,10 +79,11 @@ For multi-agent work, treat this as two layers:
 
 - `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
 - `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, skill usage, token usage, context usage, and timestamps when available.
+- `dispatch-plan` is the bridge between the two: it reads ready nodes and model policy, then returns a bounded subagent plan for Codex to execute when subagent tools are available.
 
 Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
 
-Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. The active `model_profile` maps tiers to recommended concrete models and may add node-specific overrides. Record actual provider/model names only in handoff execution metadata, because the controller recommends but does not call models.
+Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. The active `model_profile` maps tiers to recommended concrete models and may add node-specific overrides. Record actual provider/model names only in handoff execution metadata, because the controller recommends but does not call models. If Codex subagent tools expose a `model` parameter, the main orchestrator may pass the dispatch plan's override to the subagent; otherwise the subagent inherits the main model and should record `model_unavailable_reason` when actual model metadata is hidden.
 
 ## Retry Limits
 

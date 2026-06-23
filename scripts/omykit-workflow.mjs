@@ -129,6 +129,7 @@ const BOARD_LABELS = {
     route: "Route",
     workflowShape: "Workflow shape",
     controller: "Controller",
+    controllerRole: "Controller role",
     enabled: "enabled",
     disabled: "disabled",
     assumptions: "Assumptions",
@@ -325,6 +326,7 @@ const BOARD_LABELS = {
     route: "路由",
     workflowShape: "执行形态",
     controller: "控制器",
+    controllerRole: "控制器角色",
     enabled: "已启用",
     disabled: "未启用",
     assumptions: "关键假设",
@@ -749,6 +751,15 @@ function loadModelProfileDefinition(profileId) {
   return profiles.find((profile) => profile.id === profileId) || null;
 }
 
+function loadSafetyLimitDefinition(limitId) {
+  if (!limitId) return null;
+  const file = path.join(templatesRoot(), "common", "safety-limits.yaml");
+  if (!fs.existsSync(file)) return null;
+  const doc = readYaml(file);
+  const limits = Array.isArray(doc.safety_limits) ? doc.safety_limits : [];
+  return limits.find((limit) => limit.id === limitId) || null;
+}
+
 function defaultRecommendedModel(tier, language = "en") {
   const byTier = {
     fast: {
@@ -912,6 +923,7 @@ function compileTemplateToGraph(template, input) {
     created_at: now(),
     metadata: {
       controller: "omykit-workflow",
+      controller_role: "orchestrator-observer",
       language,
       template_id: template.template_id || input.templateId || DEFAULT_TEMPLATE_ID,
       template_version: template.template_version || null,
@@ -1022,6 +1034,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs validate [--workflow workflow-id]
   node scripts/omykit-workflow.mjs scorecard [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs start <node-id> [--workflow workflow-id]
@@ -1037,6 +1050,7 @@ Codex chat intents:
   $omykit 创建工作流：<任务>     create a workflow, then continue unless you say "只创建"
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
   $omykit 继续工作流             resume, start the next ready node, and write handoffs as work completes
+  $omykit 派发计划               show which ready nodes can be delegated and which model to recommend
   $omykit 解除阻塞               unblock a blocked node after the blocker is resolved
   $omykit 下一步                 show the next ready node
   $omykit 查看进度               show status, blockers, failed nodes, and the next command
@@ -1794,7 +1808,7 @@ function validateTaskTrackingFields(handoff) {
         if (item.model_tier !== undefined && !MODEL_TIERS.has(item.model_tier)) {
           errors.push(`handoff.agent_activity[${index}].model_tier must be one of ${[...MODEL_TIERS].join(", ")}`);
         }
-        for (const field of ["model", "model_selection_reason"]) {
+        for (const field of ["model", "model_provider", "model_selection_reason", "model_unavailable_reason"]) {
           if (item[field] !== undefined && typeof item[field] !== "string") {
             errors.push(`handoff.agent_activity[${index}].${field} must be a string`);
           }
@@ -2581,7 +2595,9 @@ function normalizeAgentActivity(handoff) {
     mode: item.mode || "subagent",
     model_tier: item.model_tier || null,
     model: item.model || null,
+    model_provider: item.model_provider || null,
     model_selection_reason: item.model_selection_reason || null,
+    model_unavailable_reason: item.model_unavailable_reason || null,
     started_at: item.started_at || null,
     completed_at: item.completed_at || null,
     evidence: Array.isArray(item.evidence) ? item.evidence : [],
@@ -2641,7 +2657,7 @@ function actualModelRecords(handoff, tokenUsage, agentActivity) {
     if (activity.model) {
       records.push({
         model: activity.model,
-        provider: fallbackProvider,
+        provider: activity.model_provider || fallbackProvider,
         model_tier: activity.model_tier || null,
         source: "agent_activity",
         reason: activity.model_selection_reason || null,
@@ -3629,6 +3645,15 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, language) 
         .map(({ node }) => node.id);
       return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "部分子智能体活动缺少 role/scope/task/status。" : "Some agent activities lack role/scope/task/status.");
     }
+    case "subagent_model_recorded_or_explained": {
+      const activities = projectedNodes.flatMap((node) => node.agent_activity.map((activity) => ({ node, activity })))
+        .filter(({ activity }) => activity.mode === "subagent");
+      if (activities.length === 0) return pending();
+      const failing = activities
+        .filter(({ activity }) => !activity.model && !activity.token_usage?.model && !activity.model_unavailable_reason)
+        .map(({ node }) => node.id);
+      return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "子智能体活动需要记录实际模型，或说明运行时没有暴露模型。" : "Subagent activity must record the actual model or explain why the runtime did not expose it.");
+    }
     case "skills_used_recorded": {
       if (terminalNodes.length === 0) return pending();
       const failing = terminalNodes.filter((node) => node.skills_used.length === 0).map((node) => node.id);
@@ -3750,6 +3775,10 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       description: graph.metadata?.template_description || null,
       layers: graph.metadata?.layers || {},
     },
+    controller: {
+      name: graph.metadata?.controller || "omykit-workflow",
+      role: graph.metadata?.controller_role || "observer",
+    },
     project,
     summary: {
       total: projectedNodes.length,
@@ -3801,6 +3830,163 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     improvement_plan: recommendations,
     recent_events: recentEvents,
   };
+}
+
+const SUBAGENT_READY_NODE_TYPES = new Set(["research", "design", "plan", "implement", "verify", "review"]);
+
+function codexModelOverrideName(model) {
+  const normalized = String(model || "").trim().toLowerCase().replace(/\s+/g, "-");
+  if (!normalized) return null;
+  if (normalized.includes("5.5")) return "gpt-5.5";
+  if (normalized.includes("5.4-mini")) return "gpt-5.4-mini";
+  if (normalized.includes("5.4")) return "gpt-5.4";
+  if (normalized.includes("5.3") || normalized.includes("codex-spark")) return "gpt-5.3-codex-spark";
+  return null;
+}
+
+function dispatchAgentType(node) {
+  return node.type === "research" ? "explorer" : "worker";
+}
+
+function dispatchEligibility(node, language) {
+  const isZh = language === "zh-CN";
+  if (node.owner && node.owner !== "codex") {
+    return {
+      eligible: false,
+      reason: isZh ? `owner=${node.owner}，不应由 Codex 子智能体接管。` : `owner=${node.owner}; do not delegate to a Codex subagent.`,
+    };
+  }
+  if (!SUBAGENT_READY_NODE_TYPES.has(node.type)) {
+    return {
+      eligible: false,
+      reason: isZh ? `${node.type} 节点适合主控收口或人工决策。` : `${node.type} nodes should stay with the main orchestrator or human decision path.`,
+    };
+  }
+  if (node.claimed_by && !/^codex|main|orchestrator$/i.test(node.claimed_by)) {
+    return {
+      eligible: false,
+      reason: isZh ? `已由 ${node.claimed_by} 认领；先确认是否接管。` : `Already claimed by ${node.claimed_by}; confirm takeover before dispatch.`,
+    };
+  }
+  return {
+    eligible: true,
+    reason: isZh ? "节点范围独立，可交给子智能体执行，并由主控集成结果。" : "Independent node scope; safe to delegate and let the main orchestrator integrate the result.",
+  };
+}
+
+function nodeContextPack(node) {
+  const pack = [
+    "state.json",
+    "graph.json",
+    `nodes/${node.id}.json`,
+  ];
+  for (const dependency of node.depends_on || []) pack.push(`handoffs/${dependency}.json or evidence summary`);
+  return pack;
+}
+
+function buildDispatchPlan(board) {
+  const language = board.language || "en";
+  const isZh = language === "zh-CN";
+  const safetyId = board.template?.layers?.safety_limits || null;
+  const safety = loadSafetyLimitDefinition(safetyId);
+  const maxParallel = Number.isFinite(safety?.max_parallel_running_nodes) ? safety.max_parallel_running_nodes : null;
+  const runningCount = board.columns.running.length;
+  let availableSlots = maxParallel === null ? board.columns.ready.length : Math.max(0, maxParallel - runningCount);
+  const ready = board.columns.ready.map((node) => {
+    const eligibility = dispatchEligibility(node, language);
+    const canStartNow = eligibility.eligible && availableSlots > 0;
+    if (canStartNow) availableSlots -= 1;
+    const modelOverride = codexModelOverrideName(node.recommended_model);
+    const executor = canStartNow ? "subagent" : eligibility.eligible ? "wait_for_parallel_slot" : "main-thread";
+    return {
+      node_id: node.id,
+      title: node.display_title || node.title,
+      type: node.type,
+      status: node.status,
+      executor,
+      agent_type: canStartNow ? dispatchAgentType(node) : null,
+      worker_profile: node.worker_profile || null,
+      agent: node.agent || null,
+      parallel_group: node.parallel_group || null,
+      model_tier: node.model_tier,
+      recommended_model: node.recommended_model || null,
+      model_override: modelOverride,
+      model_override_policy: isZh
+        ? "仅当 Codex 子智能体工具支持 model 参数时传入；否则继承主模型并在 handoff 记录实际模型缺口。"
+        : "Pass only when the Codex subagent tool supports a model parameter; otherwise inherit the main model and record the actual-model gap in handoff.",
+      dispatch_reason: canStartNow
+        ? eligibility.reason
+        : eligibility.eligible
+          ? (isZh ? "已达到并行上限，等待运行中节点交付或解除占用。" : "Parallel limit reached; wait for a running node to hand off or free a slot.")
+          : eligibility.reason,
+      context_pack: nodeContextPack(node),
+      handoff_contract: {
+        required: true,
+        record_agent_activity: true,
+        record_actual_model_when_available: true,
+        record_token_and_context_when_available: true,
+      },
+    };
+  });
+  return {
+    schema_version: SCHEMA_VERSION,
+    workflow_id: board.workflow_id,
+    language,
+    generated_at: now(),
+    orchestrator: {
+      role: isZh
+        ? "主对话只做编排、观察、集成、验票和人工阻塞升级，不为单个子任务切换主模型。"
+        : "Main thread only orchestrates, observes, integrates, audits, and escalates human blockers; it does not switch the main model for individual subtasks.",
+      context_policy: isZh
+        ? "主控保留 workflow state、graph、ledger 和必要 handoff 摘要；子智能体只接收当前节点所需上下文包。"
+        : "Main thread keeps workflow state, graph, ledger, and necessary handoff summaries; subagents receive only the context pack needed for the node.",
+      model_policy: isZh
+        ? "controller 推荐模型档位和具体模型；实际 spawn 时由 Codex 主控使用 model override（可用时）或继承主模型。"
+        : "Controller recommends model tier and concrete model; Codex orchestration uses model override when available or inherits the main model.",
+    },
+    safety: {
+      safety_limits: safetyId,
+      max_parallel_running_nodes: maxParallel,
+      running_nodes: runningCount,
+      dispatchable_slots: maxParallel === null ? null : Math.max(0, maxParallel - runningCount),
+      stop_conditions: safety?.stop_conditions || [],
+    },
+    runtime_capability: {
+      controller_calls_models: false,
+      controller_spawns_agents: false,
+      codex_subagent_model_override: "available_when_runtime_tool_supports_model_parameter",
+      fallback: "inherit_parent_model_and_record_recommended_vs_actual_gap",
+    },
+    ready_dispatches: ready,
+    running_nodes: board.columns.running.map((node) => ({ node_id: node.id, title: node.display_title || node.title, claimed_by: node.claimed_by || null })),
+    failed_nodes: board.columns.failed.map((node) => ({ node_id: node.id, title: node.display_title || node.title, reason: node.reason || node.handoff_summary || null })),
+    blocked_nodes: board.columns.blocked.map((node) => ({ node_id: node.id, title: node.display_title || node.title, reason: node.reason || node.handoff_summary || null })),
+  };
+}
+
+function printDispatchPlan(plan) {
+  const isZh = plan.language === "zh-CN";
+  console.log(`${isZh ? "派发计划" : "Dispatch plan"}: ${plan.workflow_id}`);
+  console.log(`${isZh ? "主控角色" : "Main thread"}: ${plan.orchestrator.role}`);
+  console.log(`${isZh ? "上下文策略" : "Context policy"}: ${plan.orchestrator.context_policy}`);
+  console.log(`${isZh ? "模型策略" : "Model policy"}: ${plan.orchestrator.model_policy}`);
+  console.log(`${isZh ? "并行上限" : "Parallel limit"}: ${plan.safety.max_parallel_running_nodes ?? "unlimited"}; ${isZh ? "运行中" : "running"}: ${plan.safety.running_nodes}; ${isZh ? "可派发槽位" : "dispatchable slots"}: ${plan.safety.dispatchable_slots ?? "unlimited"}`);
+  console.log(isZh ? "就绪派发:" : "Ready dispatches:");
+  if (plan.ready_dispatches.length === 0) {
+    console.log(isZh ? "无" : "none");
+  } else {
+    for (const item of plan.ready_dispatches) {
+      console.log(`- ${item.node_id} ${item.title} | executor=${item.executor} | agent_type=${item.agent_type || "none"} | worker=${item.worker_profile || "none"} | tier=${item.model_tier || "none"} | recommended=${item.recommended_model || "none"} | override=${item.model_override || "inherit"}`);
+      console.log(`  ${isZh ? "原因" : "Reason"}: ${item.dispatch_reason}`);
+      console.log(`  ${isZh ? "上下文包" : "Context pack"}: ${item.context_pack.join(", ")}`);
+    }
+  }
+  if (plan.failed_nodes.length > 0) {
+    console.log(`${isZh ? "失败节点" : "Failed nodes"}: ${plan.failed_nodes.map((node) => node.node_id).join(", ")}`);
+  }
+  if (plan.blocked_nodes.length > 0) {
+    console.log(`${isZh ? "阻塞节点" : "Blocked nodes"}: ${plan.blocked_nodes.map((node) => node.node_id).join(", ")}`);
+  }
 }
 
 function escapeHtml(value) {
@@ -4031,12 +4217,14 @@ function renderAgentActivity(items, text) {
   return renderObjectList(items, text.noAgentActivity, (item) => {
     const tokens = formatTokens(item.token_usage, text);
     const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
-    const model = item.model_tier || item.model ? `<p><strong>${escapeHtml(text.modelSelection)}:</strong> ${escapeHtml([item.model_tier, item.model].filter(Boolean).join(" / "))}</p>` : "";
+    const modelParts = [item.model_tier, item.model, item.model_provider].filter(Boolean);
+    const modelUnavailable = item.model_unavailable_reason ? ` (${item.model_unavailable_reason})` : "";
+    const model = modelParts.length || modelUnavailable ? `<p><strong>${escapeHtml(text.modelSelection)}:</strong> ${escapeHtml(modelParts.join(" / ") || text.notRecorded)}${escapeHtml(modelUnavailable)}</p>` : "";
     const scope = item.scope ? `<p><strong>${escapeHtml(text.scope)}:</strong> ${escapeHtml(item.scope)}</p>` : "";
     const skills = item.skills_used?.length ? `<p><strong>${escapeHtml(text.skillsUsed)}:</strong> ${escapeHtml(item.skills_used.map((skill) => skill.name).join(", "))}</p>` : "";
     const context = item.context_usage?.recorded ? `<p>${escapeHtml(text.contextUsage)}: ${escapeHtml(item.context_usage.estimated_tokens || item.context_usage.source_bytes || text.notRecorded)} (${escapeHtml(item.context_usage.source)})</p>` : "";
     const timing = [item.started_at, item.completed_at].filter(Boolean).join(" -> ");
-    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${skills}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
+    return `<strong>${escapeHtml(item.agent_id)}</strong> ${escapeHtml(item.role)} · ${escapeHtml(item.status)} · ${escapeHtml(item.mode || "subagent")}<p class="muted">${escapeHtml(item.task || "")}</p>${scope}${skills}${model}<p>${escapeHtml(text.tokenUsage)}: ${escapeHtml(tokens)}</p>${context}${timing ? `<p>${escapeHtml(text.timeUsage)}: ${escapeHtml(timing)}</p>` : ""}${evidence}`;
   });
 }
 
@@ -4408,6 +4596,8 @@ function renderBoardHtml(board) {
           <dt>${escapeHtml(text.templateId)}</dt><dd>${escapeHtml(template.template_id || text.none)}</dd>
           <dt>${escapeHtml(text.templateVersion)}</dt><dd>${escapeHtml(template.template_version || text.none)}</dd>
           <dt>${escapeHtml(text.template)}</dt><dd>${escapeHtml(template.name || text.none)}</dd>
+          <dt>${escapeHtml(text.controller)}</dt><dd>${escapeHtml(board.controller?.name || text.none)}</dd>
+          <dt>${escapeHtml(text.controllerRole)}</dt><dd>${escapeHtml(board.controller?.role || text.none)}</dd>
           <dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(layers.agents || text.none)}</dd>
           <dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(layers.model_profile || text.none)}</dd>
           <dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(layers.runtime_profile || text.none)}</dd>
@@ -4829,6 +5019,21 @@ function cmdScorecard(options) {
   }
 }
 
+function cmdDispatchPlan(options) {
+  const workflowDir = resolveWorkflowDir(options);
+  const errors = validateWorkflow(workflowDir);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const { graph, state } = loadWorkflow(workflowDir);
+  const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
+  const board = buildBoardProjection(workflowDir, graph, state, language);
+  const plan = buildDispatchPlan(board);
+  if (options.json) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+  printDispatchPlan(plan);
+}
+
 function cmdResume(options) {
   const workflowDir = resolveWorkflowDir(options);
   const { graph, state } = loadWorkflow(workflowDir);
@@ -5033,6 +5238,9 @@ function main() {
       return;
     case "next":
       cmdNext(options);
+      return;
+    case "dispatch-plan":
+      cmdDispatchPlan(options);
       return;
     case "validate":
       cmdValidate(options);

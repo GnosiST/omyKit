@@ -32,6 +32,7 @@ $omykit 开始执行：重构登录模块
 $omykit 只创建工作流：重构登录模块
 $omykit 查看工作流状态
 $omykit 继续工作流
+$omykit 派发计划
 $omykit 解除阻塞
 $omykit 下一步
 $omykit 生成看板并打开
@@ -56,6 +57,19 @@ Execution loop:
 6. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
 
 Use `$omykit 开始执行：<任务>` or `$omykit 创建并执行工作流：<任务>` when you want Codex to create/resume and keep advancing. Use `$omykit 只创建工作流：<任务>` only when you want the skeleton and manual continuation commands.
+
+## Subagent Dispatch
+
+For tracked long work, the main Codex thread should behave as an orchestrator-observer: keep the durable workflow state, create or read the dispatch plan, spawn bounded subagents when the task is independently scoped, integrate handoffs, run scorecards, and escalate only true human blockers. Do not switch the main thread's model for a worker task; that risks losing the main coordination context.
+
+Use:
+
+```bash
+node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id>
+node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --json
+```
+
+The dispatch plan lists ready nodes, suggested worker profile, subagent role, recommended model tier, recommended concrete model, Codex model override name when known, context pack, and handoff contract. The controller still does not spawn agents or call models by itself. Codex can pass the recommended model override only when the active subagent runtime exposes a `model` parameter; otherwise the worker inherits the main model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` instead of inventing a model name.
 
 ## Runtime Location
 

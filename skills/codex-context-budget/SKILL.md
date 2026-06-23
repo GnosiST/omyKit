@@ -45,6 +45,8 @@ For omyKit controller workflows after compact, interruption, or handoff, resume 
 
 Return to original files or full evidence only when the next action needs exact edits, quotes, security/legal/privacy judgment, or failure root cause.
 
+For subagent dispatch, the main thread keeps only the orchestration state and gives each worker the smallest node-local context pack: `state.json`, `graph.json`, the node card, relevant dependency handoff summaries, and exact files only when the node needs edits or verification. Do not fork the whole conversation history into a worker unless the subtask cannot be specified any other way.
+
 ## Hard Limits
 
 - Do not read all docs for a narrow change.

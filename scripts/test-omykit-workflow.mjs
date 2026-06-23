@@ -53,6 +53,7 @@ const helpOutput = run(["help"]);
 assert.match(helpOutput, /Usage:/);
 assert.match(helpOutput, /templates/);
 assert.match(helpOutput, /board/);
+assert.match(helpOutput, /dispatch-plan/);
 assert.match(helpOutput, /Codex chat intents:/);
 assert.match(helpOutput, /Long task loop:/);
 assert.match(helpOutput, /只创建工作流/);
@@ -73,9 +74,21 @@ assert.match(initOutput, /Continue now:/);
 assert.match(initOutput, /start 01-intake/);
 assert.match(initOutput, /Creating the workflow is not task completion/);
 
+const dispatchOutput = run(["dispatch-plan", "--lang", "zh-CN"]);
+assert.match(dispatchOutput, /派发计划: feature-x/);
+assert.match(dispatchOutput, /主控角色/);
+assert.match(dispatchOutput, /executor=main-thread/);
+assert.match(dispatchOutput, /override=gpt-5\.4-mini/);
+const dispatchJson = JSON.parse(run(["dispatch-plan", "--json"]));
+assert.equal(dispatchJson.orchestrator.role.includes("Main thread"), true);
+assert.equal(dispatchJson.safety.max_parallel_running_nodes, 3);
+assert.equal(dispatchJson.ready_dispatches[0].node_id, "01-intake");
+assert.equal(dispatchJson.ready_dispatches[0].model_override, "gpt-5.4-mini");
+
 const dir = workflowDir();
 const graphPath = path.join(dir, "graph.json");
 let graph = readJson(graphPath);
+assert.equal(graph.metadata.controller_role, "orchestrator-observer");
 graph.nodes.push({
   id: "02-research",
   type: "research",
@@ -272,6 +285,7 @@ writeJson(intakeHandoff, {
       mode: "main-agent",
       model_tier: "standard",
       model: "GPT-5.4",
+      model_provider: "openai",
       model_selection_reason: "测试夹具中的常规规划任务。",
       started_at: intakeStart,
       completed_at: intakeEnd,
@@ -573,9 +587,11 @@ assert.equal(board.language, "zh-CN");
 assert.equal(board.summary.total, 7);
 assert.equal(board.template.template_id, "change.standard");
 assert.equal(board.template.layers.model_profile, "balanced");
+assert.equal(board.controller.role, "orchestrator-observer");
 assert.ok(Array.isArray(board.scorecard.checks));
 assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "subagent-model-recorded-or-explained" && check.status === "pending"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "board-language" && check.status === "failed"));
 assert.ok(board.recommendations.some((item) => item.id === "scorecard-required-not-failed"));
 assert.ok(board.recommendations.some((item) => item.id === "run-workflow-evolution"));
@@ -686,6 +702,7 @@ assert.match(boardHtml, /GPT-5\.4/);
 assert.match(boardHtml, /整改建议/);
 assert.match(boardHtml, /上下文用量/);
 assert.match(boardHtml, /工作流模板/);
+assert.match(boardHtml, /orchestrator-observer/);
 assert.match(boardHtml, /Scorecard 验票/);
 assert.match(boardHtml, /Workflow 进化/);
 assert.match(boardHtml, /交付节点应记录进化候选/);
@@ -699,6 +716,7 @@ assert.match(boardHtml, /class="event-list"/);
 assert.match(boardHtml, /class="panel technical-data"/);
 assert.match(boardHtml, /需求已固化/);
 assert.match(boardHtml, /main-codex/);
+assert.match(boardHtml, /main-agent/);
 assert.doesNotMatch(boardHtml, /\{"passed"/);
 const eventListHtml = boardHtml.slice(boardHtml.indexOf('class="event-list"'), boardHtml.indexOf('class="panel technical-data"'));
 assert.doesNotMatch(eventListHtml, /&quot;event&quot;/);
