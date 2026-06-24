@@ -88,6 +88,8 @@ $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -122,10 +124,12 @@ node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs resume
 node scripts/omykit-workflow.mjs orchestrate --json
 node scripts/omykit-workflow.mjs upgrade --all
+node scripts/omykit-workflow.mjs doctor --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
+The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. `doctor` writes `.omykit/health/health-report.json` and inspects retrofit completeness, active workflow pointers, legacy artifact gaps, stale boards, command recovery signals, cleanup candidates, and next recommendations. `doctor --fix` only applies safe compatibility repairs; it does not fabricate handoffs, usage, model, skill, or verification evidence. `cleanup` defaults to dry-run, and `cleanup --apply` archives safe candidates under `.omykit/archive/` instead of deleting them. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 

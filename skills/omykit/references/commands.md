@@ -17,6 +17,8 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `工作流列表`, `切换工作流`, `使用这个 workflow`, `active workflow`, `list workflows` | `controller` |
 | `查看编排计划`, `自动编排`, `orchestration plan`, `next action` | `controller` |
 | `升级旧工作流`, `迁移历史工作流`, `upgrade workflows`, `migrate workflows` | `controller` |
+| `诊断工作流健康`, `检查工作流健康`, `旧项目健康检查`, `doctor`, `workflow health` | `controller` |
+| `清理旧工作流残留`, `清理无用 workflow 产物`, `cleanup residue`, `cleanup workflows` | `controller` |
 | `交接包`, `上下文包`, `给子智能体的包`, `context pack`, `handoff packet` | `controller` diagnostic; Codex normally generates this internally |
 | `记录后台命令`, `记录日志`, `record run`, `background command` | `controller` diagnostic; Codex normally records this internally when recovery needs it |
 | `派发计划`, `子智能体执行计划`, `并行执行计划`, `dispatch plan`, `subagent plan` | `controller` diagnostic; automatic orchestration chooses this internally |
@@ -50,6 +52,9 @@ $omykit 切换工作流：<workflow-id>
 $omykit 解除阻塞
 $omykit 阻塞已解决，继续执行
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 修复工作流健康
+$omykit 清理旧工作流残留
 $omykit 修 bug：登录后跳转错误
 $omykit 做 UI：设置页响应式优化
 $omykit 做调研：对比三种数据导出方案
@@ -88,6 +93,9 @@ Use this table as the single command taxonomy; other docs may list aliases, but 
 | Pick among multiple workflows | `$omykit 查看工作流列表` / `$omykit 切换工作流：<id>` | `node scripts/omykit-workflow.mjs workflows` / `workflows use <id>` |
 | Show automatic orchestration decision | `$omykit 下一步` / `$omykit 查看编排计划` | `node scripts/omykit-workflow.mjs orchestrate --json` |
 | Upgrade old workflow artifacts | `$omykit 升级旧工作流` | `node scripts/omykit-workflow.mjs upgrade --all` |
+| Diagnose workflow health | `$omykit 诊断工作流健康` | `node scripts/omykit-workflow.mjs doctor --lang zh-CN` |
+| Safely repair health issues | `$omykit 修复工作流健康` | `node scripts/omykit-workflow.mjs doctor --fix --lang zh-CN` |
+| Review/archive cleanup candidates | `$omykit 清理旧工作流残留` | `node scripts/omykit-workflow.mjs cleanup --dry-run`, then `cleanup --apply` only after review |
 | View evidence board | `$omykit 生成看板并打开` | `node scripts/omykit-workflow.mjs board --open` |
 
 Creating a workflow is not completion. For long tasks, Codex should keep advancing nodes until delivery passes, a real blocker needs the user, or the user explicitly asks to stop. `dispatch-plan`, `context-pack`, `assign`, and `record-run` remain available as controller primitives, but they are not normal user choices.

@@ -1177,6 +1177,8 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs next [--workflow workflow-id]
   node scripts/omykit-workflow.mjs orchestrate [--workflow workflow-id] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs upgrade [--workflow workflow-id|--all] [--lang en|zh-CN] [--json]
+  node scripts/omykit-workflow.mjs doctor [--workflow workflow-id|--all] [--fix] [--json] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--json] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
@@ -1202,6 +1204,8 @@ Codex chat intents:
   $omykit 查看进度               show status, blockers, failed nodes, and the automatic next action
   $omykit 生成看板并打开         generate/open board.html
   $omykit 升级旧工作流           upgrade old workflow artifacts to the current controller surface
+  $omykit 诊断工作流健康         inspect project workflow health, legacy artifacts, residual files, and next actions
+  $omykit 清理旧工作流残留       dry-run safe cleanup candidates or archive them when explicitly applied
   $omykit scorecard 验票         audit recorded workflow evidence
   $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
   $omykit 查看模板               list reusable workflow templates
@@ -1223,6 +1227,66 @@ function listWorkflowDirs(root = workflowsRoot()) {
     .filter((entry) => entry.isDirectory())
     .map((entry) => path.join(root, entry.name))
     .filter((dir) => fs.existsSync(path.join(dir, "graph.json")))
+    .sort();
+}
+
+function listAllWorkflowDirs(root = workflowsRoot()) {
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(root, entry.name))
+    .sort();
+}
+
+function healthRoot(cwd = process.cwd()) {
+  return path.join(omykitRoot(cwd), "health");
+}
+
+function healthReportFile(cwd = process.cwd()) {
+  return path.join(healthRoot(cwd), "health-report.json");
+}
+
+function archiveRoot(cwd = process.cwd()) {
+  return path.join(omykitRoot(cwd), "archive");
+}
+
+function projectRelativePath(file, cwd = process.cwd()) {
+  const relative = path.relative(cwd, file);
+  return relative.startsWith("..") ? file : relative || ".";
+}
+
+function safeStat(file) {
+  try {
+    return fs.statSync(file);
+  } catch {
+    return null;
+  }
+}
+
+function safeReadJsonForDoctor(file) {
+  try {
+    return { ok: true, value: readJson(file) };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+function latestMtimeMs(paths) {
+  let latest = 0;
+  for (const file of paths) {
+    const stat = safeStat(file);
+    if (stat && stat.mtimeMs > latest) latest = stat.mtimeMs;
+  }
+  return latest;
+}
+
+function filesInDir(dir, predicate = () => true) {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && predicate(entry.name))
+    .map((entry) => path.join(dir, entry.name))
     .sort();
 }
 
@@ -6583,6 +6647,554 @@ function upgradeWorkflowArtifacts(workflowDir, options = {}) {
   return { report, reportFile };
 }
 
+function doctorIssue({ id, severity = "warning", scope = "project", path: issuePath = null, workflow_id = null, summary, detail = null, fixable = false, next_action = null }) {
+  return {
+    id,
+    severity,
+    scope,
+    path: issuePath,
+    workflow_id,
+    summary,
+    detail,
+    fixable,
+    next_action,
+  };
+}
+
+function cleanupCandidate({ id, kind, workflow_id = null, paths, reason, safety = "archive_only", action = "archive" }) {
+  return {
+    id,
+    kind,
+    workflow_id,
+    paths: asStringArray(paths),
+    reason,
+    safety,
+    action,
+  };
+}
+
+function workflowStatusSummary(graph, state) {
+  if (!graph?.nodes || !state?.nodes) return {};
+  return statusCounts(graph.nodes.map((node) => ({ status: state.nodes[node.id]?.status || "missing" })));
+}
+
+function workflowSourceFiles(workflowDir) {
+  return [
+    path.join(workflowDir, "graph.json"),
+    path.join(workflowDir, "state.json"),
+    path.join(workflowDir, "ledger.jsonl"),
+    path.join(workflowDir, "decisions.md"),
+    path.join(workflowDir, "blockers.md"),
+    assignmentsFile(workflowDir),
+    ...filesInDir(path.join(workflowDir, "nodes"), (name) => name.endsWith(".json")),
+    ...filesInDir(path.join(workflowDir, "handoffs"), (name) => name.endsWith(".json")),
+    ...filesInDir(path.join(workflowDir, "context-packs"), (name) => name.endsWith(".json")),
+    ...filesInDir(path.join(workflowDir, "commands"), () => true),
+  ];
+}
+
+function boardProjectionStatus(workflowDir) {
+  const jsonPath = path.join(workflowDir, "board.json");
+  const htmlPath = path.join(workflowDir, "board.html");
+  const jsonStat = safeStat(jsonPath);
+  const htmlStat = safeStat(htmlPath);
+  const missing = [];
+  if (!jsonStat) missing.push("board.json");
+  if (!htmlStat) missing.push("board.html");
+  const sourceMtime = latestMtimeMs(workflowSourceFiles(workflowDir));
+  const boardMtime = Math.min(jsonStat?.mtimeMs || 0, htmlStat?.mtimeMs || 0);
+  return {
+    json_path: jsonPath,
+    html_path: htmlPath,
+    missing,
+    source_mtime_ms: sourceMtime,
+    board_mtime_ms: boardMtime,
+    stale: missing.length === 0 && sourceMtime > boardMtime,
+  };
+}
+
+function workflowNeedsCompatibilityUpgrade(workflowDir, graph, state) {
+  const reasons = [];
+  if (graph.schema_version !== SCHEMA_VERSION) reasons.push("graph schema version");
+  if (graph.metadata?.workflow_artifact_version !== WORKFLOW_ARTIFACT_VERSION) reasons.push("artifact version");
+  for (const relativeDir of WORKFLOW_RUNTIME_DIRS) {
+    if (!fs.existsSync(path.join(workflowDir, relativeDir))) reasons.push(`missing ${relativeDir}`);
+  }
+  for (const file of ["decisions.md", "blockers.md", "assignments.jsonl"]) {
+    if (!fs.existsSync(path.join(workflowDir, file))) reasons.push(`missing ${file}`);
+  }
+  for (const node of graph.nodes || []) {
+    if (!fs.existsSync(path.join(workflowDir, "nodes", `${node.id}.json`))) reasons.push(`missing nodes/${node.id}.json`);
+    const nodeState = state.nodes?.[node.id];
+    if (nodeState && TERMINAL_STATUSES.has(nodeState.status)) {
+      const handoffPath = nodeState.last_handoff ? path.join(workflowDir, nodeState.last_handoff) : null;
+      if (!handoffPath || !fs.existsSync(handoffPath)) reasons.push(`terminal ${node.id} lacks readable handoff`);
+    }
+  }
+  return reasons;
+}
+
+function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null) {
+  const candidates = [];
+  const workflowId = graph?.workflow_id || path.basename(workflowDir);
+  const nodeIds = new Set((graph?.nodes || []).map((node) => node.id));
+  const board = boardProjectionStatus(workflowDir);
+  if (board.stale) {
+    candidates.push(cleanupCandidate({
+      id: `${workflowId}:stale-board`,
+      kind: "stale_board_projection",
+      workflow_id: workflowId,
+      paths: [projectRelativePath(board.json_path, cwd), projectRelativePath(board.html_path, cwd)],
+      reason: "Board projection is older than workflow source files. It can be regenerated with the board command.",
+    }));
+  }
+  if (nodeIds.size > 0) {
+    for (const file of filesInDir(path.join(workflowDir, "nodes"), (name) => name.endsWith(".json"))) {
+      const nodeId = path.basename(file, ".json");
+      if (!nodeIds.has(nodeId)) {
+        candidates.push(cleanupCandidate({
+          id: `${workflowId}:orphan-node-card:${nodeId}`,
+          kind: "orphan_node_card",
+          workflow_id: workflowId,
+          paths: [projectRelativePath(file, cwd)],
+          reason: `Node card ${nodeId} is not present in graph.json.`,
+        }));
+      }
+    }
+    for (const file of filesInDir(path.join(workflowDir, "context-packs"), (name) => name.endsWith(".json"))) {
+      const nodeId = path.basename(file, ".json");
+      if (!nodeIds.has(nodeId)) {
+        candidates.push(cleanupCandidate({
+          id: `${workflowId}:orphan-context-pack:${nodeId}`,
+          kind: "orphan_context_pack",
+          workflow_id: workflowId,
+          paths: [projectRelativePath(file, cwd)],
+          reason: `Context pack ${nodeId} is not present in graph.json.`,
+        }));
+      }
+    }
+  }
+  return candidates;
+}
+
+function inspectWorkflowHealth(workflowDir, cwd = process.cwd()) {
+  const workflowId = path.basename(workflowDir);
+  const relativePath = projectRelativePath(workflowDir, cwd);
+  const issues = [];
+  const cleanupCandidates = [];
+  const graphPath = path.join(workflowDir, "graph.json");
+  const statePath = path.join(workflowDir, "state.json");
+  const graphRead = fs.existsSync(graphPath) ? safeReadJsonForDoctor(graphPath) : { ok: false, error: "missing graph.json" };
+  const stateRead = fs.existsSync(statePath) ? safeReadJsonForDoctor(statePath) : { ok: false, error: "missing state.json" };
+  if (!graphRead.ok || !stateRead.ok) {
+    const paths = [workflowDir].map((file) => projectRelativePath(file, cwd));
+    cleanupCandidates.push(cleanupCandidate({
+      id: `${workflowId}:invalid-workflow-dir`,
+      kind: "invalid_workflow_dir",
+      workflow_id: workflowId,
+      paths,
+      reason: `Workflow directory cannot be loaded (${graphRead.error || stateRead.error}).`,
+    }));
+    issues.push(doctorIssue({
+      id: "invalid_workflow_dir",
+      severity: "error",
+      scope: "workflow",
+      workflow_id: workflowId,
+      path: relativePath,
+      summary: "Workflow directory is not loadable.",
+      detail: graphRead.error || stateRead.error,
+      next_action: "Archive after review or restore graph.json/state.json from history.",
+    }));
+    return {
+      workflow_id: workflowId,
+      path: relativePath,
+      valid: false,
+      status_counts: {},
+      needs_upgrade: false,
+      issues,
+      cleanup_candidates: cleanupCandidates,
+    };
+  }
+
+  const graph = graphRead.value;
+  const state = stateRead.value;
+  const id = graph.workflow_id || workflowId;
+  const validateErrors = validateWorkflow(workflowDir);
+  for (const error of validateErrors) {
+    issues.push(doctorIssue({
+      id: "workflow_validation_error",
+      severity: "error",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Workflow validation failed.",
+      detail: error,
+      next_action: "Run validate after repairing the listed file.",
+    }));
+  }
+
+  const upgradeReasons = workflowNeedsCompatibilityUpgrade(workflowDir, graph, state);
+  const evidenceOnlyGaps = upgradeReasons.filter((reason) => /lacks readable handoff/.test(reason));
+  const compatibilityReasons = upgradeReasons.filter((reason) => !/lacks readable handoff/.test(reason));
+  if (compatibilityReasons.length > 0) {
+    issues.push(doctorIssue({
+      id: "workflow_compatibility_upgrade_needed",
+      severity: "warning",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Workflow artifacts need the current controller compatibility surface.",
+      detail: compatibilityReasons.join("; "),
+      fixable: true,
+      next_action: "Run doctor --fix or upgrade --all.",
+    }));
+  }
+  for (const gap of evidenceOnlyGaps) {
+    issues.push(doctorIssue({
+      id: "terminal_node_missing_handoff",
+      severity: "error",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Terminal node is missing readable handoff evidence.",
+      detail: gap,
+      next_action: "Recover the handoff from history or reject/re-run the affected node.",
+    }));
+  }
+
+  const board = boardProjectionStatus(workflowDir);
+  if (board.missing.length > 0) {
+    issues.push(doctorIssue({
+      id: "board_projection_missing",
+      severity: "info",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Board projection has not been generated.",
+      detail: board.missing.join(", "),
+      next_action: "Run board --open when visualization is needed.",
+    }));
+  } else if (board.stale) {
+    issues.push(doctorIssue({
+      id: "board_projection_stale",
+      severity: "warning",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Board projection is older than workflow source files.",
+      detail: "Regenerate board.html/board.json before using the board for review.",
+      next_action: "Run board --open.",
+    }));
+  }
+
+  const commandProjection = buildCommandRunProjection(readCommandRuns(workflowDir));
+  for (const command of commandProjection.active) {
+    issues.push(doctorIssue({
+      id: "active_command_run",
+      severity: command.resume_command || command.log_path ? "warning" : "error",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Workflow has an active command run record.",
+      detail: `${command.run_id || "unknown"}: ${command.command || "unknown command"}`,
+      next_action: command.resume_command || command.log_path
+        ? "Inspect the log or resume command before continuing."
+        : "Record a log path or resume command so interruption recovery is possible.",
+    }));
+  }
+
+  cleanupCandidates.push(...collectWorkflowCleanupCandidates(workflowDir, cwd, graph));
+  return {
+    workflow_id: id,
+    path: relativePath,
+    template_id: graph.metadata?.template_id || null,
+    artifact_version: graph.metadata?.workflow_artifact_version || null,
+    valid: validateErrors.length === 0,
+    status_counts: workflowStatusSummary(graph, state),
+    needs_upgrade: compatibilityReasons.length > 0,
+    board: {
+      missing: board.missing,
+      stale: board.stale,
+    },
+    issues,
+    cleanup_candidates: cleanupCandidates,
+  };
+}
+
+function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
+  const language = normalizeBoardLanguage(options.lang);
+  const root = workflowsRoot(cwd);
+  const allDirs = options.workflow
+    ? [path.join(root, String(options.workflow))]
+    : listAllWorkflowDirs(root);
+  const validDirs = listWorkflowDirs(root);
+  const activeId = readActiveWorkflowId(cwd);
+  const issues = [];
+  const cleanupCandidates = [];
+  const project = {
+    root: cwd,
+    omykit_root: projectRelativePath(omykitRoot(cwd), cwd),
+    has_omykit_root: fs.existsSync(omykitRoot(cwd)),
+    has_workflows_root: fs.existsSync(root),
+    active_workflow: activeId,
+    active_workflow_valid: activeId ? fs.existsSync(path.join(root, activeId, "graph.json")) : null,
+    has_agents_md: fs.existsSync(path.join(cwd, "AGENTS.md")),
+    has_readme: fs.existsSync(path.join(cwd, "README.md")),
+    has_project_profile: fs.existsSync(path.join(cwd, "docs", "workflow", "project-profile.md")),
+    repo_local_skill_dirs: [".codex/skills", ".agents/skills"]
+      .filter((relative) => fs.existsSync(path.join(cwd, relative))),
+  };
+
+  if (!project.has_omykit_root) {
+    issues.push(doctorIssue({
+      id: "missing_omykit_root",
+      severity: "warning",
+      scope: "project",
+      path: ".omykit",
+      summary: "Project has no .omykit directory.",
+      next_action: "Run init, retrofit, or start a tracked workflow if this project should use omyKit.",
+    }));
+  }
+  if (!project.has_workflows_root) {
+    issues.push(doctorIssue({
+      id: "missing_workflows_root",
+      severity: "info",
+      scope: "project",
+      path: ".omykit/workflows",
+      summary: "No tracked workflow directory exists.",
+      next_action: "Create a tracked workflow only when the task needs resumable state.",
+    }));
+  }
+  if (activeId && !project.active_workflow_valid) {
+    issues.push(doctorIssue({
+      id: "active_workflow_missing",
+      severity: "warning",
+      scope: "project",
+      path: ".omykit/active-workflow",
+      summary: `Active workflow points to missing workflow '${activeId}'.`,
+      fixable: validDirs.length === 1,
+      next_action: validDirs.length === 1
+        ? `Run doctor --fix to point active workflow to ${path.basename(validDirs[0])}.`
+        : "Run workflows and choose the active workflow explicitly.",
+    }));
+  }
+  if (!project.has_project_profile) {
+    issues.push(doctorIssue({
+      id: "missing_project_profile",
+      severity: "warning",
+      scope: "project",
+      path: "docs/workflow/project-profile.md",
+      summary: "Retrofit profile is missing, so old-project workflow readiness is hard to audit.",
+      next_action: "Run $omykit 改造旧项目 or create docs/workflow/project-profile.md from existing project facts.",
+    }));
+  }
+  if (project.repo_local_skill_dirs.length > 0) {
+    issues.push(doctorIssue({
+      id: "repo_local_skill_copy_present",
+      severity: "info",
+      scope: "project",
+      path: project.repo_local_skill_dirs.join(", "),
+      summary: "Repo-local skill directories exist.",
+      detail: "Keep them only when the project intentionally vendors skills for team or CI use; otherwise prefer global omyKit.",
+      next_action: "Compare repo-local skills with global install before relying on them.",
+    }));
+  }
+
+  const workflows = allDirs.map((dir) => {
+    if (!fs.existsSync(dir)) {
+      const id = path.basename(dir);
+      return {
+        workflow_id: id,
+        path: projectRelativePath(dir, cwd),
+        valid: false,
+        status_counts: {},
+        needs_upgrade: false,
+        issues: [doctorIssue({
+          id: "requested_workflow_missing",
+          severity: "error",
+          scope: "workflow",
+          workflow_id: id,
+          path: projectRelativePath(dir, cwd),
+          summary: "Requested workflow does not exist.",
+          next_action: "Use workflows list or pass a valid --workflow id.",
+        })],
+        cleanup_candidates: [],
+      };
+    }
+    return inspectWorkflowHealth(dir, cwd);
+  });
+
+  for (const workflow of workflows) {
+    issues.push(...workflow.issues);
+    cleanupCandidates.push(...workflow.cleanup_candidates);
+  }
+
+  const severityCounts = issues.reduce((counts, issue) => {
+    counts[issue.severity] = (counts[issue.severity] || 0) + 1;
+    return counts;
+  }, {});
+  const health = severityCounts.error > 0 ? "fail" : severityCounts.warning > 0 ? "warning" : "pass";
+  const recommendations = buildDoctorRecommendations({ health, issues, workflows, cleanupCandidates, validWorkflowCount: validDirs.length, language });
+  return {
+    schema_version: SCHEMA_VERSION,
+    artifact_version: WORKFLOW_ARTIFACT_VERSION,
+    checked_at: now(),
+    language,
+    health,
+    project,
+    counts: {
+      workflows_total: workflows.length,
+      workflows_valid: workflows.filter((workflow) => workflow.valid).length,
+      workflows_needing_upgrade: workflows.filter((workflow) => workflow.needs_upgrade).length,
+      cleanup_candidates: cleanupCandidates.length,
+      issues: severityCounts,
+    },
+    workflows,
+    issues,
+    cleanup_candidates: cleanupCandidates,
+    recommendations,
+  };
+}
+
+function buildDoctorRecommendations({ issues, workflows, cleanupCandidates, validWorkflowCount, language }) {
+  const isZh = language === "zh-CN";
+  const recommendations = [];
+  const has = (id) => issues.some((issue) => issue.id === id);
+  if (has("workflow_compatibility_upgrade_needed")) {
+    recommendations.push(isZh ? "运行 doctor --fix 或 upgrade --all 补齐旧 workflow 的兼容元数据、运行目录和节点卡。" : "Run doctor --fix or upgrade --all to repair legacy workflow compatibility metadata, runtime directories, and node cards.");
+  }
+  if (has("active_workflow_missing")) {
+    recommendations.push(validWorkflowCount === 1
+      ? (isZh ? "运行 doctor --fix 自动修正 active workflow 指针。" : "Run doctor --fix to repair the active workflow pointer.")
+      : (isZh ? "先运行 workflows 选择正确 workflow，再执行 workflows use <id>。" : "Run workflows, choose the correct workflow, then run workflows use <id>."));
+  }
+  if (has("terminal_node_missing_handoff")) {
+    recommendations.push(isZh ? "不要让升级伪造证据；从历史恢复 handoff，或 reject/re-run 缺证据节点。" : "Do not fabricate evidence during upgrade; recover handoffs from history or reject/re-run nodes with missing evidence.");
+  }
+  if (has("missing_project_profile")) {
+    recommendations.push(isZh ? "补齐 docs/workflow/project-profile.md，让旧项目改造有明确项目现状、命令、门禁和遗留问题。" : "Add docs/workflow/project-profile.md so retrofit state, commands, gates, and legacy issues are auditable.");
+  }
+  if (cleanupCandidates.length > 0) {
+    recommendations.push(isZh ? "先运行 cleanup --dry-run 审查候选，再按需运行 cleanup --apply 归档，不直接删除。" : "Run cleanup --dry-run first, then cleanup --apply only when archiving candidates is acceptable. It archives, not deletes.");
+  }
+  if (workflows.some((workflow) => workflow.board?.stale || workflow.board?.missing?.length)) {
+    recommendations.push(isZh ? "需要看板时重新运行 board --open，避免用过期 board 做判断。" : "Regenerate the board with board --open before relying on it for review.");
+  }
+  if (recommendations.length === 0) {
+    recommendations.push(isZh ? "当前未发现阻塞性工作流健康问题；继续按当前 workflow 推进。" : "No blocking workflow health issue found; continue with the current workflow.");
+  }
+  return recommendations;
+}
+
+function writeHealthReport(report, cwd = process.cwd()) {
+  const file = healthReportFile(cwd);
+  writeJson(file, report);
+  return file;
+}
+
+function applyDoctorFixes(initialReport, cwd = process.cwd()) {
+  const actions = [];
+  const root = workflowsRoot(cwd);
+  const validDirs = listWorkflowDirs(root);
+  if (initialReport.issues.some((issue) => issue.id === "active_workflow_missing" && issue.fixable) && validDirs.length === 1) {
+    const workflowId = path.basename(validDirs[0]);
+    writeActiveWorkflowId(workflowId, cwd);
+    actions.push(`set active workflow to ${workflowId}`);
+  }
+  for (const workflow of initialReport.workflows) {
+    if (!workflow.needs_upgrade) continue;
+    const workflowDir = path.join(root, workflow.workflow_id);
+    if (!fs.existsSync(path.join(workflowDir, "graph.json")) || !fs.existsSync(path.join(workflowDir, "state.json"))) continue;
+    const { report } = upgradeWorkflowArtifacts(workflowDir, { recordLedger: true });
+    actions.push(`upgraded ${report.workflow_id}: actions=${report.actions.length} warnings=${report.warnings.length}`);
+  }
+  return actions;
+}
+
+function printDoctorReport(report, reportFile = null) {
+  const isZh = report.language === "zh-CN";
+  const counts = report.counts.issues || {};
+  console.log(`${isZh ? "工作流健康检查" : "Workflow health"}: ${report.health}`);
+  console.log(`${isZh ? "项目" : "Project"}: ${projectRelativePath(report.project.root, report.project.root)}`);
+  console.log(`${isZh ? "工作流" : "Workflows"}: total=${report.counts.workflows_total} valid=${report.counts.workflows_valid} needs_upgrade=${report.counts.workflows_needing_upgrade}`);
+  console.log(`${isZh ? "问题" : "Issues"}: error=${counts.error || 0} warning=${counts.warning || 0} info=${counts.info || 0}`);
+  for (const issue of report.issues.slice(0, 12)) {
+    const workflow = issue.workflow_id ? ` ${issue.workflow_id}` : "";
+    console.log(`- [${issue.severity}]${workflow} ${issue.id}: ${issue.summary}${issue.detail ? ` (${issue.detail})` : ""}`);
+  }
+  if (report.issues.length > 12) {
+    console.log(isZh ? `... 另有 ${report.issues.length - 12} 个问题，详见报告。` : `... ${report.issues.length - 12} more issues in the report.`);
+  }
+  console.log(`${isZh ? "清理候选" : "Cleanup candidates"}: ${report.cleanup_candidates.length}`);
+  console.log(isZh ? "下一步建议:" : "Next recommendations:");
+  for (const item of report.recommendations) console.log(`- ${item}`);
+  if (reportFile) console.log(`${isZh ? "报告" : "Report"}: ${path.relative(process.cwd(), reportFile)}`);
+}
+
+function timestampForArchive() {
+  return now().replace(/[-:.TZ]/g, "").slice(0, 14);
+}
+
+function uniqueArchivePath(destination) {
+  if (!fs.existsSync(destination)) return destination;
+  const parsed = path.parse(destination);
+  for (let index = 1; index < 1000; index += 1) {
+    const candidate = path.join(parsed.dir, `${parsed.name}-${index}${parsed.ext}`);
+    if (!fs.existsSync(candidate)) return candidate;
+  }
+  throw new Error(`Could not find unique archive path for ${destination}`);
+}
+
+function archiveCleanupCandidates(candidates, cwd = process.cwd()) {
+  const stamp = timestampForArchive();
+  const archiveBase = path.join(archiveRoot(cwd), stamp);
+  const actions = [];
+  const cwdResolved = path.resolve(cwd);
+  for (const candidate of candidates) {
+    for (const relativePath of candidate.paths || []) {
+      const source = path.resolve(cwd, relativePath);
+      if (!source.startsWith(`${cwdResolved}${path.sep}`)) {
+        actions.push({ candidate_id: candidate.id, path: relativePath, status: "skipped", reason: "path is outside project root" });
+        continue;
+      }
+      if (!fs.existsSync(source)) {
+        actions.push({ candidate_id: candidate.id, path: relativePath, status: "skipped", reason: "path no longer exists" });
+        continue;
+      }
+      const destination = uniqueArchivePath(path.join(archiveBase, relativePath));
+      ensureDir(path.dirname(destination));
+      fs.renameSync(source, destination);
+      actions.push({
+        candidate_id: candidate.id,
+        path: relativePath,
+        status: "archived",
+        archive_path: projectRelativePath(destination, cwd),
+      });
+    }
+  }
+  return { archive_dir: projectRelativePath(archiveBase, cwd), actions };
+}
+
+function printCleanupPlan(report, result = null) {
+  const isZh = report.language === "zh-CN";
+  const candidates = report.cleanup_candidates || [];
+  console.log(`${isZh ? "清理计划" : "Cleanup plan"}: ${candidates.length} ${isZh ? "个候选" : "candidates"}`);
+  for (const candidate of candidates.slice(0, 20)) {
+    console.log(`- ${candidate.kind}: ${candidate.paths.join(", ")} (${candidate.reason})`);
+  }
+  if (candidates.length > 20) {
+    console.log(isZh ? `... 另有 ${candidates.length - 20} 个候选，详见报告。` : `... ${candidates.length - 20} more candidates in the report.`);
+  }
+  if (result) {
+    console.log(`${isZh ? "归档目录" : "Archive"}: ${result.archive_dir}`);
+    const archived = result.actions.filter((action) => action.status === "archived").length;
+    const skipped = result.actions.filter((action) => action.status === "skipped").length;
+    console.log(`${isZh ? "结果" : "Result"}: archived=${archived} skipped=${skipped}`);
+  } else {
+    console.log(isZh ? "默认只 dry-run。确认后再运行 cleanup --apply，文件会归档到 .omykit/archive/，不会直接删除。" : "Default is dry-run. Run cleanup --apply after review; files are archived under .omykit/archive/ and are not deleted.");
+  }
+}
+
 function cmdInit(positional, options) {
   const title = positional.join(" ").trim();
   if (!title) throw new Error("init requires a workflow title");
@@ -6808,6 +7420,65 @@ function cmdUpgrade(options) {
   console.log(isZh
     ? "说明: 升级只补 controller 兼容元数据、目录、节点卡和报告；不会伪造 handoff、token、skill、模型或验证证据。旧 board 可以重新运行 board 命令生成新版投影。"
     : "Note: upgrade only adds controller compatibility metadata, directories, node cards, and reports. It never fabricates handoffs, token usage, skill usage, models, or verification evidence. Regenerate old boards with the board command.");
+}
+
+function cmdDoctor(options) {
+  const language = normalizeBoardLanguage(options.lang);
+  let fixActions = [];
+  if (options.fix) {
+    const initialReport = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
+    fixActions = applyDoctorFixes(initialReport, process.cwd());
+  }
+  const report = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
+  if (fixActions.length > 0) {
+    report.fix = {
+      applied: true,
+      actions: fixActions,
+    };
+  }
+  const reportFile = writeHealthReport(report);
+  if (options.json) {
+    console.log(JSON.stringify({
+      ...report,
+      report_file: path.relative(process.cwd(), reportFile),
+    }, null, 2));
+    return;
+  }
+  printDoctorReport(report, reportFile);
+  if (fixActions.length > 0) {
+    const isZh = language === "zh-CN";
+    console.log(isZh ? "已应用修复:" : "Applied fixes:");
+    for (const action of fixActions) console.log(`- ${action}`);
+  }
+}
+
+function cmdCleanup(options) {
+  const language = normalizeBoardLanguage(options.lang);
+  const report = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
+  let result = null;
+  if (options.apply) {
+    result = archiveCleanupCandidates(report.cleanup_candidates, process.cwd());
+    report.cleanup = {
+      applied: true,
+      archive_dir: result.archive_dir,
+      actions: result.actions,
+    };
+  } else {
+    report.cleanup = {
+      applied: false,
+      mode: "dry-run",
+    };
+  }
+  const reportFile = writeHealthReport(report);
+  if (options.json) {
+    console.log(JSON.stringify({
+      ...report,
+      report_file: path.relative(process.cwd(), reportFile),
+    }, null, 2));
+    return;
+  }
+  printCleanupPlan(report, result);
+  console.log(`${language === "zh-CN" ? "报告" : "Report"}: ${path.relative(process.cwd(), reportFile)}`);
 }
 
 function cmdAssign(positional, options) {
@@ -7164,6 +7835,12 @@ function main() {
       return;
     case "upgrade":
       cmdUpgrade(options);
+      return;
+    case "doctor":
+      cmdDoctor(options);
+      return;
+    case "cleanup":
+      cmdCleanup(options);
       return;
     case "dispatch-plan":
       cmdDispatchPlan(options);

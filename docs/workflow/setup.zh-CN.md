@@ -26,6 +26,8 @@ $omykit 继续工作流
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -155,7 +157,11 @@ $omykit 查看工作流状态
 
 ```text
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 ```
+
+当现有项目存在旧 workflow 改造不彻底、看板过期、active workflow 指针失效或下一步不清楚时，先做健康诊断再清理。清理默认 dry-run；显式 apply 时也只归档安全候选，不直接删除。
 
 ## 可选 MCP / Plugins
 

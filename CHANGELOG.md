@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added project-level workflow health diagnosis and residue cleanup: `doctor` writes `.omykit/health/health-report.json`, `doctor --fix` safely repairs compatibility issues, and `cleanup` defaults to dry-run before archive-only cleanup under `.omykit/archive/`.
 - Added a pre-execution option gate: intake handoffs now record multiple execution options, a recommended and selected option, confirmation status, and scorecard coverage before implementation or worker dispatch.
 - Added `mission.orchestration` for broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning.
 - Split runtime-unavailable token/model metrics from missing records with `usage_observation`, and updated board/model guidance to pass Codex worker model overrides when spawning subagents or new threads.

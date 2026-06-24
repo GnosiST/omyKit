@@ -50,11 +50,31 @@ $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 校验工作流
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 ```
 
 Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、推荐模型和实际模型记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
 
 只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
+
+## 项目健康检查
+
+当旧项目或历史 workflow 出现“改造不彻底、状态混乱、旧产物残留、看板过期、下一步不清楚”时，用 `doctor`。它会写入 `.omykit/health/health-report.json`，并检查项目级工作流层：
+
+- `.omykit/` 和 workflow 目录是否存在。
+- active workflow 指针是否有效。
+- workflow 校验错误和兼容升级缺口。
+- 已终态节点是否缺少可读 handoff 证据。
+- board projection 是否缺失或过期。
+- 后台命令是否有可续接记录。
+- repo-local skill 副本是否可能陈旧。
+- `docs/workflow/project-profile.md` 旧项目 profile 是否存在。
+- 清理候选和下一步建议。
+
+`doctor --fix` 只做安全兼容修复：当只有一个有效 workflow 时修正坏 active 指针，并运行和 `upgrade` 一致的不伪造证据的 artifact 修复。它不会编造 handoff、token 用量、skill 使用、模型记录或验证证据。
+
+查看 doctor 报告后再使用 `cleanup`。它默认 dry-run；`cleanup --apply` 也只是把安全候选归档到 `.omykit/archive/<timestamp>/`，不会直接删除，方便回滚或追溯。
 
 ## 长任务执行方式
 

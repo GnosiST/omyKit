@@ -50,11 +50,31 @@ $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 校验工作流
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 ```
 
 Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
+
+## Project Health
+
+Use `doctor` when an existing project or historical workflow feels partially upgraded, confusing, or stale. It writes `.omykit/health/health-report.json` and checks the project-level workflow layer:
+
+- `.omykit/` and workflow directory presence.
+- active workflow pointer validity.
+- workflow validation errors and compatibility upgrade gaps.
+- terminal nodes that claim completion but lack readable handoff evidence.
+- stale or missing board projections.
+- active command-run recovery records.
+- repo-local skill copies that may be stale.
+- retrofit profile presence at `docs/workflow/project-profile.md`.
+- cleanup candidates and next recommendations.
+
+`doctor --fix` only applies safe compatibility repairs: correcting a broken active pointer when there is exactly one valid workflow, and running the same non-fabricating artifact repair as `upgrade`. It never invents handoffs, token usage, skill usage, model records, or verification evidence.
+
+Use `cleanup` after reviewing the doctor report. It defaults to dry-run. `cleanup --apply` archives safe candidates into `.omykit/archive/<timestamp>/` instead of deleting them, so users can recover or inspect old artifacts.
 
 ## Long Task Execution
 

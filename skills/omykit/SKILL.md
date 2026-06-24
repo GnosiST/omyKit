@@ -1,6 +1,6 @@
 ---
 name: omykit
-description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 收尾, 整理文档, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 升级旧工作流, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, clean up knowledge, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
+description: User-facing entry point for Codex Workflow Kit. Use when the user says omyKit, omykit, help, 帮助, 怎么用, 初始化项目, 改造旧项目, 开始一个需求, 交付检查, 收尾, 整理文档, 安装 omyKit, 更新 omyKit, 生成看板, 查看进度, 继续工作流, 升级旧工作流, 诊断工作流健康, 清理旧工作流残留, 工作流列表, or asks Codex to initialize, retrofit, run, verify, install, update, inspect, resume, explain, clean up knowledge, or visualize app, deck, video, design, research, data, or mixed projects with a guided workflow.
 ---
 
 # omyKit
@@ -45,6 +45,8 @@ Map user intent to commands:
 - progress/status -> `status`
 - next work -> `orchestrate --lang <user-language>` or `next`; both should show the automatic orchestration decision, not only raw ready nodes
 - upgrade historical workflow artifacts -> `upgrade --all --lang <user-language>` when old `.omykit/workflows/*` should use the latest controller metadata, command surface, node cards, and board projection rules
+- diagnose project workflow health -> `doctor --lang <user-language>` to inspect retrofit completeness, active workflow pointer, legacy workflows, stale boards, command recovery, cleanup candidates, and next recommendations; add `--fix` only for safe compatibility repairs
+- cleanup legacy workflow residue -> `cleanup --dry-run --lang <user-language>` first; run `cleanup --apply` only after review because it archives safe candidates into `.omykit/archive/` instead of deleting them
 - list or switch tracked workflows -> `workflows` or `workflows use <workflow-id>`
 - record long-running command metadata -> `record-run <node-id> --id <run-id> --command <cmd> --status <status> --log <path> --resume <cmd>`
 - continue after interruption -> `resume`
@@ -83,6 +85,7 @@ Include these concise groups:
 - task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
+- health and cleanup: `$omykit 诊断工作流健康`, `$omykit 修复工作流健康`, `$omykit 清理旧工作流残留`
 - maintenance: `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
 - diagnostics, only when asked: `$omykit 查看编排计划`, `$omykit 导出交接包`, `$omykit 查看 Agent 通讯录`
@@ -122,7 +125,7 @@ If the entry is unclear, infer when safe and state the assumption. Ask only when
 For controller entries, distinguish user intent:
 
 - `execute`: phrases like `开始执行`, `创建并执行`, `继续`, `推进`, `跑完整个工作流`, or a task brief without `只创建` mean Codex should advance nodes after controller setup.
-- `inspect`: phrases like `状态`, `进度`, `下一步`, `看板`, `scorecard`, `校验`, or `模板` mean run the matching direct operation and report; for `下一步`, prefer `orchestrate` so the user sees the automatic decision.
+- `inspect`: phrases like `状态`, `进度`, `下一步`, `看板`, `scorecard`, `校验`, `健康`, `诊断`, `清理残留`, or `模板` mean run the matching direct operation and report; for `下一步`, prefer `orchestrate` so the user sees the automatic decision.
 - `skeleton_only`: phrases like `只创建`, `只初始化`, `先建骨架`, or `不要执行` mean create state only and return the next command.
 
 ## Project Type

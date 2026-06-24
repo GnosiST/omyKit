@@ -87,6 +87,8 @@ $omykit 解除阻塞
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -121,10 +123,12 @@ node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs resume
 node scripts/omykit-workflow.mjs orchestrate --json
 node scripts/omykit-workflow.mjs upgrade --all
+node scripts/omykit-workflow.mjs doctor --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-controller 仍然保留 `dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以用 `--template auto` 在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；显式指定模板会覆盖自动选择。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、执行方案与确认状态、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
+controller 仍然保留 `dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。`doctor` 会写入 `.omykit/health/health-report.json`，检查旧项目改造完整度、active workflow 指针、旧 artifact 缺口、过期看板、后台命令续接信号、清理候选和下一步建议。`doctor --fix` 只做安全兼容修复，不会伪造 handoff、用量、模型、skill 或验证证据。`cleanup` 默认 dry-run；`cleanup --apply` 也只是把安全候选归档到 `.omykit/archive/`，不会直接删除。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以用 `--template auto` 在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；显式指定模板会覆盖自动选择。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、执行方案与确认状态、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 

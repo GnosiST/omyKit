@@ -26,6 +26,8 @@ $omykit 继续工作流
 $omykit 生成看板并打开
 $omykit 查看工作流状态
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -155,7 +157,11 @@ For old workflow artifacts:
 
 ```text
 $omykit 升级旧工作流
+$omykit 诊断工作流健康
+$omykit 清理旧工作流残留
 ```
+
+Run health diagnosis before cleanup when an existing project has partially upgraded workflows, stale boards, invalid active workflow pointers, or unclear next steps. Cleanup defaults to dry-run and archives safe candidates only when explicitly applied.
 
 ## Optional MCP / Plugins
 
