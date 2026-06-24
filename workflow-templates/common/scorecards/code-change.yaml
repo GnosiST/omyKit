@@ -14,6 +14,13 @@ checks:
     severity: required
     evidence:
       type: intake_decision_recorded
+  - id: intake-options-confirmed
+    title:
+      en: Intake records execution options and user confirmation
+      zh-CN: 入口记录执行方案和用户确认
+    severity: required
+    evidence:
+      type: intake_execution_options_confirmed
   - id: terminal-handoff-summary
     title:
       en: Terminal nodes have handoff summaries

@@ -9,6 +9,7 @@ const WORKFLOW_ARTIFACT_VERSION = "2026-06-24.intent-orchestration";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DEFAULT_TEMPLATE_ID = "change.standard";
+const AUTO_TEMPLATE_ID = "auto";
 const COLUMN_STATUSES = ["pending", "ready", "running", "blocked", "failed", "passed", "skipped"];
 const STATUSES = new Set(["pending", "ready", "running", "passed", "failed", "blocked", "skipped"]);
 const TERMINAL_STATUSES = new Set(["passed", "skipped"]);
@@ -38,6 +39,8 @@ const KNOWLEDGE_SYNC_STATUSES = new Set(["completed", "not_needed", "deferred"])
 const SKILL_DECISION_OUTCOMES = new Set(["effective", "needs_revision", "switched", "not_evaluated"]);
 const SKILL_FEEDBACK_STATUSES = new Set(["accepted", "needs_revision", "rejected", "not_reviewed"]);
 const SKILL_ALTERNATIVE_DECISIONS = new Set(["backup", "rejected", "next_retry", "selected"]);
+const INTAKE_CONFIRMATION_STATUSES = new Set(["pending", "confirmed", "auto_authorized", "changed", "rejected"]);
+const USAGE_OBSERVATION_STATUSES = new Set(["recorded", "unavailable", "not_applicable", "not_recorded"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const COLLABORATION_FIELDS = [
   "worker_profile",
@@ -149,6 +152,10 @@ const BOARD_LABELS = {
     questions: "Questions",
     answer: "Answer",
     customAnswersAllowed: "Custom answers allowed",
+    executionOptions: "Execution Options",
+    selectedOption: "Selected option",
+    confirmation: "Confirmation",
+    recommended: "recommended",
     verification: "Verification",
     noActiveChanges: "No active tracked changes",
     type: "Type",
@@ -183,7 +190,10 @@ const BOARD_LABELS = {
     tokenTotal: "Total tokens",
     tokenRecorded: "Recorded nodes",
     tokenMissing: "Missing token records",
+    tokenUnavailable: "Unavailable token records",
     tokenCoverage: "Token coverage",
+    tokenValueCoverage: "Exact token coverage",
+    usageObservation: "Usage Observation",
     contextUsage: "Context Usage",
     contextCoverage: "Context coverage",
     contextTotal: "Approx context tokens",
@@ -239,7 +249,9 @@ const BOARD_LABELS = {
     modelUsage: "Model Usage",
     modelRecorded: "Recorded actual-model nodes",
     modelMissing: "Missing actual-model records",
+    modelUnavailable: "Unavailable actual-model records",
     modelCoverage: "Actual-model coverage",
+    modelValueCoverage: "Exact actual-model coverage",
     noModelsRecorded: "No model records",
     complexity: "Complexity",
     assignment: "Assignment",
@@ -382,6 +394,10 @@ const BOARD_LABELS = {
     questions: "问题",
     answer: "答案",
     customAnswersAllowed: "允许自定义答案",
+    executionOptions: "执行方案",
+    selectedOption: "已选方案",
+    confirmation: "确认状态",
+    recommended: "推荐",
     verification: "验证",
     noActiveChanges: "没有已跟踪改动",
     type: "类型",
@@ -416,7 +432,10 @@ const BOARD_LABELS = {
     tokenTotal: "总 token",
     tokenRecorded: "已记录节点",
     tokenMissing: "未记录 token 的节点",
+    tokenUnavailable: "不可观测 token 的节点",
     tokenCoverage: "Token 覆盖率",
+    tokenValueCoverage: "精确 token 覆盖率",
+    usageObservation: "用量观测",
     contextUsage: "上下文用量",
     contextCoverage: "上下文覆盖率",
     contextTotal: "估算上下文 token",
@@ -472,7 +491,9 @@ const BOARD_LABELS = {
     modelUsage: "模型使用记录",
     modelRecorded: "已记录实际模型节点",
     modelMissing: "未记录实际模型的节点",
+    modelUnavailable: "不可观测实际模型的节点",
     modelCoverage: "实际模型覆盖率",
+    modelValueCoverage: "精确实际模型覆盖率",
     noModelsRecorded: "未记录模型",
     complexity: "复杂度",
     assignment: "分工",
@@ -818,6 +839,26 @@ function loadWorkflowTemplate(templateId = DEFAULT_TEMPLATE_ID) {
   return { ...template, __file: candidate };
 }
 
+function inferWorkflowTemplateId(title) {
+  const text = String(title || "").toLowerCase();
+  if (/(bug|fix|regression|error|exception|fail|failure|crash|修复|报错|故障|缺陷|失败|崩溃|回归)/i.test(text)) {
+    return "bugfix.standard";
+  }
+  if (/(ui|ux|frontend|front-end|page|screen|layout|visual|design|figma|shadcn|tailwind|react component|界面|页面|前端|视觉|设计|组件|交互|样式)/i.test(text)) {
+    return "frontend-ui.strict";
+  }
+  if (/(mission|orchestrat|workflow|multi-agent|parallel|fan[- ]?out|long task|complex|migration|roadmap|end[- ]?to[- ]?end|全流程|完整|复杂|长任务|工作流|多智能体|多 agent|多个|并行|扇出|汇聚|编排|协同|监听|拆解|自主推进|托管|漂移|进化|端到端|每个角色|全量验收)/i.test(text)) {
+    return "mission.orchestration";
+  }
+  return DEFAULT_TEMPLATE_ID;
+}
+
+function resolveInitTemplateId(title, requestedTemplate) {
+  const requested = requestedTemplate ? String(requestedTemplate) : AUTO_TEMPLATE_ID;
+  if (requested !== AUTO_TEMPLATE_ID) return requested;
+  return inferWorkflowTemplateId(title);
+}
+
 function listWorkflowTemplates() {
   return templateFiles().map((file) => ({
     ...readYaml(file),
@@ -1129,7 +1170,7 @@ function parseArgs(argv) {
 
 function commandHelp() {
   return `Usage:
-  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template change.standard] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template auto|change.standard|bugfix.standard|frontend-ui.strict|mission.orchestration] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs workflows [list|use <workflow-id>]
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
@@ -1903,6 +1944,56 @@ function validateIntakeDecisionShape(value, label) {
       });
     }
   }
+  if (value.execution_options !== undefined) {
+    if (!Array.isArray(value.execution_options)) {
+      errors.push(`${label}.execution_options must be an array`);
+    } else {
+      value.execution_options.forEach((item, index) => {
+        const prefix = `${label}.execution_options[${index}]`;
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          errors.push(`${prefix} must be an object`);
+          return;
+        }
+        for (const field of ["id", "label", "summary"]) {
+          if (!item[field] || typeof item[field] !== "string") errors.push(`${prefix}.${field} is required`);
+        }
+        if (item.recommended !== undefined && typeof item.recommended !== "boolean") {
+          errors.push(`${prefix}.recommended must be boolean`);
+        }
+        for (const field of ["tradeoffs", "risks"]) {
+          if (item[field] !== undefined && (!Array.isArray(item[field]) || item[field].some((entry) => typeof entry !== "string" || !entry))) {
+            errors.push(`${prefix}.${field} must be an array of non-empty strings`);
+          }
+        }
+      });
+      if (value.execution_options.length > 0) {
+        const ids = new Set(value.execution_options.map((item) => item?.id).filter(Boolean));
+        if (ids.size !== value.execution_options.filter((item) => item?.id).length) {
+          errors.push(`${label}.execution_options ids must be unique`);
+        }
+        if (value.selected_option && !ids.has(value.selected_option)) {
+          errors.push(`${label}.selected_option must match an execution_options id`);
+        }
+      }
+    }
+  }
+  if (value.selected_option !== undefined && (typeof value.selected_option !== "string" || !value.selected_option)) {
+    errors.push(`${label}.selected_option must be a non-empty string`);
+  }
+  if (value.confirmation !== undefined) {
+    if (!value.confirmation || typeof value.confirmation !== "object" || Array.isArray(value.confirmation)) {
+      errors.push(`${label}.confirmation must be an object`);
+    } else {
+      if (!value.confirmation.status || !INTAKE_CONFIRMATION_STATUSES.has(value.confirmation.status)) {
+        errors.push(`${label}.confirmation.status must be one of ${[...INTAKE_CONFIRMATION_STATUSES].join(", ")}`);
+      }
+      for (const field of ["by", "evidence", "notes"]) {
+        if (value.confirmation[field] !== undefined && (typeof value.confirmation[field] !== "string" || !value.confirmation[field])) {
+          errors.push(`${label}.confirmation.${field} must be a non-empty string`);
+        }
+      }
+    }
+  }
   return errors;
 }
 
@@ -1998,6 +2089,37 @@ function validateDownstreamContextShape(value, label) {
   return errors;
 }
 
+function validateUsageObservationShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  for (const field of ["model_status", "token_status"]) {
+    if (value[field] !== undefined && !USAGE_OBSERVATION_STATUSES.has(value[field])) {
+      errors.push(`${label}.${field} must be one of ${[...USAGE_OBSERVATION_STATUSES].join(", ")}`);
+    }
+  }
+  for (const field of ["source", "runtime_surface", "model_unavailable_reason", "token_unavailable_reason"]) {
+    if (value[field] !== undefined && (typeof value[field] !== "string" || !value[field])) {
+      errors.push(`${label}.${field} must be a non-empty string`);
+    }
+  }
+  if (value.notes !== undefined && typeof value.notes !== "string") {
+    errors.push(`${label}.notes must be a string`);
+  }
+  if (value.evidence !== undefined && (!Array.isArray(value.evidence) || value.evidence.some((item) => typeof item !== "string" || !item))) {
+    errors.push(`${label}.evidence must be an array of non-empty strings`);
+  }
+  if (value.model_status === "unavailable" && !value.model_unavailable_reason) {
+    errors.push(`${label}.model_unavailable_reason is required when model_status is unavailable`);
+  }
+  if (value.token_status === "unavailable" && !value.token_unavailable_reason) {
+    errors.push(`${label}.token_unavailable_reason is required when token_status is unavailable`);
+  }
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -2019,6 +2141,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
   errors.push(...validateKnowledgeSyncShape(handoff.knowledge_sync, "handoff.knowledge_sync"));
   errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
+  errors.push(...validateUsageObservationShape(handoff.usage_observation, "handoff.usage_observation"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -2854,6 +2977,24 @@ function normalizeIntakeQuestions(value) {
     .filter((item) => item?.question);
 }
 
+function normalizeExecutionOptions(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      return {
+        id: item.id || null,
+        label: item.label || null,
+        summary: item.summary || null,
+        tradeoffs: Array.isArray(item.tradeoffs) ? item.tradeoffs : [],
+        risks: Array.isArray(item.risks) ? item.risks : [],
+        recommended: item.recommended === true,
+        index,
+      };
+    })
+    .filter((item) => item?.id && item?.label);
+}
+
 function normalizeIntakeDecision(handoff) {
   const decision = handoff?.intake_decision;
   if (!decision || typeof decision !== "object" || Array.isArray(decision)) return null;
@@ -2875,6 +3016,16 @@ function normalizeIntakeDecision(handoff) {
     },
     assumptions: normalizeAssumptions(decision.assumptions),
     questions: normalizeIntakeQuestions(decision.questions),
+    execution_options: normalizeExecutionOptions(decision.execution_options),
+    selected_option: decision.selected_option || null,
+    confirmation: decision.confirmation && typeof decision.confirmation === "object" && !Array.isArray(decision.confirmation)
+      ? {
+        status: decision.confirmation.status || null,
+        by: decision.confirmation.by || null,
+        evidence: decision.confirmation.evidence || null,
+        notes: decision.confirmation.notes || null,
+      }
+      : null,
     custom_answers_allowed: decision.custom_answers_allowed === true,
   };
 }
@@ -3172,6 +3323,49 @@ function actualModelRecords(handoff, tokenUsage, agentActivity) {
   return mergeModelRecords(records);
 }
 
+function firstNonEmpty(values) {
+  return values.find((value) => typeof value === "string" && value.trim()) || null;
+}
+
+function normalizeUsageObservation(handoff, tokenUsage, actualModels, agentActivity) {
+  const value = handoff?.usage_observation && typeof handoff.usage_observation === "object" && !Array.isArray(handoff.usage_observation)
+    ? handoff.usage_observation
+    : {};
+  const agentModelUnavailable = firstNonEmpty((agentActivity || []).map((item) => item.model_unavailable_reason));
+  const modelRecorded = actualModels.length > 0;
+  const tokenRecorded = Boolean(tokenUsage?.recorded);
+  const modelUnavailableReason = value.model_unavailable_reason || agentModelUnavailable;
+  const tokenUnavailableReason = value.token_unavailable_reason || null;
+  const modelStatus = modelRecorded
+    ? "recorded"
+    : value.model_status || (modelUnavailableReason ? "unavailable" : "not_recorded");
+  const tokenStatus = tokenRecorded
+    ? "recorded"
+    : value.token_status || (tokenUnavailableReason ? "unavailable" : "not_recorded");
+  return {
+    model_status: modelStatus,
+    token_status: tokenStatus,
+    model_unavailable_reason: modelUnavailableReason,
+    token_unavailable_reason: tokenUnavailableReason,
+    source: value.source || (modelRecorded || tokenRecorded ? "recorded_usage" : "not_recorded"),
+    runtime_surface: value.runtime_surface || null,
+    evidence: Array.isArray(value.evidence) ? value.evidence : [],
+    notes: value.notes || null,
+  };
+}
+
+function tokenUsageAccounted(node) {
+  return Boolean(node.token_usage?.recorded)
+    || (node.usage_observation?.token_status === "unavailable" && Boolean(node.usage_observation.token_unavailable_reason))
+    || node.usage_observation?.token_status === "not_applicable";
+}
+
+function modelUsageAccounted(node) {
+  return node.actual_models.length > 0
+    || (node.usage_observation?.model_status === "unavailable" && Boolean(node.usage_observation.model_unavailable_reason))
+    || node.usage_observation?.model_status === "not_applicable";
+}
+
 function deriveTokenUsageFromAgents(agentActivity) {
   const recorded = agentActivity.filter((item) => item.token_usage.recorded);
   if (recorded.length === 0) return normalizeTokenUsage(null);
@@ -3282,6 +3476,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     language,
   });
   const actualModels = actualModelRecords(handoff, tokenUsage, agentActivity);
+  const usageObservation = normalizeUsageObservation(handoff, tokenUsage, actualModels, agentActivity);
   const estimatedMinutes = Number.isFinite(node.estimated_minutes)
     ? node.estimated_minutes
     : Number.isFinite(card.estimated_minutes)
@@ -3309,6 +3504,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     recommended_model_reason: recommended.reason,
     recommended_model_source: recommended.source,
     actual_models: actualModels,
+    usage_observation: usageObservation,
     estimated_minutes: estimatedMinutes,
     worker_profile: collaborationValue(node, card, "worker_profile", "unassigned"),
     agent: collaborationValue(node, card, "agent", null),
@@ -3652,6 +3848,8 @@ function buildUsage(projectedNodes) {
   const byAgent = new Map();
   const byParallelGroup = new Map();
   const missingNodes = [];
+  const accountedNodes = [];
+  const unavailableNodes = [];
   for (const node of projectedNodes) {
     const groupName = node.parallel_group || "none";
     if (!byParallelGroup.has(groupName)) {
@@ -3672,6 +3870,10 @@ function buildUsage(projectedNodes) {
       mergeTokenUsage(totals, node.token_usage);
       mergeTokenUsage(group, node.token_usage);
       byNode.push({ node_id: node.id, ...node.token_usage });
+      accountedNodes.push(node.id);
+    } else if (tokenUsageAccounted(node)) {
+      accountedNodes.push(node.id);
+      if (node.usage_observation?.token_status === "unavailable") unavailableNodes.push(node.id);
     } else {
       missingNodes.push(node.id);
       group.missing_nodes.push(node.id);
@@ -3696,8 +3898,11 @@ function buildUsage(projectedNodes) {
   return {
     totals,
     recorded_nodes: byNode.length,
+    accounted_nodes: accountedNodes,
+    unavailable_nodes: unavailableNodes,
     missing_nodes: missingNodes,
-    coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
+    coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((accountedNodes.length / projectedNodes.length) * 100),
+    recorded_value_coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
     by_node: byNode,
     by_agent: [...byAgent.values()],
     by_parallel_group: [...byParallelGroup.values()],
@@ -3850,6 +4055,8 @@ function buildModelUsage(projectedNodes) {
   const byRecommendedModel = new Map();
   const byActualModel = new Map();
   const missingActualNodes = [];
+  const accountedNodes = [];
+  const unavailableNodes = [];
   for (const node of projectedNodes) {
     const recommendedKey = node.recommended_model || "unassigned";
     if (!byRecommendedModel.has(recommendedKey)) {
@@ -3862,8 +4069,14 @@ function buildModelUsage(projectedNodes) {
     if (node.recommended_model_reason) recommended.reasons.add(node.recommended_model_reason);
 
     if (node.actual_models.length === 0) {
-      missingActualNodes.push(node.id);
+      if (modelUsageAccounted(node)) {
+        accountedNodes.push(node.id);
+        if (node.usage_observation?.model_status === "unavailable") unavailableNodes.push(node.id);
+      } else {
+        missingActualNodes.push(node.id);
+      }
     } else {
+      accountedNodes.push(node.id);
       for (const record of node.actual_models) {
         const key = [record.model, record.provider || ""].join("\u0000");
         if (!byActualModel.has(key)) {
@@ -3882,13 +4095,17 @@ function buildModelUsage(projectedNodes) {
       recommended_model: node.recommended_model,
       recommended_model_source: node.recommended_model_source,
       actual_models: node.actual_models,
+      usage_observation: node.usage_observation,
     });
   }
   return {
     recommended_nodes: projectedNodes.filter((node) => node.recommended_model).length,
-    actual_recorded_nodes: projectedNodes.length - missingActualNodes.length,
+    actual_recorded_nodes: projectedNodes.filter((node) => node.actual_models.length > 0).length,
+    accounted_nodes: accountedNodes,
+    unavailable_nodes: unavailableNodes,
     missing_actual_nodes: missingActualNodes,
-    actual_coverage_percent: projectedNodes.length === 0 ? 100 : Math.round(((projectedNodes.length - missingActualNodes.length) / projectedNodes.length) * 100),
+    actual_coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((accountedNodes.length / projectedNodes.length) * 100),
+    recorded_value_coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((projectedNodes.filter((node) => node.actual_models.length > 0).length / projectedNodes.length) * 100),
     by_node: byNode,
     recommended_by_model: [...byRecommendedModel.values()].map((entry) => ({
       model: entry.model,
@@ -4165,8 +4382,8 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       "missing-token-usage",
       "low",
       isZh ? "Token 消耗记录不完整" : "Token usage coverage is incomplete",
-      isZh ? "更多节点记录来源感知 token 后，看板才能分析真实消耗趋势。" : "The board cannot show full token cost trends until more nodes record source-aware token usage.",
-      isZh ? "工具暴露精确用量时记录 token_usage；拿不到时保持缺失，不要编造。" : "Record token_usage when the provider or tool exposes exact usage; otherwise leave it missing.",
+      isZh ? "更多节点记录来源感知 token 或不可用原因后，看板才能分析真实消耗边界。" : "The board cannot show full token cost boundaries until more nodes record source-aware token usage or an unavailable reason.",
+      isZh ? "工具暴露精确用量时记录 token_usage；拿不到时记录 usage_observation.token_status=unavailable 和原因，不要编造数值。" : "Record token_usage when exact usage is exposed; otherwise record usage_observation.token_status=unavailable with a reason, and do not invent values.",
       usage.missing_nodes,
     ));
   }
@@ -4218,8 +4435,8 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       "missing-model-usage",
       "low",
       isZh ? "实际模型记录不完整" : "Actual model coverage is incomplete",
-      isZh ? "看板已经能显示推荐模型，但缺少实际执行模型时，无法复盘成本和质量选择是否匹配。" : "The board can show recommended models, but actual model records are needed to audit cost and quality choices.",
-      isZh ? "后续 handoff 或 agent_activity 记录 model；如果环境未暴露实际模型，保持缺失即可。" : "Record model in handoff or agent_activity when the runtime exposes it; leave it missing when unavailable.",
+      isZh ? "看板已经能显示推荐模型，但缺少实际执行模型或不可用原因时，无法复盘成本和质量选择是否匹配。" : "The board can show recommended models, but actual model records or unavailable reasons are needed to audit cost and quality choices.",
+      isZh ? "后续 handoff 或 agent_activity 记录 model；如果环境未暴露实际模型，记录 usage_observation.model_status=unavailable 和原因。" : "Record model in handoff or agent_activity when exposed; otherwise record usage_observation.model_status=unavailable with a reason.",
       models.missing_actual_nodes,
     ));
   }
@@ -4439,6 +4656,24 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
         .map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "入口节点缺少完整 intake_decision、路由、执行形态或自定义答案记录。" : "Intake nodes are missing complete intake_decision, route, execution shape, or custom-answer records.");
     }
+    case "intake_execution_options_confirmed": {
+      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && TERMINAL_STATUSES.has(node.status));
+      if (intakeNodes.length === 0) return pending();
+      const confirmedStatuses = new Set(["confirmed", "auto_authorized", "changed"]);
+      const failing = intakeNodes
+        .filter((node) => {
+          const decision = node.intake_decision;
+          if (!decision) return true;
+          if (!Array.isArray(decision.execution_options) || decision.execution_options.length < 2) return true;
+          if (!decision.execution_options.some((option) => option.recommended === true)) return true;
+          if (!decision.selected_option) return true;
+          if (!decision.execution_options.some((option) => option.id === decision.selected_option)) return true;
+          if (!confirmedStatuses.has(decision.confirmation?.status)) return true;
+          return false;
+        })
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "入口节点必须记录多种执行方案、推荐方案、已选方案和确认状态。" : "Intake nodes must record multiple execution options, a recommendation, selected option, and confirmation status.");
+    }
     case "terminal_handoff_summary": {
       if (terminalNodes.length === 0) return pending();
       const failing = terminalNodes.filter((node) => !node.handoff_summary).map((node) => node.id);
@@ -4497,8 +4732,8 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
     }
     case "token_usage_source": {
       if (terminalNodes.length === 0) return pending();
-      const failing = terminalNodes.filter((node) => !node.token_usage.recorded).map((node) => node.id);
-      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点缺少来源感知 token_usage。" : "Terminal nodes are missing source-aware token_usage.");
+      const failing = terminalNodes.filter((node) => !tokenUsageAccounted(node)).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点缺少来源感知 token_usage，或没有说明运行时不暴露 token。" : "Terminal nodes are missing source-aware token_usage, or did not explain that runtime token usage is unavailable.");
     }
     case "context_usage_source": {
       if (terminalNodes.length === 0) return pending();
@@ -4557,8 +4792,8 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
     }
     case "model_usage_recorded": {
       if (terminalNodes.length === 0) return pending();
-      const failing = terminalNodes.filter((node) => node.actual_models.length === 0).map((node) => node.id);
-      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录实际使用模型。" : "Terminal nodes did not record actual model usage.");
+      const failing = terminalNodes.filter((node) => !modelUsageAccounted(node)).map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "终态节点没有记录实际使用模型，或没有说明运行时不暴露模型。" : "Terminal nodes did not record actual model usage, or did not explain that runtime model data is unavailable.");
     }
     case "board_language": {
       const expected = graph.metadata?.language || language;
@@ -4850,8 +5085,8 @@ function buildDispatchPlan(board, options = {}) {
       recommended_model: node.recommended_model || null,
       model_override: modelOverride,
       model_override_policy: isZh
-        ? "仅当 Codex 子智能体工具支持 model 参数时传入；否则继承主模型并在 handoff 记录实际模型缺口。"
-        : "Pass only when the Codex subagent tool supports a model parameter; otherwise inherit the main model and record the actual-model gap in handoff.",
+        ? "Codex 子智能体/新线程支持 model 参数；创建 worker 时传入推荐模型。若运行面受限无法覆盖模型，在 handoff 记录实际模型缺口。"
+        : "Codex subagents/threads support a model parameter; pass the recommended model when creating the worker. If a constrained surface cannot override the model, record the actual-model gap in handoff.",
       dispatch_reason: canStartNow
         ? hasActiveAssignment
           ? (isZh ? "已有显式 assignment 记录，按通讯录执行面继续跟踪。" : "Explicit assignment exists; track by the recorded execution surface.")
@@ -4881,8 +5116,8 @@ function buildDispatchPlan(board, options = {}) {
         ? "主控保留 workflow state、graph、ledger 和必要 handoff 摘要；子智能体只接收当前节点所需上下文包。"
         : "Main thread keeps workflow state, graph, ledger, and necessary handoff summaries; subagents receive only the context pack needed for the node.",
       model_policy: isZh
-        ? "controller 推荐模型档位和具体模型；实际 spawn 时由 Codex 主控使用 model override（可用时）或继承主模型。"
-        : "Controller recommends model tier and concrete model; Codex orchestration uses model override when available or inherits the main model.",
+        ? "controller 推荐模型档位和具体模型；实际 spawn 时由 Codex 主控传入对应 model override，并保持主线程模型稳定。"
+        : "Controller recommends model tier and concrete model; Codex orchestration passes the matching model override when spawning workers while keeping the main thread model stable.",
     },
     safety: {
       safety_limits: safetyId,
@@ -5228,6 +5463,20 @@ function renderTokenUsage(usage, text) {
   return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>${usage.notes ? `<p class="muted">${escapeHtml(usage.notes)}</p>` : ""}`;
 }
 
+function renderUsageObservation(observation, text) {
+  if (!observation) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const fields = [
+    ["model_status", observation.model_status],
+    ["model_unavailable_reason", observation.model_unavailable_reason],
+    ["token_status", observation.token_status],
+    ["token_unavailable_reason", observation.token_unavailable_reason],
+    [text.source, observation.source],
+    ["runtime_surface", observation.runtime_surface],
+  ].filter(([, value]) => value !== null && value !== undefined);
+  const evidence = observation.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${observation.evidence.map((item) => `<code>${escapeHtml(item)}</code>`).join(" ")}</p>` : "";
+  return `<dl>${fields.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>${observation.notes ? `<p class="muted">${escapeHtml(observation.notes)}</p>` : ""}${evidence}`;
+}
+
 function renderContextUsage(usage, text) {
   if (!usage?.recorded) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
   const fields = [
@@ -5278,13 +5527,32 @@ function renderIntakeDecision(decision, text) {
       return `${escapeHtml(item.question)}${options}${answer}<p class="muted">${escapeHtml(text.customAnswersAllowed)}: ${escapeHtml(String(item.custom_answer_allowed))}</p>`;
     })}`
     : `<p><strong>${escapeHtml(text.questions)}:</strong> ${escapeHtml(text.none)}</p>`;
+  const executionOptions = decision.execution_options?.length
+    ? `<h5>${escapeHtml(text.executionOptions)}</h5>${renderObjectList(decision.execution_options, text.none, (item) => {
+      const label = `${item.label}${item.recommended ? ` (${text.recommended})` : ""}`;
+      const tradeoffs = item.tradeoffs?.length ? `<p class="muted">${escapeHtml(item.tradeoffs.join(" / "))}</p>` : "";
+      const risks = item.risks?.length ? `<p class="muted">${escapeHtml(text.openRisks)}: ${escapeHtml(item.risks.join(" / "))}</p>` : "";
+      return `<strong>${escapeHtml(label)}</strong><p>${escapeHtml(item.summary || "")}</p>${tradeoffs}${risks}`;
+    })}`
+    : `<p><strong>${escapeHtml(text.executionOptions)}:</strong> ${escapeHtml(text.none)}</p>`;
+  const confirmation = decision.confirmation
+    ? [
+      decision.confirmation.status,
+      decision.confirmation.by ? `by=${decision.confirmation.by}` : null,
+      decision.confirmation.evidence ? `evidence=${decision.confirmation.evidence}` : null,
+      decision.confirmation.notes,
+    ].filter(Boolean).join(" · ")
+    : text.notRecorded;
   return `<dl>
       <dt>${escapeHtml(text.goal)}</dt><dd>${escapeHtml(decision.goal || text.none)}</dd>
       <dt>${escapeHtml(text.route)}</dt><dd>${escapeHtml(route || text.none)}</dd>
       <dt>${escapeHtml(text.workflowShape)}</dt><dd>${escapeHtml(workflow || text.none)}</dd>
+      <dt>${escapeHtml(text.selectedOption)}</dt><dd>${escapeHtml(decision.selected_option || text.none)}</dd>
+      <dt>${escapeHtml(text.confirmation)}</dt><dd>${escapeHtml(confirmation)}</dd>
       <dt>${escapeHtml(text.customAnswersAllowed)}</dt><dd>${escapeHtml(String(decision.custom_answers_allowed))}</dd>
     </dl>
     ${decision.workflow?.reason ? `<p class="muted">${escapeHtml(decision.workflow.reason)}</p>` : ""}
+    ${executionOptions}
     ${assumptions}
     ${questions}`;
 }
@@ -5669,6 +5937,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
         <section><h4>${escapeHtml(text.tokenUsage)}</h4>${renderTokenUsage(node.token_usage, text)}</section>
         <section><h4>${escapeHtml(text.actualModel)}</h4>${renderModelRecords(node.actual_models, text)}</section>
+        <section><h4>${escapeHtml(text.usageObservation)}</h4>${renderUsageObservation(node.usage_observation, text)}</section>
         <section><h4>${escapeHtml(text.contextUsage)}</h4>${renderContextUsage(node.context_usage, text)}</section>
         <section><h4>${escapeHtml(text.timeUsage)}</h4>${renderTiming(node.timing, text)}</section>
         <section><h4>${escapeHtml(text.agentPolicy)}</h4><dl><dt>${escapeHtml(text.complexity)}</dt><dd>${escapeHtml(node.task_complexity)}</dd><dt>${escapeHtml(text.agent)}</dt><dd>${escapeHtml(node.agent || text.none)}</dd><dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd><dt>${escapeHtml(text.recommendedModel)}</dt><dd>${escapeHtml(node.recommended_model || text.none)}</dd><dt>${escapeHtml(text.modelProfile)}</dt><dd>${escapeHtml(node.model_profile || text.none)}</dd><dt>${escapeHtml(text.runtimeProfile)}</dt><dd>${escapeHtml(node.runtime_profile || text.none)}</dd><dt>${escapeHtml(text.safetyProfile)}</dt><dd>${escapeHtml(node.safety_profile || text.none)}</dd><dt>${escapeHtml(text.scorecard)}</dt><dd>${escapeHtml(node.scorecard || text.none)}</dd><dt>${escapeHtml(text.modelSelection)}</dt><dd>${escapeHtml(node.recommended_model_reason || node.model_selection_reason)}</dd></dl></section>
@@ -5908,10 +6177,13 @@ function renderBoardHtml(board) {
       <div class="metrics">
         ${renderMetric(text.recommendedModel, board.models.recommended_nodes)}
         ${renderMetric(text.modelRecorded, board.models.actual_recorded_nodes)}
+        ${renderMetric(text.modelUnavailable, board.models.unavailable_nodes.length)}
         ${renderMetric(text.modelMissing, board.models.missing_actual_nodes.length)}
         ${renderMetric(text.modelCoverage, `${board.models.actual_coverage_percent}%`)}
+        ${renderMetric(text.modelValueCoverage, `${board.models.recorded_value_coverage_percent}%`)}
       </div>
       <p><strong>${escapeHtml(text.modelMissing)}:</strong> ${escapeHtml(board.models.missing_actual_nodes.join(", ") || text.none)}</p>
+      <p><strong>${escapeHtml(text.modelUnavailable)}:</strong> ${escapeHtml(board.models.unavailable_nodes.join(", ") || text.none)}</p>
       <h3>${escapeHtml(text.recommendedModel)}</h3>
       ${renderModelGroups(board.models.recommended_by_model, text)}
       <h3>${escapeHtml(text.actualModel)}</h3>
@@ -5923,10 +6195,13 @@ function renderBoardHtml(board) {
       <div class="metrics">
         ${renderMetric(text.tokenTotal, board.usage.totals.total_tokens || text.notRecorded)}
         ${renderMetric(text.tokenRecorded, board.usage.recorded_nodes)}
+        ${renderMetric(text.tokenUnavailable, board.usage.unavailable_nodes.length)}
         ${renderMetric(text.tokenMissing, board.usage.missing_nodes.length)}
         ${renderMetric(text.tokenCoverage, `${board.usage.coverage_percent}%`)}
+        ${renderMetric(text.tokenValueCoverage, `${board.usage.recorded_value_coverage_percent}%`)}
       </div>
       <p><strong>${escapeHtml(text.tokenMissing)}:</strong> ${escapeHtml(board.usage.missing_nodes.join(", ") || text.none)}</p>
+      <p><strong>${escapeHtml(text.tokenUnavailable)}:</strong> ${escapeHtml(board.usage.unavailable_nodes.join(", ") || text.none)}</p>
       <h3>${escapeHtml(text.parallelGroups)}</h3>
       ${renderUsageGroups(board.usage.by_parallel_group, text)}
     </section>
@@ -6309,7 +6584,8 @@ function cmdInit(positional, options) {
   const title = positional.join(" ").trim();
   if (!title) throw new Error("init requires a workflow title");
 
-  const templateId = options.template ? String(options.template) : DEFAULT_TEMPLATE_ID;
+  const requestedTemplateId = options.template ? String(options.template) : AUTO_TEMPLATE_ID;
+  const templateId = resolveInitTemplateId(title, requestedTemplateId);
   const template = loadWorkflowTemplate(templateId);
   const mode = options.mode ? String(options.mode) : template.default_mode || DEFAULT_MODE;
   if (!MODES.has(mode)) throw new Error(`--mode must be one of ${[...MODES].join(", ")}`);
@@ -6341,12 +6617,13 @@ function cmdInit(positional, options) {
   for (const node of graph.nodes) writeJson(path.join(workflowDir, "nodes", `${node.id}.json`), nodeCard(graph, node));
   fs.writeFileSync(path.join(workflowDir, "decisions.md"), `# Decisions\n\nWorkflow: ${workflowId}\n\n`);
   fs.writeFileSync(path.join(workflowDir, "blockers.md"), `# Blockers\n\nWorkflow: ${workflowId}\n\n`);
-  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, language });
+  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, requested_template_id: requestedTemplateId, language });
   writeActiveWorkflowId(workflowId);
 
   const { graph: savedGraph, state } = loadWorkflow(workflowDir);
   console.log(`Workflow created: ${workflowId}`);
   console.log(`Path: ${path.relative(process.cwd(), workflowDir)}`);
+  console.log(`Template: ${templateId}${requestedTemplateId === AUTO_TEMPLATE_ID ? " (auto)" : ""}`);
   printStatus(savedGraph, state);
   const board = buildBoardProjection(workflowDir, savedGraph, state, language);
   const plan = buildOrchestrationPlan(board, buildDispatchPlan(board, { surface: "auto" }));

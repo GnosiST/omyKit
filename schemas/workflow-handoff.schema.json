@@ -173,6 +173,84 @@
             }
           }
         },
+        "execution_options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "summary"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tradeoffs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "risks": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "recommended": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "selected_option": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "auto_authorized",
+                "changed",
+                "rejected"
+              ]
+            },
+            "by": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
         "custom_answers_allowed": {
           "type": "boolean"
         }
@@ -798,6 +876,86 @@
           "minLength": 1
         }
       }
+    },
+    "usage_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model_status": {
+          "type": "string",
+          "enum": [
+            "recorded",
+            "unavailable",
+            "not_applicable",
+            "not_recorded"
+          ]
+        },
+        "token_status": {
+          "type": "string",
+          "enum": [
+            "recorded",
+            "unavailable",
+            "not_applicable",
+            "not_recorded"
+          ]
+        },
+        "model_unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "token_unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime_surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "model_status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "model_unavailable_reason"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "token_status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "token_unavailable_reason"
+            ]
+          }
+        }
+      ]
     },
     "agent_activity": {
       "type": "array",

@@ -14,7 +14,7 @@ omyKit is not meant to wrap every step in a heavy process. It is meant to make c
 - Context and token control: each node receives only necessary context through `context-pack`, `downstream_context`, evidence summaries, and command records.
 - Less long-task drift: long tasks are split into short nodes with structured handoffs instead of relying on one long chat memory.
 - Parallelism and joins: workflows can run serial, parallel, fan-out, join, reject, and block paths while the board reflects real progress.
-- Model fit by task: low-risk simple nodes use cheaper tiers, while design or high-risk review uses frontier tiers; actual model usage is recorded only when the runtime exposes it.
+- Model fit by task: low-risk simple nodes use cheaper tiers, while design or high-risk review uses frontier tiers; Codex Desktop workers receive the recommended model override and actual model usage is recorded when execution exposes it.
 - Language adaptation: user-visible plans, questions, progress, handoffs, and boards follow the user's prompt language.
 - Continuous evolution: delivery nodes capture reusable lessons, scorecards verify the review happened, and only abstracted lessons enter the generic kit.
 - Source integrity: only high-signal, official, or explicitly verified references are admitted; omyKit does not copy third-party skill bodies, templates, images, badges, or branding.
@@ -61,7 +61,7 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | --- | --- | --- |
 | Do not run workflow on every step | `omykit` routes only at intake, scope/risk change, or delivery. | Mostly satisfied. |
 | Long tasks continue after workflow creation | Skills, docs, and controller status output require the `resume/orchestrate -> start or dispatch -> work -> handoff -> complete/reject/block` loop. | Rules and orchestration artifact exist; real execution still depends on the active Codex turn. |
-| Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, with topology, agent, model, runtime, safety, and scorecard layers. | Direction is right; template set is still small. |
+| Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`, with topology, agent, model, runtime, safety, and scorecard layers. | Covers ordinary change, bugfix, strict UI, and broad mission orchestration; future templates should be added only when topology materially differs. |
 | Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
 | Subagent parallelism | `orchestrate` emits the automatic execution mode, ready actions, worker profile, model recommendation, and context pack policy. | Controller decides the plan; Codex runtime performs any actual worker spawn. |
 | Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, handoff coverage scorecard, and write-scope scorecard exist. | Recording and audit exist; the controller still does not create threads/worktrees by itself. |

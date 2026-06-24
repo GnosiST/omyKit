@@ -32,11 +32,12 @@ Route once per task or meaningful phase. Do not re-run routing for routine file 
    - Infer missing values when safe and state assumptions.
    - Ask 1-3 questions before execution only when the deliverable, target project, success criteria, destructive/risky boundary, runtime/deployment constraint, workflow mode, controller need, or template choice is unclear and a wrong guess would change the work.
    - Suggested choices are allowed, but every question must allow a free-form/custom answer.
-   - If the route is clear, provide a concise routing summary and continue without confirmation.
+   - Before real execution, provide 2-3 execution options, mark one recommendation, explain tradeoffs, and get user confirmation unless the user explicitly auto-authorized professional judgment.
+   - If the route is clear and auto-authorized, provide a concise routing summary and continue.
 6. Select execution shape:
    - direct Lite/Standard workflow for small or straightforward work.
    - tracked controller workflow for multi-node, compact-prone, parallel, rejected, resumable, user-requested tracked, or Strict work.
-   - nearest controller template when tracked: `change.standard`, `bugfix.standard`, or `frontend-ui.strict`.
+   - nearest controller template when tracked: `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`.
 7. Route:
    - `init` -> `codex-project-init`.
    - `retrofit` -> `codex-project-retrofit`.
@@ -56,6 +57,9 @@ Project type:
 Mode:
 Context level now:
 Workflow shape:
+Execution options:
+Recommended option:
+Confirmation:
 Next skill:
 Assumptions:
 Questions:

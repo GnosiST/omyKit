@@ -53,13 +53,15 @@ Low-signal sources that duplicate omyKit's PM, taste, catalog, or meta-UX lanes 
 node ./scripts/check-upstream-refs.mjs
 ```
 
-This checks both upstream `HEAD` drift and the required source-integrity snapshot fields in `upstream-sources.json`.
+This checks both upstream `HEAD` drift and the required source-integrity snapshot fields in `upstream-sources.json`. Drift inside the configured review interval is reported as deferred so ordinary work is not interrupted.
 
 Use strict mode when a changed upstream should block release readiness until reviewed:
 
 ```bash
-node ./scripts/check-upstream-refs.mjs --strict
+node ./scripts/check-upstream-refs.mjs --strict --force-review --report .omykit/upstream-watch/report.json
 ```
+
+`--strict` exits non-zero only when review is due and drift is present. `--force-review` marks the run as review-due regardless of the cadence, which is appropriate before releases or when a task depends on current upstream behavior. `--report <file>` writes a machine-readable drift report.
 
 ## Review Rule
 

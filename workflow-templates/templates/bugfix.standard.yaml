@@ -43,9 +43,9 @@ nodes:
     estimated_minutes: 10
     acceptance:
       en:
-        - Expected behavior, actual behavior, environment, and success criteria are explicit.
+        - Expected behavior, actual behavior, environment, success criteria, execution options, recommendation, and confirmation are explicit.
       zh-CN:
-        - 预期行为、实际行为、环境和成功标准已经明确。
+        - 预期行为、实际行为、环境、成功标准、执行方案、推荐方案和确认状态已经明确。
   - id: 02-reproduce
     type: verify
     title:

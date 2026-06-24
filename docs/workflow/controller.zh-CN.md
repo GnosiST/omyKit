@@ -95,7 +95,7 @@ node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-controller 仍然不会自己启动 agent 或调用模型。只有当前 worker 运行时暴露 `model` 参数时，Codex 才能把推荐模型作为 override 传入；否则 worker 继承主模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason`，不要编造模型名。
+controller 仍然不会自己启动 agent 或调用模型。Codex Desktop 的新线程和子智能体工具支持模型 override；节点有任务级推荐模型时，Codex 应在创建 worker 时传入该模型，同时让主线程保持当前模型作为 orchestrator-observer。若非 Codex 客户端、权限边界或工具策略不允许 override，worker 才继承默认模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason` 和节点级 `usage_observation.model_status=unavailable`，不要编造模型名。
 
 `assign` 会把实际分工追加到 `assignments.jsonl`：节点、agent id、角色、执行面、thread id、worktree、模型档位、写入范围、context pack、handoff 路径和状态。它是运行时通讯录，不写入模板。看板会投影 Agent 通讯录，Scorecard 会提醒 assignment 缺少可读取 handoff 或多个活跃 agent 写入范围重叠。
 
@@ -202,6 +202,7 @@ node scripts/omykit-workflow.mjs resume
 | `change.standard` | 默认的有边界功能、重构、文档或维护工作。 |
 | `bugfix.standard` | 缺陷修复的复现、诊断、修复、验证、评审和交付。 |
 | `frontend-ui.strict` | 设计敏感前端工作，包含 UI 方向、实现、浏览器/视觉验收、评审和交付。 |
+| `mission.orchestration` | 需要需求洞察、任务拆解、工作流路由、执行监听、集成验票和 workflow 学习的复杂需求。 |
 
 模板是分层的：
 
@@ -232,13 +233,13 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、执行方案和确认状态、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
 
-token、上下文、skill 和实际模型总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。推荐模型来自所选 `model_profile` 和节点策略；实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
+token、上下文、skill 和实际模型总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。运行环境不可观测的用量会通过 `usage_observation` 和缺失记录分开展示。推荐模型来自所选 `model_profile` 和节点策略；当 Codex runtime 策略允许时，worker 创建应把这些推荐模型作为 model override 传入。实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
 
 看板语言按这个顺序确定：显式 `--lang`、workflow metadata 语言、最新 handoff 语言、标题语言推断。只有需要覆盖 workflow 语言时才手动传 `--lang zh-CN`。在 Codex Desktop 中，Codex 应返回生成的 `board.html` 本地链接，并在可用时用内置浏览器打开。CLI 的 `--open` fallback 会让操作系统尝试用系统默认浏览器打开 HTML；如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
-看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设和自定义答案策略。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择或运行环境没有暴露模型的节点伪造记录。
+看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设、执行方案、已选方案、确认状态和自定义答案策略。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择或运行环境没有暴露模型的节点伪造记录。
 
 这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不替用户选择具体供应商模型，不自动推断 skill 使用，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组、skill 使用记录、模型档位建议、推荐模型、实际模型记录、耗时、用量和 handoff 证据。
 

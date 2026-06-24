@@ -124,7 +124,7 @@ node scripts/omykit-workflow.mjs upgrade --all
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-controller 仍然保留 `dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以选择 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 等可复用模板；未指定时使用 `change.standard`。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
+controller 仍然保留 `dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以用 `--template auto` 在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；显式指定模板会覆盖自动选择。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示每个节点和 worker 实际使用的 skill、执行方案与确认状态、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 
@@ -162,9 +162,9 @@ controller 仍然保留 `dispatch-plan`、`context-pack`、`assign` 和 `record-
 
 Controller 是本地确定性机制。它不调用模型，不自动启动 agent，不自动改代码，不替代 Codex，也不会让 Lite 任务默认变重。全局安装会把它复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`，schemas 位于 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`。
 
-Controller 是模板驱动的。内置 YAML 模板把图拓扑、agent 角色、模型配置、运行配置、安全限位和 scorecard 分层定义；因此同类任务可以复用稳定流程，不同 issue 只改变输入、证据和产物。可以用 `templates list`、`templates show <id>` 和 `templates validate` 查看或校验已安装模板。
+Controller 是模板驱动的。内置 YAML 模板把图拓扑、agent 角色、模型配置、运行配置、安全限位和 scorecard 分层定义；因此同类任务可以复用稳定流程，不同 issue 只改变输入、证据和产物。`init --template auto` 会在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；用户显式指定模板时仍优先尊重用户选择。可以用 `templates list`、`templates show <id>` 和 `templates validate` 查看或校验已安装模板。
 
-`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、入口决策、workflow 进化候选、delivery 知识同步审查、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。token、上下文、skill 使用和实际模型只聚合有记录的证据，缺失节点会明确展示，不会被当作 0。
+`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、入口决策、workflow 进化候选、delivery 知识同步审查、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、用量观测状态、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、最近事件和自动生成的整改建议，不引入服务端或数据库。token、上下文、skill 使用和实际模型只聚合有记录的证据；运行环境不可观测的指标会和缺失记录分开显示，不会猜测或当成 0。
 
 ## 工作流模型
 
@@ -176,13 +176,18 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 
 - 只在任务入口、范围/风险变化或交付前路由一次。
 - 入口阶段先说明目标、路由、执行形态或 controller 模板，以及影响交付的关键假设，再开始实现。
+- 开始实现或派发 worker 前，先给出执行方案、推荐方案、取舍，并记录用户确认或明确自动授权。
 - 在任务边界和关键阶段变化时使用工作流，不要每个文件读取、编辑或命令都重跑。
 - 只有追踪型多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作才启用 controller。
 - 创建追踪型 workflow 不等于任务完成；长任务要继续按 `resume/orchestrate -> 内部启动或派发 -> work -> handoff -> complete/reject/block/unblock` 循环推进，直到 delivery 通过或记录真实阻塞。
-- 多智能体工作由自动编排计划根据任务适配度选择主线程、子智能体、后台线程或 worktree；主对话保持当前模型作为 orchestrator-observer，只在运行时支持时把模型 override 传给 worker。
+- 多智能体工作由自动编排计划根据任务适配度选择主线程、子智能体、后台线程或 worktree；主对话保持当前模型作为 orchestrator-observer，并把节点推荐模型作为 override 传给 Codex worker。
 - 历史 `.omykit/workflows/*` 产物需要适配最新版 controller 时，使用 `upgrade --all` 补齐 controller 元数据、命令边界、节点卡和新版看板投影；升级时不得伪造缺失的 handoff、token、skill、模型或验证证据。
 - 追踪型工作先选择最接近的 workflow 模板；需要定制时优先增改模板/profile YAML，不把一次性逻辑硬编码进 controller。
+- 复杂需求需要需求洞察、任务拆解、多个工作流/工作分支路由、执行监听、集成验票和交付学习时，使用 `mission.orchestration`。
 - 每个节点选择最低足够模型档位；由模型配置给出推荐模型，实际 provider/model 只有在执行环境暴露时才记录。
+- 当前 Codex 新线程和子智能体运行面支持模型 override；创建 worker 时应按节点推荐模型传入。若某个客户端或工具策略确实无法覆盖模型，记录 `usage_observation` 中的推荐/实际差异和不可观测原因。
+- 执行环境没有暴露精确 token 或实际 worker 模型时，记录 `usage_observation` 的 `unavailable` 原因，不要伪造指标。
+- 把漂移当作 workflow 事件处理：非阻塞漂移进入 handoff notes 和 downstream risks；验收、安全、目标项目、破坏性操作或模板漂移必须带证据 block 或 reject 受影响节点。
 - 当同类 specialist skill 都可能适用时，记录 `skill_decisions`：为什么选它、未选候选、用户不满意时换哪个 skill 重做，以及实际反馈结果。
 - 追踪型交付必须记录 `evolution_candidates`；已复盘但没有可复用 workflow 经验时使用空数组。
 - 同时记录 delivery `knowledge_sync`：README/docs/AGENTS 或记忆已同步时用 `completed`，没有持久知识变化时用 `not_needed`，确实延期时用带原因的 `deferred`。

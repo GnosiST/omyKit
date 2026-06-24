@@ -1,0 +1,203 @@
+schema_version: "1"
+template_id: mission.orchestration
+template_version: "1.0"
+name:
+  en: Mission Orchestration
+  zh-CN: 需求编排
+description:
+  en: Top-level workflow for broad requirements that need insight, task decomposition, workflow routing, monitored execution, integration gates, and learning.
+  zh-CN: 面向复杂需求的顶层工作流，覆盖需求洞察、任务拆解、工作流路由、执行监听、集成验票和经验沉淀。
+default_mode: Strict
+layers:
+  agents: orchestration-agents
+  model_profile: quality-critical
+  runtime_profile: project-default
+  safety_limits: strict-delivery
+  scorecards:
+    - mission
+nodes:
+  - id: 01-intake
+    type: intake
+    title:
+      en: Mission Intake
+      zh-CN: 需求接收
+    objective:
+      en: Capture the user demand, target project, success criteria, language, risk boundary, and any decisions that truly require user input.
+      zh-CN: 固化用户需求、目标项目、成功标准、语言、风险边界，以及确实需要用户输入的决策。
+    depends_on: []
+    required: true
+    retry_limit: 1
+    context_level: scan
+    owner: codex
+    worker_profile: demand-analyst
+    agent: demand-analyst
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 02-insight
+    task_complexity: standard
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Goal, target project, success criteria, language, risk boundary, execution options, recommendation, confirmation, and custom-answer policy are explicit.
+      zh-CN:
+        - 目标、目标项目、成功标准、语言、风险边界、执行方案、推荐方案、确认状态和自定义答案策略已经明确。
+  - id: 02-insight
+    type: research
+    title:
+      en: Requirement Insight
+      zh-CN: 需求洞察
+    objective:
+      en: Analyze intent, hidden constraints, affected surfaces, likely task classes, and drift risks before planning execution.
+      zh-CN: 在制定执行计划前分析意图、隐藏约束、影响面、可能任务类别和漂移风险。
+    depends_on:
+      - 01-intake
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: demand-analyst
+    agent: demand-analyst
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 03-workflow-map
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 35
+    acceptance:
+      en:
+        - Intent, constraints, affected surfaces, task classes, and drift risks are recorded with evidence.
+      zh-CN:
+        - 已用证据记录意图、约束、影响面、任务类别和漂移风险。
+  - id: 03-workflow-map
+    type: plan
+    title:
+      en: Workflow Map
+      zh-CN: 工作流地图
+    objective:
+      en: Split the mission into reusable workflow instances or bounded workstreams, with serial, parallel, fan-out, join, and reject paths.
+      zh-CN: 将需求拆成可复用工作流实例或有边界工作流分支，并定义串行、并行、扇出、汇聚和打回路径。
+    depends_on:
+      - 02-insight
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: workflow-architect
+    agent: workflow-architect
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 04-orchestrate
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 40
+    acceptance:
+      en:
+        - Workstreams are mapped to templates, owners, model tiers, dispatch surfaces, handoff contracts, and reject conditions.
+      zh-CN:
+        - 工作流分支已映射到模板、负责人、模型档位、派发表面、交接合同和打回条件。
+  - id: 04-orchestrate
+    type: implement
+    title:
+      en: Orchestrated Execution
+      zh-CN: 编排执行
+    objective:
+      en: Start or dispatch ready workstreams, keep the main thread as controller-observer, monitor state, integrate handoffs, and record non-blocking drift.
+      zh-CN: 启动或派发就绪工作流分支，让主线程保持主控观察者角色，监听状态、集成交接并记录非阻塞漂移。
+    depends_on:
+      - 03-workflow-map
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: orchestrator
+    agent: orchestrator
+    parallel_group: execution
+    join_policy: all_required
+    handoff_target: 05-integrate-verify
+    task_complexity: complex
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 60
+    acceptance:
+      en:
+        - Ready workstreams have assignments, context packs, handoff targets, status records, and blocker or reject paths when needed.
+      zh-CN:
+        - 就绪工作流分支已有分配、上下文包、交接目标、状态记录，以及必要的阻塞或打回路径。
+  - id: 05-integrate-verify
+    type: verify
+    title:
+      en: Integration Gate
+      zh-CN: 集成验票
+    objective:
+      en: Verify all workstream evidence, reject incomplete handoffs, confirm scope alignment, and run scorecards before delivery.
+      zh-CN: 验证所有工作流分支证据、打回不完整交接、确认范围一致，并在交付前运行 scorecard。
+    depends_on:
+      - 04-orchestrate
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: integrator
+    agent: integrator
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 06-delivery-learn
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 45
+    acceptance:
+      en:
+        - Scorecards pass or produce explicit reject/block actions, and drift from the original demand is either resolved or recorded.
+      zh-CN:
+        - Scorecard 通过或产生明确打回/阻塞动作，偏离原始需求的漂移已处理或记录。
+  - id: 06-delivery-learn
+    type: delivery
+    title:
+      en: Delivery And Learning
+      zh-CN: 交付与学习
+    objective:
+      en: Package final evidence, user-facing result, residual risks, knowledge sync, and workflow evolution candidates.
+      zh-CN: 汇总最终证据、面向用户的结果、剩余风险、知识同步和 workflow 进化候选。
+    depends_on:
+      - 05-integrate-verify
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: delivery
+    agent: delivery
+    parallel_group: delivery
+    join_policy: manual_review
+    handoff_target: null
+    task_complexity: standard
+    model_tier: standard
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 25
+    acceptance:
+      en:
+        - Delivery includes evidence, scorecard status, residual risk, knowledge sync review, and generic workflow lessons when applicable.
+      zh-CN:
+        - 交付包含证据、scorecard 状态、剩余风险、知识同步审查，以及适用时的通用 workflow 经验。

@@ -4,7 +4,7 @@ Language: [English](task-graph.md) | [简体中文](task-graph.zh-CN.md)
 
 The controller uses a directed acyclic graph. Each node has one responsibility, explicit dependencies, acceptance criteria, and a handoff requirement.
 
-Graphs are normally compiled from workflow templates such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`. You can still inspect and edit the generated `graph.json`, but durable changes should usually be made in template/profile YAML so the workflow remains reusable.
+Graphs are normally compiled from workflow templates such as `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`. You can still inspect and edit the generated `graph.json`, but durable changes should usually be made in template/profile YAML so the workflow remains reusable.
 
 ## Node Types
 
@@ -86,7 +86,7 @@ For multi-agent work, treat this as two layers:
 
 Do not treat a logical parallel group as proof that work physically ran at the same time unless timestamps or agent activity records show it.
 
-Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. The active `model_profile` maps tiers to recommended concrete models and may add node-specific overrides. Record actual provider/model names only in handoff execution metadata, because the controller recommends but does not call models. If Codex worker tools expose a `model` parameter, the main orchestrator may pass the orchestration plan's override to the worker; otherwise the worker inherits the main model and should record `model_unavailable_reason` when actual model metadata is hidden.
+Use `model_tier` to avoid over-spending on simple work: `fast` for clear bounded tasks, `standard` for ordinary implementation and verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. The active `model_profile` maps tiers to recommended concrete models and may add node-specific overrides. Codex Desktop worker tools support model overrides, so the main orchestrator should pass the orchestration plan's recommended model to subagents or new threads while keeping the main thread model stable. Record actual provider/model names only in handoff execution metadata, because the controller recommends but does not call models. If a non-Codex runtime cannot override or expose model metadata, record the recommendation/actual gap and `model_unavailable_reason`.
 
 ## Retry Limits
 

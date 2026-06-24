@@ -340,11 +340,11 @@
 }
 ```
 
-使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`skill_decisions`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。节点级 `skills_used` 记录影响整个节点的 skill，`skill_decisions` 记录同类能力选择依据、候选替代、fallback 和用户反馈；没有同类竞争或没有使用 specialist skill 时可以省略。`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
+使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`skill_decisions`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。入口 handoff 在实现开始前应包含 `execution_options`、`selected_option` 和 `confirmation`：给出 2-3 个可执行方案，标记推荐方案，记录用户纠偏或确认，并保持允许自定义答案。节点级 `skills_used` 记录影响整个节点的 skill，`skill_decisions` 记录同类能力选择依据、候选替代、fallback 和用户反馈；没有同类竞争或没有使用 specialist skill 时可以省略。`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
 
 如果用户对产物不满意，不要盲目叠加所有同类 skill。先查看对应节点的 `skill_decisions[].fallback_policy`；若已有 `next_skill`，保留已验证事实和功能，只把不满意的质量维度交给下一个更擅长的 skill 重做或修改。重做后把 `user_feedback.status`、`outcome` 和新证据写回 handoff。反复有效或反复失败的选择经验，作为 delivery `evolution_candidates` 交给 `codex-workflow-evolution` 判断是否进入通用 omyKit 规则。
 
-token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。若子智能体运行时隐藏实际模型，记录 `agent_activity[].model_unavailable_reason`。
+token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。Codex Desktop 创建 worker 支持模型 override，所以节点 handoff 应记录推荐模型，并在执行环境暴露时记录实际模型。若运行时策略或 metadata 隐藏实际模型或 token 计数，增加节点级 `usage_observation`，将 `model_status` 或 `token_status` 设为 `unavailable`，并写明对应不可观测原因。看板会把运行时不可观测和未记录分开展示。
 
 ## Failed And Reject
 
@@ -409,7 +409,7 @@ token、上下文和模型记录必须有来源。只要出现 `token_usage` 或
 - 下游需要继承的事实写入 `downstream_context`，不要只留在聊天摘要里。
 - `downstream_context` 应优先引用摘要和证据路径，不要复制大段日志、源码或完整对话。
 - 只记录实际使用过的 skill；可取得时写清用途和证据。
-- 只有运行环境暴露实际模型时才记录模型名；子智能体拿不到模型时写 `model_unavailable_reason`，节点级模型记录可保持缺失。
-- token 用量必须带来源；无法取得真实用量时标记未记录，不要估成 0。
+- 执行环境暴露实际模型时记录模型名；否则在 worker activity 写 `model_unavailable_reason`，并在节点级 `usage_observation.model_status=unavailable` 写明原因。
+- token 用量必须带来源；无法取得精确用量时记录 `usage_observation.token_status=unavailable` 和原因，不要估成 0。
 
 节点状态见 [task-graph.zh-CN.md](task-graph.zh-CN.md)，命令见 [controller.zh-CN.md](controller.zh-CN.md)。

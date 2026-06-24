@@ -43,9 +43,9 @@ nodes:
     estimated_minutes: 15
     acceptance:
       en:
-        - Target screens, user intent, states, constraints, and visual acceptance are explicit.
+        - Target screens, user intent, states, constraints, visual acceptance, execution options, recommendation, and confirmation are explicit.
       zh-CN:
-        - 目标页面、用户意图、状态、约束和视觉验收标准已经明确。
+        - 目标页面、用户意图、状态、约束、视觉验收标准、执行方案、推荐方案和确认状态已经明确。
   - id: 02-design
     type: design
     title:

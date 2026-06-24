@@ -43,9 +43,9 @@ nodes:
     estimated_minutes: 10
     acceptance:
       en:
-        - Goal, constraints, deliverable, language, and success criteria are explicit.
+        - Goal, constraints, deliverable, language, success criteria, execution options, recommendation, and confirmation are explicit.
       zh-CN:
-        - 目标、约束、交付物、语言和成功标准已经明确。
+        - 目标、约束、交付物、语言、成功标准、执行方案、推荐方案和确认状态已经明确。
   - id: 02-design
     type: design
     title:

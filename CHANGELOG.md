@@ -4,6 +4,9 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added a pre-execution option gate: intake handoffs now record multiple execution options, a recommended and selected option, confirmation status, and scorecard coverage before implementation or worker dispatch.
+- Added `mission.orchestration` for broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning.
+- Split runtime-unavailable token/model metrics from missing records with `usage_observation`, and updated board/model guidance to pass Codex worker model overrides when spawning subagents or new threads.
 - Formalized official-tool-first routing: omyKit now treats platform official CLIs and automation APIs as project-discovered first-class tools, and uses Computer Use as the final fallback for local GUI work only after official/bundled connectors, MCP/plugins, browser automation, shell/API paths, project scripts, and platform CLIs are unavailable or insufficient.
 - Added intent-first tracked workflow orchestration: `orchestrate` now produces `orchestration-plan.json`, `next/resume/init` point to automatic orchestration, user-facing help no longer promotes manual subagent/context-pack/assignment selection, and `upgrade` can update historical workflow artifacts without fabricating missing evidence.
 - Added same-lane skill selection tracking: handoffs can record `skill_decisions` with rationale, alternatives, fallback policy, user feedback, and outcome; boards and scorecards now surface missing selection records and skill-based rework needs.

@@ -2,7 +2,9 @@
   "review_policy": {
     "cadence": "monthly and before omyKit releases",
     "owner": "codex-workflow-evolution",
-    "promotion_rule": "Review changed upstream references for reusable workflow lessons; do not copy third-party bodies, templates, resource lists, images, badges, or branding."
+    "review_interval_days": 14,
+    "promotion_rule": "Review changed upstream references for reusable workflow lessons; do not copy third-party bodies, templates, resource lists, images, badges, or branding.",
+    "noise_control": "Default checks defer drift inside the review interval; use --force-review before releases or when current upstream behavior affects the task."
   },
   "source_integrity": {
     "last_verified_on": "2026-06-23",

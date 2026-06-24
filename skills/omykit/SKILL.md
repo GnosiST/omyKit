@@ -38,7 +38,7 @@ For controller and board requests, use the first available script:
 
 Map user intent to commands:
 
-- create or execute tracked workflow -> `init --template <template-id> --lang <user-language>` when no workflow exists; default to `change.standard`, use `bugfix.standard` for bug-fix loops, and `frontend-ui.strict` for design-sensitive UI work
+- create or execute tracked workflow -> `init --template auto --lang <user-language>` when no workflow exists; controller auto-selects `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`, and explicit user template requests override auto
 - continue execution -> `resume`, then `orchestrate --json --lang <user-language>`; follow the orchestration plan internally instead of asking the user to choose subagent, thread, context-pack, or assignment commands
 - skeleton-only workflow -> run only `init` when the user explicitly says `只创建`, `只初始化`, `skeleton only`, or `do not execute`
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
@@ -100,10 +100,13 @@ The intake gate must settle or show:
 - `Goal`: one-sentence user goal.
 - `Route`: entry type, project type, mode, and next skill.
 - `Workflow`: direct Lite/Standard execution or tracked controller workflow with the nearest template.
+- `Execution options`: 2-3 viable approaches, one recommended approach, tradeoffs, and what will happen after confirmation.
 - `Assumptions`: only assumptions that affect deliverables, target project, risk, runtime, language, or versioning.
 - `Questions`: ask only when a wrong assumption would change the deliverable, target project, risk mode, destructive action, runtime/deployment constraint, workflow template, or controller choice.
 
-If the route is clear, state the route and assumptions briefly, then proceed without extra confirmation. If questions are needed, ask 1-3 concise questions before implementation. Questions may include suggested choices, but must explicitly allow a custom answer. Do not repeat the intake gate for routine file reads, edits, commands, or verification; rerun it only when scope, risk, artifact type, or user intent changes.
+Before real execution, present the execution options and recommended option, then get user confirmation or use the user's explicit auto-authorization if they already said to proceed by judgment. Do not start implementation, destructive commands, worker dispatch, or long-running execution before this confirmation gate. If questions are needed, ask 1-3 concise questions before implementation. Questions may include suggested choices, but must explicitly allow a custom answer. Do not repeat the intake gate for routine file reads, edits, commands, or verification; rerun it only when scope, risk, artifact type, or user intent changes.
+
+For tracked workflows, the intake handoff must record `execution_options`, `selected_option`, and `confirmation`. Use `confirmation.status=confirmed` when the user chose or accepted a plan, `auto_authorized` when the user explicitly asked Codex to proceed by professional judgment, `changed` when the user corrected the plan before execution, and `pending` only when execution has not started yet.
 
 Classify the user request:
 
@@ -167,9 +170,9 @@ When the orchestration plan recommends separate/background threads and the Codex
 
 Subagents must hand off through the controller, not through informal chat alone. Before delegation or recovery, generate a context pack for the node. The worker receives that pack, exact files only when needed, and a handoff contract. The completed handoff must include `downstream_context` when later nodes need a compact, accurate carry-forward summary.
 
-When the runtime exposes subagent tools with a `model` parameter, map the node's `recommended_model` to the lowest sufficient model override and pass it to the subagent. When the runtime does not expose model override, omit the override, inherit the main model, and record the recommendation/actual-model gap. The controller recommends models but does not call or switch models by itself.
+Codex Desktop thread and subagent tools support model overrides. For worker creation, map the node's `recommended_model` to the concrete model parameter and pass it when the task-specific model policy justifies the override. Keep the main thread's model stable as the orchestrator-observer; do not switch the main thread to satisfy a worker need. If a non-Codex client, permission boundary, or tool policy prevents model override, omit the override and record the recommendation/actual-model gap. The controller recommends models and records intended assignment; Codex runtime performs the actual worker creation.
 
-Name each agent clearly in handoff `agent_activity`, record role/scope/task/status/mode, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Let the active workflow `model_profile` provide concrete model recommendations, but record actual provider/model only when the runtime exposes it through handoff `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, `agent_activity[].model_provider`, or `agent_activity[].token_usage.model`. If the runtime hides the actual model, write `agent_activity[].model_unavailable_reason` instead of inventing a value. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If several same-lane skills could reasonably apply, also record `skill_decisions` with capability lane, selected skill, selection basis, skipped alternatives, fallback policy, user feedback when available, and outcome. If the user is dissatisfied, follow the recorded fallback instead of stacking every same-lane skill, then update the handoff and consider an `evolution_candidates` lesson if the pattern should improve omyKit. If exact token or context metrics are unavailable, leave them missing; do not invent usage numbers.
+Name each agent clearly in handoff `agent_activity`, record role/scope/task/status/mode, and choose the lowest sufficient model tier: `fast` for simple bounded work, `standard` for ordinary implementation or verification, and `frontier` for architecture, design judgment, high-risk review, or unresolved ambiguity. Let the active workflow `model_profile` provide concrete model recommendations, but record actual provider/model only when the runtime exposes it through handoff `model`, `model_provider`, `token_usage.model`, `agent_activity[].model`, `agent_activity[].model_provider`, or `agent_activity[].token_usage.model`. If the runtime hides the actual model, write `agent_activity[].model_unavailable_reason` and node-level `usage_observation.model_status=unavailable` with `model_unavailable_reason` instead of inventing a value. When a node uses a Codex skill, record it in handoff `skills_used`; when a specific worker uses a skill, record it in `agent_activity[].skills_used` with purpose and evidence when available. If several same-lane skills could reasonably apply, also record `skill_decisions` with capability lane, selected skill, selection basis, skipped alternatives, fallback policy, user feedback when available, and outcome. If the user is dissatisfied, follow the recorded fallback instead of stacking every same-lane skill, then update the handoff and consider an `evolution_candidates` lesson if the pattern should improve omyKit. If exact token or context metrics are unavailable, record `usage_observation.token_status=unavailable` with the reason when the node is terminal; do not invent usage numbers.
 
 ## Workflow Templates And Scorecards
 
@@ -178,9 +181,18 @@ For tracked controller work, select the nearest reusable template instead of inv
 - `change.standard`: scoped feature, refactor, docs, or maintenance work
 - `bugfix.standard`: reproduce, diagnose, fix, verify, review, and delivery loops
 - `frontend-ui.strict`: design-sensitive UI work with visual QA and review
+- `mission.orchestration`: broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning
 
-Do not force strict UI or bugfix templates onto unrelated work. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
+Do not force strict UI, bugfix, or mission templates onto unrelated work. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
 
 Scorecards audit recorded evidence. Treat failed required scorecard checks as delivery blockers unless the user explicitly accepts the residual risk. Treat recommended scorecard warnings as improvement suggestions, not automatic blockers.
 
 For tracked delivery, record `knowledge_sync` in the delivery handoff. Use `completed` when README/docs/AGENTS or agent memory were reviewed and updated, `not_needed` when no durable knowledge changed, and `deferred` only with a reason. If the installed `neat-freak` skill is available and the task changed durable workflow docs, project rules, or handoff knowledge, use it as the knowledge cleanup pass; do not run it after every node or copy its body into omyKit.
+
+## Drift Guard
+
+Treat drift as a workflow event, not a vague concern. Drift includes changes to the user goal, target project, workflow template fit, acceptance criteria, write scope, evidence quality, model/runtime availability, external upstream behavior, or specialist skill selection.
+
+When drift is non-blocking, record it in the current handoff `non_blocking_notes`, carry it through `downstream_context.carry_forward_risks`, and keep executing. When drift changes acceptance, safety, target project, destructive action, or the selected workflow template, stop the affected node and write a `blocked` or `failed` handoff with the exact upstream node, required fix, and evidence. Do not silently reinterpret the original requirement after compact or worker handoff.
+
+For external reference drift, run `node ./scripts/check-upstream-refs.mjs --force-review` only before releases, larger omyKit workflow revisions, or tasks that depend on current upstream behavior. Ordinary work should rely on the current reviewed baseline unless the task itself requires fresh upstream facts.

@@ -11,8 +11,9 @@ omyKit workflow templates define reusable task maps for the controller. They are
 | `change.standard` | Standard | Scoped feature, refactor, documentation, or maintenance work. |
 | `bugfix.standard` | Standard | Reproduce, diagnose, fix, verify, review, and deliver bug fixes. |
 | `frontend-ui.strict` | Strict | Design-sensitive frontend work that needs UI direction, implementation, browser/visual QA, review, and delivery. |
+| `mission.orchestration` | Strict | Broad requirements that need insight, task decomposition, workflow routing, monitored execution, integration gates, and learning. |
 
-Use the nearest template first. Do not make every task use the strictest graph; the controller is useful when state, handoff, retry, parallelism, or compact recovery matters.
+Use the nearest template first. `init --template auto` selects from these templates by task brief; explicit `--template <id>` overrides auto. Do not make every task use the strictest graph; the controller is useful when state, handoff, retry, parallelism, or compact recovery matters.
 
 ## Layering
 
@@ -30,6 +31,7 @@ workflow-templates/
     change.standard.yaml
     bugfix.standard.yaml
     frontend-ui.strict.yaml
+    mission.orchestration.yaml
 ```
 
 Keep these layers separate:
@@ -51,6 +53,7 @@ This separation lets you add a node without rewriting model policy, adjust an ag
 node scripts/omykit-workflow.mjs templates list --lang zh-CN
 node scripts/omykit-workflow.mjs templates show frontend-ui.strict --lang zh-CN
 node scripts/omykit-workflow.mjs templates validate
+node scripts/omykit-workflow.mjs init "Coordinate a complex release" --template auto
 node scripts/omykit-workflow.mjs init "Fix checkout bug" --template bugfix.standard
 node scripts/omykit-workflow.mjs init "Redesign settings page" --template frontend-ui.strict --lang zh-CN
 node scripts/omykit-workflow.mjs scorecard --workflow <workflow-id>
@@ -65,13 +68,15 @@ Scorecards inspect recorded workflow evidence. They are not a replacement for ju
 Current evidence checks cover:
 
 - terminal node handoff summaries
+- intake execution options, recommendation, selected option, and confirmation before implementation
 - actual work item records
 - downstream context for passed nodes that hand off to later nodes
 - changed-file summaries
 - verification records and evidence paths
 - recorded skill usage when skills were actually used
-- recommended model and actual model records when the runtime exposes them
+- recommended model records, model override intent for worker creation, and actual model records when execution exposes them
 - source-aware token and context usage records
+- `usage_observation` for unavailable token/model runtime metrics so unavailable facts are not confused with missing records
 - required nodes not being failed or blocked
 - subagent role/scope/task/status records
 - expert task complexity requiring the frontier model tier

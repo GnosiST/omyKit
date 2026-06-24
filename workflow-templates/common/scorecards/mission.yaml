@@ -1,11 +1,11 @@
 schema_version: "1"
-scorecard_id: frontend-ui
+scorecard_id: mission
 name:
-  en: Frontend UI Delivery
-  zh-CN: 前端 UI 交付
+  en: Mission Orchestration
+  zh-CN: 需求编排交付
 description:
-  en: Evidence checks for design-sensitive frontend work.
-  zh-CN: 面向设计敏感前端工作的证据检查。
+  en: Evidence checks for broad requirements that coordinate multiple workstreams or workflows.
+  zh-CN: 面向需要协调多个工作流或工作流分支的复杂需求证据检查。
 checks:
   - id: intake-decision-recorded
     title:
@@ -32,55 +32,34 @@ checks:
     title:
       en: Terminal nodes record actual work items
       zh-CN: 终态节点记录实际工作项
-    severity: recommended
+    severity: required
     evidence:
       type: terminal_work_items
   - id: downstream-context-recorded
     title:
       en: Passed handoff nodes carry compact downstream context
       zh-CN: 通过的交接节点携带压缩下游上下文
-    severity: recommended
+    severity: required
     evidence:
       type: downstream_context_recorded
-  - id: evolution-review-recorded
-    title:
-      en: Delivery nodes record workflow evolution review
-      zh-CN: 交付节点记录 workflow 进化复盘
-    severity: required
-    evidence:
-      type: evolution_review_recorded
-  - id: knowledge-sync-reviewed
-    title:
-      en: Delivery nodes record knowledge sync review
-      zh-CN: 交付节点记录知识同步审查
-    severity: required
-    evidence:
-      type: knowledge_sync_reviewed
   - id: changed-files-summary
     title:
-      en: UI files explain their main changes
-      zh-CN: UI 文件说明主要改动
+      en: Changed files explain their main changes
+      zh-CN: 变更文件说明主要改动
     severity: recommended
     evidence:
       type: changed_files_summary
   - id: verification-recorded
     title:
-      en: Browser or focused verification is recorded
-      zh-CN: 浏览器或聚焦验证已记录
+      en: Passed nodes record verification
+      zh-CN: 通过节点记录验证
     severity: required
     evidence:
       type: verification_recorded
-  - id: agent-activity-scoped
-    title:
-      en: Subagent activity has clear role and scope
-      zh-CN: 子智能体活动有清晰职责和范围
-    severity: recommended
-    evidence:
-      type: agent_activity_scoped
   - id: token-usage-source
     title:
-      en: Terminal nodes record token source when available
-      zh-CN: 终态节点记录 token 来源
+      en: Terminal nodes record token source or unavailable reason
+      zh-CN: 终态节点记录 token 来源或不可观测原因
     severity: recommended
     evidence:
       type: token_usage_source
@@ -121,8 +100,8 @@ checks:
       type: model_tier_policy
   - id: model-usage-recorded
     title:
-      en: Terminal nodes record actual model usage when available
-      zh-CN: 终态节点记录实际使用模型
+      en: Terminal nodes record actual model usage or unavailable reason
+      zh-CN: 终态节点记录实际模型或不可观测原因
     severity: recommended
     evidence:
       type: model_usage_recorded
@@ -133,6 +112,34 @@ checks:
     severity: recommended
     evidence:
       type: subagent_model_recorded_or_explained
+  - id: assignment-handoff-coverage
+    title:
+      en: Agent assignments produce readable handoffs
+      zh-CN: Agent 分配产生可读取交接
+    severity: recommended
+    evidence:
+      type: assignment_handoff_coverage
+  - id: assignment-write-scope-conflicts
+    title:
+      en: Active agent assignments avoid overlapping write scope
+      zh-CN: 活跃 Agent 分配避免写入范围重叠
+    severity: required
+    evidence:
+      type: assignment_write_scope_conflicts
+  - id: evolution-review-recorded
+    title:
+      en: Delivery nodes record workflow evolution review
+      zh-CN: 交付节点记录 workflow 进化复盘
+    severity: required
+    evidence:
+      type: evolution_review_recorded
+  - id: knowledge-sync-reviewed
+    title:
+      en: Delivery nodes record knowledge sync review
+      zh-CN: 交付节点记录知识同步审查
+    severity: required
+    evidence:
+      type: knowledge_sync_reviewed
   - id: board-language
     title:
       en: Board language follows workflow language

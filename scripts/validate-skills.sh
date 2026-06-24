@@ -68,6 +68,10 @@ if ! grep -q 'custom answer' "$omykit_skill"; then
   echo "omyKit skill is missing custom-answer intake guidance: $omykit_skill" >&2
   exit 1
 fi
+if ! grep -q 'execution options' "$omykit_skill"; then
+  echo "omyKit skill is missing pre-execution option guidance: $omykit_skill" >&2
+  exit 1
+fi
 if ! grep -q 'Use Computer Use only when no suitable official/bundled connector' "$omykit_skill"; then
   echo "omyKit skill is missing official-tool-first Computer Use fallback guidance: $omykit_skill" >&2
   exit 1

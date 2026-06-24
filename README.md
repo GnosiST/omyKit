@@ -18,12 +18,13 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 
 - **Clear routing:** classify work by entry type, project type, risk, and artifact.
 - **Intake decision gate:** show the chosen route and ask 1-3 custom-answer questions only when ambiguity would change the work.
+- **Pre-execution choice gate:** present viable execution options, recommend one, and capture confirmation before implementation or worker dispatch.
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
 - **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
-- **Model traceability:** recommend a right-sized model per node and show the actual recorded model when the runtime exposes it.
+- **Model traceability:** recommend a right-sized model per node, pass worker model overrides in Codex Desktop, and show actual recorded models when execution exposes them.
 - **Automatic orchestration:** keep the main Codex thread as an orchestrator-observer while the controller recommends whether ready work should run in the main thread, a subagent, a background thread, or a worktree.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
@@ -124,7 +125,7 @@ node scripts/omykit-workflow.mjs upgrade --all
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can choose a reusable template such as `change.standard`, `bugfix.standard`, or `frontend-ui.strict`; if omitted, `change.standard` is used. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
+The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -162,9 +163,9 @@ For long or Strict work, omyKit can persist a task graph under `.omykit/workflow
 
 The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
-The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
+The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. `init --template auto` chooses among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template requests still override auto. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, delivery knowledge sync review, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; missing nodes stay visible instead of being treated as zero.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, delivery knowledge sync review, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, usage-observation status, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; unavailable runtime metrics are shown separately from missing records and are never guessed.
 
 ## Workflow Model
 
@@ -176,13 +177,17 @@ Operational rules:
 
 - Route once at task intake, when scope or risk changes, or before delivery.
 - At intake, state the goal, route, execution shape or controller template, and material assumptions before implementation.
+- Before implementation or worker dispatch, present execution options, recommend one, explain tradeoffs, and capture user confirmation or explicit auto-authorization.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - Creating a tracked workflow is not task completion; for long work, continue `resume/orchestrate -> internal start or dispatch -> work -> handoff -> complete/reject/block/unblock` until delivery passes or a real blocker is recorded.
-- For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, and pass a model override only to workers when the runtime supports it.
+- For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, and pass the node's recommended model override to Codex workers.
 - Use `upgrade --all` when historical `.omykit/workflows/*` artifacts need current controller metadata, command-surface policy, node cards, and regenerated board projections; never fabricate missing handoff, token, skill, model, or verification evidence during upgrade.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
+- Use `mission.orchestration` for broad demands that need requirement insight, task decomposition, multiple workflow/workstream routing, monitored execution, integration gates, and delivery learning.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
+- When the runtime does not expose exact token counts or actual worker models, record `usage_observation` with `unavailable` reason instead of fabricating metrics.
+- Treat drift as a workflow event: non-blocking drift goes into handoff notes and downstream risks; acceptance, safety, target-project, destructive-action, or template drift must block or reject the affected node with evidence.
 - When multiple same-lane specialist skills could apply, record `skill_decisions`: why one was selected, which alternatives were skipped, which skill to use for dissatisfied-user rework, and the actual feedback outcome.
 - For tracked delivery, record `evolution_candidates`; use an empty array when the work was reviewed and no reusable workflow lesson should be promoted.
 - Also record delivery `knowledge_sync`: `completed` when README/docs/AGENTS or memory were reconciled, `not_needed` when no durable knowledge changed, or `deferred` with a reason.

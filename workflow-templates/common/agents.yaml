@@ -72,3 +72,46 @@ agent_sets:
         scope:
           en: Verify responsive layout, screenshots, interaction state, and accessibility basics.
           zh-CN: 验证响应式布局、截图、交互状态和基础可访问性。
+  - id: orchestration-agents
+    name:
+      en: Orchestration Agents
+      zh-CN: 编排智能体
+    description:
+      en: Roles for broad requirements that need insight, workstream routing, monitored execution, integration gates, and workflow learning.
+      zh-CN: 面向复杂需求的角色组合，覆盖需求洞察、工作流路由、执行监听、集成验票和流程学习。
+    agents:
+      - id: demand-analyst
+        role:
+          en: Demand analyst
+          zh-CN: 需求洞察者
+        scope:
+          en: Extract intent, constraints, success metrics, hidden risks, and required user decisions.
+          zh-CN: 提炼意图、约束、成功指标、隐藏风险和必要用户决策。
+      - id: workflow-architect
+        role:
+          en: Workflow architect
+          zh-CN: 工作流架构师
+        scope:
+          en: Map workstreams to reusable templates, dependency edges, dispatch surfaces, and scorecards.
+          zh-CN: 将工作流路由到可复用模板、依赖边、派发表面和 scorecard。
+      - id: orchestrator
+        role:
+          en: Orchestrator observer
+          zh-CN: 主控观察者
+        scope:
+          en: Monitor workflow state, assign bounded workers, integrate handoffs, and avoid main-thread drift.
+          zh-CN: 监听 workflow 状态、分配有边界 worker、集成交接，并避免主线程漂移。
+      - id: integrator
+        role:
+          en: Integration verifier
+          zh-CN: 集成验票者
+        scope:
+          en: Verify cross-workstream evidence, reject incomplete handoffs, and guard against scope drift.
+          zh-CN: 校验跨工作流证据、打回不完整交接，并防止范围漂移。
+      - id: delivery
+        role:
+          en: Delivery owner
+          zh-CN: 交付负责人
+        scope:
+          en: Package final evidence, residual risk, knowledge sync, and workflow evolution candidates.
+          zh-CN: 汇总最终证据、剩余风险、知识同步和 workflow 进化候选。

@@ -72,14 +72,29 @@ const templatesList = run(["templates", "list", "--lang", "zh-CN"]);
 assert.match(templatesList, /change\.standard/);
 assert.match(templatesList, /标准变更/);
 assert.match(templatesList, /frontend-ui\.strict/);
+assert.match(templatesList, /mission\.orchestration/);
 const templatesValidate = run(["templates", "validate"]);
-assert.match(templatesValidate, /Workflow templates valid: 3/);
+assert.match(templatesValidate, /Workflow templates valid: 4/);
 const templateShow = run(["templates", "show", "frontend-ui.strict", "--lang", "zh-CN"]);
 assert.match(templateShow, /"template_id": "frontend-ui.strict"/);
 assert.match(templateShow, /"title": "视觉验收"/);
+const missionTemplateShow = run(["templates", "show", "mission.orchestration", "--lang", "zh-CN"]);
+assert.match(missionTemplateShow, /"template_id": "mission.orchestration"/);
+assert.match(missionTemplateShow, /"title": "工作流地图"/);
+
+const tmpMission = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-mission-"));
+const missionInit = run(["init", "复杂多智能体并行编排长任务", "--id", "mission-task"], tmpMission);
+assert.match(missionInit, /Workflow created: mission-task/);
+assert.match(missionInit, /Template: mission\.orchestration \(auto\)/);
+const missionGraph = readJson(path.join(workflowDirFor(tmpMission), "graph.json"));
+assert.equal(missionGraph.metadata.template_id, "mission.orchestration");
+assert.equal(missionGraph.nodes.length, 6);
+assert.ok(missionGraph.nodes.some((node) => node.id === "03-workflow-map" && node.agent === "workflow-architect"));
+fs.rmSync(tmpMission, { recursive: true, force: true });
 
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
 assert.match(initOutput, /Workflow created: feature-x/);
+assert.match(initOutput, /Template: change\.standard \(auto\)/);
 assert.match(initOutput, /Continue now:/);
 assert.match(initOutput, /orchestrate --workflow feature-x/);
 assert.match(initOutput, /Orchestration plan: feature-x/);
@@ -248,6 +263,36 @@ writeJson(intakeHandoff, {
         resolved: true,
       },
     ],
+    execution_options: [
+      {
+        id: "tracked-controller",
+        label: "使用追踪型 controller 工作流",
+        summary: "创建并持续推进 change.standard 节点，保留 handoff、看板和 scorecard 证据。",
+        tradeoffs: ["比直接执行多一个 intake/handoff 成本", "更适合长任务和可恢复交付"],
+        risks: ["需要持续维护结构化记录"],
+        recommended: true,
+      },
+      {
+        id: "skeleton-only",
+        label: "只创建 workflow 骨架",
+        summary: "只生成状态文件和节点卡，不立即执行后续节点。",
+        tradeoffs: ["最省当前 token", "需要后续手动继续"],
+        risks: ["用户容易误以为任务已经完成"],
+      },
+      {
+        id: "direct-lite",
+        label: "直接轻量执行",
+        summary: "不启用 controller，直接完成一次性变更。",
+        tradeoffs: ["更快", "缺少可恢复状态和看板证据"],
+        risks: ["长任务中更容易漂移"],
+      },
+    ],
+    selected_option: "tracked-controller",
+    confirmation: {
+      status: "confirmed",
+      by: "user",
+      evidence: "测试夹具代表用户确认推荐方案后继续执行。",
+    },
     custom_answers_allowed: true,
   },
   downstream_context: {
@@ -407,6 +452,27 @@ writeJson(badUsageHandoff, {
 });
 runFails(["validate"], /source is required/);
 fs.rmSync(badUsageHandoff);
+const badUsageObservationHandoff = path.join(dir, "handoffs", "01-intake-bad-usage-observation.json");
+writeJson(badUsageObservationHandoff, {
+  workflow_id: "feature-x",
+  node_id: "01-intake",
+  status: "passed",
+  summary: "Invalid fixture with unavailable model but no reason.",
+  outputs: ["nodes/01-intake.json"],
+  verification: [
+    {
+      command: "manual intake check",
+      result: "passed",
+    },
+  ],
+  usage_observation: {
+    model_status: "unavailable",
+    token_status: "unavailable",
+    token_unavailable_reason: "The fixture intentionally omits token counters.",
+  },
+});
+runFails(["validate"], /usage_observation\.model_unavailable_reason is required/);
+fs.rmSync(badUsageObservationHandoff);
 const badSkillHandoff = path.join(dir, "handoffs", "01-intake-bad-skill.json");
 writeJson(badSkillHandoff, {
   workflow_id: "feature-x",
@@ -766,6 +832,15 @@ writeJson(deliveryHandoff, {
     memory_updated: [],
     evidence: ["evidence/06-delivery-summary.txt"],
   },
+  usage_observation: {
+    model_status: "unavailable",
+    model_unavailable_reason: "Codex Desktop did not expose the actual model used for this delivery fixture.",
+    token_status: "unavailable",
+    token_unavailable_reason: "Codex Desktop did not expose token counters for this delivery fixture.",
+    source: "runtime_observation",
+    runtime_surface: "main_thread",
+    evidence: ["evidence/06-delivery-summary.txt"],
+  },
 });
 state = readJson(path.join(dir, "state.json"));
 state.nodes["06-delivery"] = {
@@ -803,6 +878,7 @@ assert.equal(board.template.layers.model_profile, "balanced");
 assert.equal(board.controller.role, "orchestrator-observer");
 assert.ok(Array.isArray(board.scorecard.checks));
 assert.ok(board.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(board.scorecard.checks.some((check) => check.id === "intake-options-confirmed" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "downstream-context-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "evolution-review-recorded" && check.status === "passed"));
 assert.ok(board.scorecard.checks.some((check) => check.id === "knowledge-sync-reviewed" && check.status === "passed"));
@@ -861,6 +937,9 @@ assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.in
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.route.entry === "change"));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.workflow.template_id === "change.standard"));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.custom_answers_allowed === true));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.execution_options?.length === 3));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.selected_option === "tracked-controller"));
+assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.confirmation?.status === "confirmed"));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.intake_decision?.questions.some((question) => question.custom_answer_allowed === true)));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.changed_files.some((file) => file.path === "nodes/01-intake.json")));
 assert.ok(board.columns.passed.some((node) => node.id === "01-intake" && node.token_usage.total_tokens === 140));
@@ -882,6 +961,7 @@ assert.equal(board.summary.knowledge_sync_reviews, 1);
 assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.evolution_candidates.some((item) => item.scope === "generic_omykit")));
 assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.knowledge_sync?.status === "completed"));
 assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.knowledge_sync?.skill === "neat-freak"));
+assert.ok(board.columns.passed.some((node) => node.id === "06-delivery" && node.usage_observation?.token_status === "unavailable"));
 assert.ok(board.evolution.by_node.some((item) => item.node_id === "06-delivery" && item.candidates.length === 1));
 assert.ok(board.evolution.candidates.some((item) => /交付节点应记录进化候选/.test(item.lesson) && item.owner === "codex-workflow-evolution"));
 assert.equal(board.evolution.by_scope.generic_omykit, 1);
@@ -889,6 +969,8 @@ assert.equal(board.evolution.by_status.candidate, 1);
 assert.equal(board.evolution.generic_candidates.length, 1);
 assert.equal(board.usage.totals.total_tokens, 220);
 assert.equal(board.usage.recorded_nodes, 2);
+assert.ok(board.usage.accounted_nodes.includes("06-delivery"));
+assert.ok(board.usage.unavailable_nodes.includes("06-delivery"));
 assert.ok(board.usage.missing_nodes.includes("02-research"));
 assert.ok(board.usage.by_agent.some((agent) => agent.agent_id === "main-codex" && agent.total_tokens === 140));
 assert.ok(board.usage.by_parallel_group.some((group) => group.parallel_group === "strategy" && group.nodes.includes("02-research")));
@@ -902,6 +984,8 @@ assert.equal(board.skills.selection_recorded_nodes, 1);
 assert.equal(board.skills.selection_missing_nodes.length, 0);
 assert.ok(board.skills.by_capability.some((entry) => entry.capability === "workflow orchestration" && entry.selected.includes("omykit")));
 assert.equal(board.models.actual_recorded_nodes, 1);
+assert.ok(board.models.accounted_nodes.includes("06-delivery"));
+assert.ok(board.models.unavailable_nodes.includes("06-delivery"));
 assert.ok(board.models.actual_by_model.some((model) => model.model === "GPT-5.4" && model.nodes.includes("01-intake")));
 assert.ok(board.models.recommended_by_model.some((model) => model.model === "GPT-5.5" && model.nodes.includes("03-plan")));
 assert.ok(board.models.missing_actual_nodes.includes("02-research"));
@@ -931,9 +1015,14 @@ assert.match(boardHtml, /Agent 通讯录/);
 assert.match(boardHtml, /知识同步/);
 assert.match(boardHtml, /任务追踪/);
 assert.match(boardHtml, /入口决策/);
+assert.match(boardHtml, /执行方案/);
+assert.match(boardHtml, /使用追踪型 controller 工作流/);
+assert.match(boardHtml, /确认状态/);
 assert.match(boardHtml, /为 Feature X 创建可追踪的项目化看板/);
 assert.match(boardHtml, /允许自定义答案/);
 assert.match(boardHtml, /Token 消耗/);
+assert.match(boardHtml, /用量观测/);
+assert.match(boardHtml, /不可观测 token 的节点/);
 assert.match(boardHtml, /Skill 使用记录/);
 assert.match(boardHtml, /使用的 Skills/);
 assert.match(boardHtml, /Skill 选择决策/);
@@ -1046,7 +1135,7 @@ assert.ok(inferredZhBoard.scorecard.checks.some((check) => check.id === "board-l
 const inferredZhHtml = fs.readFileSync(path.join(zhDir, "board.html"), "utf8");
 assert.match(inferredZhHtml, /<html lang="zh-CN">/);
 assert.match(inferredZhHtml, /严格前端 UI/);
-assert.match(inferredZhHtml, /目标页面、用户意图、状态、约束和视觉验收标准已经明确/);
+assert.match(inferredZhHtml, /目标页面、用户意图、状态、约束、视觉验收标准、执行方案、推荐方案和确认状态已经明确/);
 fs.rmSync(tmpZh, { recursive: true, force: true });
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
