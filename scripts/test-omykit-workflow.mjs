@@ -683,6 +683,30 @@ assert.ok(state.nodes["01-intake"].started_at);
 assert.ok(state.nodes["01-intake"].completed_at);
 assert.equal(state.nodes["02-design"].status, "ready");
 assert.equal(state.nodes["02-research"].status, "ready");
+
+const tmpExternalHandoff = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-external-handoff-"));
+run(["init", "External handoff projection", "--id", "external-handoff"], tmpExternalHandoff);
+const externalDir = workflowDirFor(tmpExternalHandoff);
+run(["start", "01-intake"], tmpExternalHandoff);
+fs.mkdirSync(path.join(externalDir, "evidence"), { recursive: true });
+fs.writeFileSync(path.join(externalDir, "evidence", "01-intake-summary.txt"), "external intake evidence\n");
+const externalIntakeHandoff = readJson(intakeHandoff);
+externalIntakeHandoff.workflow_id = "external-handoff";
+const externalHandoffPath = path.join(tmpExternalHandoff, "outside-intake-handoff.json");
+writeJson(externalHandoffPath, externalIntakeHandoff);
+run(["complete", "01-intake", "--handoff", externalHandoffPath], tmpExternalHandoff);
+const externalState = readJson(path.join(externalDir, "state.json"));
+assert.match(externalState.nodes["01-intake"].last_handoff, /^handoffs\//);
+assert.ok(fs.existsSync(path.join(externalDir, externalState.nodes["01-intake"].last_handoff)));
+run(["board", "--lang", "zh-CN"], tmpExternalHandoff);
+const externalBoard = readJson(path.join(externalDir, "board.json"));
+assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && /需求已固化/.test(node.handoff_summary)));
+assert.ok(externalBoard.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+const externalScorecardJson = JSON.parse(run(["scorecard", "--json", "--lang", "zh-CN"], tmpExternalHandoff));
+assert.equal(externalScorecardJson.workflow_id, "external-handoff");
+assert.ok(externalScorecardJson.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+fs.rmSync(tmpExternalHandoff, { recursive: true, force: true });
+
 const workerOrchestrationText = run(["orchestrate", "--lang", "zh-CN"]);
 assert.match(workerOrchestrationText, /dispatch_worker 02-design/);
 assert.match(workerOrchestrationText, /协作拓扑: one_to_one/);
@@ -1043,6 +1067,10 @@ writeJson(deliveryHandoff, {
       evidence: "evidence/06-delivery-summary.txt",
     },
   ],
+  downstream_context: {
+    summary: "Delivery is terminal in this workflow, so there are no downstream target nodes.",
+    target_nodes: [],
+  },
   evolution_candidates: [
     {
       lesson: "交付节点应记录进化候选，避免复盘停留在口头总结。",

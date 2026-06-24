@@ -71,7 +71,7 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，把重复 brief 记录到 `.omykit/tasks/tasks.jsonl` 并通过合并门禁判断 `merge_current`、`linked_follow_up` 或 `new_workflow`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把任务收件箱、skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，诊断项目 workflow 健康状态，归档安全清理候选，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，不伪造缺失证据，也不会让 Lite 任务默认变重。
+Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，把重复 brief 记录到 `.omykit/tasks/tasks.jsonl` 并通过合并门禁判断 `merge_current`、`linked_follow_up` 或 `new_workflow`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把任务收件箱、skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，诊断项目 workflow 健康状态，报告已被 Git 跟踪的 runtime 或旧 workflow 产物，归档安全清理候选，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，不伪造缺失证据，不自动 commit、push 或重写 Git 历史，也不会让 Lite 任务默认变重。
 
 参见 [controller.zh-CN.md](controller.zh-CN.md)、[task-graph.zh-CN.md](task-graph.zh-CN.md) 和 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。
 

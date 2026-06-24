@@ -200,7 +200,7 @@ Operational rules:
 - Use `mission.orchestration` for broad demands that need requirement insight, task decomposition, multiple workflow/workstream routing, monitored execution, integration gates, and delivery learning.
 - Choose the lowest sufficient model tier for each node; use the configured model profile for recommendations, then record actual provider/model only when execution exposes it.
 - When the runtime does not expose exact token counts or actual worker models, record `usage_observation` with `unavailable` reason instead of fabricating metrics.
-- Treat context compaction as lossy: workers receive bounded context packs, not whole chat history; context packs embed serialized-size measurements and `context_loss_guard`, and handoffs must carry `downstream_context` plus source/evidence pointers for recovery.
+- Treat context compaction as lossy: workers receive bounded context packs, not whole chat history; context packs embed serialized-size measurements and `context_loss_guard`, and handoffs that feed later nodes or recovery must carry `downstream_context` plus source/evidence pointers.
 - Use board task/context size warnings to split large nodes, shrink dependency handoff summaries, or replace bulky evidence bodies with retrievable paths before dispatching workers.
 - Treat drift as a workflow event: non-blocking drift goes into handoff notes and downstream risks; acceptance, safety, target-project, destructive-action, or template drift must block or reject the affected node with evidence.
 - When multiple same-lane specialist skills could apply, record `skill_decisions`: why one was selected, which alternatives were skipped, which skill to use for dissatisfied-user rework, and the actual feedback outcome.

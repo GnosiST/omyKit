@@ -2470,8 +2470,8 @@ function validateDownstreamContextShape(value, label) {
     return [`${label} must be an object`];
   }
   if (!value.summary || typeof value.summary !== "string") errors.push(`${label}.summary is required`);
-  if (!Array.isArray(value.target_nodes) || value.target_nodes.length === 0 || value.target_nodes.some((item) => typeof item !== "string" || !item)) {
-    errors.push(`${label}.target_nodes must contain at least one node id`);
+  if (value.target_nodes !== undefined && (!Array.isArray(value.target_nodes) || value.target_nodes.some((item) => typeof item !== "string" || !item))) {
+    errors.push(`${label}.target_nodes must be an array of non-empty strings`);
   }
   for (const field of ["target_nodes", "required_inputs", "evidence", "carry_forward_risks"]) {
     if (value[field] !== undefined && (!Array.isArray(value[field]) || value[field].some((item) => typeof item !== "string" || !item))) {
@@ -5151,7 +5151,7 @@ function buildContextPackPayload(board, nodeId) {
         "exact evidence/source paths for later retrieval",
       ],
       worker_rule: "Do not rely on memory of earlier chat when the context pack or source file disagrees.",
-      handoff_required_fields: ["summary", "work_items", "outputs", "verification", "downstream_context", "context_usage"],
+      handoff_required_fields: ["summary", "work_items", "outputs", "verification", "downstream_context_when_feeding_later_nodes", "context_usage"],
     },
     active_commands: board.commands?.active || [],
     recent_events: (board.recent_events || []).filter((event) => !event.node_id || event.node_id === node.id || (node.depends_on || []).includes(event.node_id)).slice(-8),
@@ -7765,6 +7765,24 @@ function resolveHandoffPath(workflowDir, handoffArg) {
   throw new Error(`Cannot find handoff file: ${handoffArg}`);
 }
 
+function persistHandoffInWorkflow(workflowDir, handoffPath, handoff) {
+  const handoffDir = path.join(workflowDir, "handoffs");
+  const source = path.resolve(handoffPath);
+  const targetDir = path.resolve(handoffDir);
+  if (source.startsWith(`${targetDir}${path.sep}`)) return handoffPath;
+
+  const parsed = path.parse(handoffPath);
+  const baseName = slugify(parsed.name || handoff.node_id || "handoff");
+  let target = path.join(handoffDir, `${baseName}.json`);
+  let counter = 2;
+  while (fs.existsSync(target)) {
+    target = path.join(handoffDir, `${baseName}-${counter}.json`);
+    counter += 1;
+  }
+  writeJson(target, handoff);
+  return target;
+}
+
 function requireNode(graph, nodeId) {
   const node = nodeMap(graph).get(nodeId);
   if (!node) throw new Error(`Unknown node: ${nodeId}`);
@@ -8844,6 +8862,14 @@ function cmdScorecard(options) {
   const { graph, state } = loadWorkflow(workflowDir);
   const language = resolveWorkflowLanguage(options, graph, loadHandoffs(workflowDir));
   const board = buildBoardProjection(workflowDir, graph, state, language);
+  if (options.json) {
+    console.log(JSON.stringify({
+      workflow_id: board.workflow_id,
+      language: board.language,
+      scorecard: board.scorecard,
+    }, null, 2));
+    return;
+  }
   const text = boardText(language);
   console.log(`${text.scorecard}: ${board.workflow_id}`);
   console.log(`${text.score}: ${board.scorecard.score_percent}%`);
@@ -9314,7 +9340,8 @@ function cmdComplete(positional, options) {
 
   const completedAt = now();
   const previousEntry = state.nodes[nodeId];
-  const relativeHandoff = relativeToWorkflow(workflowDir, handoffPath);
+  const persistedHandoffPath = persistHandoffInWorkflow(workflowDir, handoffPath, handoff);
+  const relativeHandoff = relativeToWorkflow(workflowDir, persistedHandoffPath);
   state.nodes[nodeId] = stateEntry("passed", null, relativeHandoff, {
     started_at: previousEntry.started_at || handoff.timing?.started_at || completedAt,
     completed_at: handoff.timing?.completed_at || completedAt,
@@ -9354,7 +9381,8 @@ function cmdReject(positional, options) {
   const edge = `${nodeId}->${rejectTo}`;
   const retryCount = (state.retry_edges[edge] || 0) + 1;
   state.retry_edges[edge] = retryCount;
-  const relativeHandoff = relativeToWorkflow(workflowDir, handoffPath);
+  const persistedHandoffPath = persistHandoffInWorkflow(workflowDir, handoffPath, handoff);
+  const relativeHandoff = relativeToWorkflow(workflowDir, persistedHandoffPath);
   state.nodes[nodeId] = stateEntry("failed", handoff.reason, relativeHandoff, {
     started_at: state.nodes[nodeId].started_at || handoff.timing?.started_at || completedAt,
     completed_at: handoff.timing?.completed_at || completedAt,

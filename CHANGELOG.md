@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Fixed controller handoff projection after independent E2E testing: `complete`/`reject` now canonicalize external handoff files into workflow-local `handoffs/`, terminal `downstream_context.target_nodes` can be empty, `scorecard --json` emits machine-readable JSON, and tests cover the regression.
 - Added Git-aware runtime cleanup: doctor now reports Git-tracked `.omykit/` and root-level legacy workflow artifacts, cleanup can generate a removal plan, untrack runtime while preserving local state, or reset runtime by archiving local state without committing, pushing, or rewriting history.
 - Added local-only workflow isolation: init now writes `.omykit/` to local `.git/info/exclude` when available, doctor audits namespace/git-ignore/root-artifact conflicts, and cleanup can uninstall `.omykit/` runtime state into a local non-project archive.
 - Added explicit collaboration topology to orchestration plans: `orchestrate` now reports 1:1 worker dispatch, 1:N fan-out batches, N:1 join targets, trigger reasons, handoff targets, and per-action collaboration metadata for Codex runtime worker creation.

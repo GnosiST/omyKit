@@ -17,6 +17,8 @@ Every controller node exits with a structured handoff. The handoff is the contra
 
 `status` must be `passed`, `failed`, `blocked`, or `skipped`.
 
+`complete` and `reject` may receive a handoff file outside the workflow directory for operator convenience. After validation, the controller copies that file into `.omykit/workflows/<workflow-id>/handoffs/` and stores the copied path in workflow state, so board, scorecard, resume, and context-pack all read the same canonical evidence.
+
 ## Intake Decision
 
 Passed intake nodes must record `intake_decision`. This makes the route, workflow choice, assumptions, and question policy auditable instead of relying on a narrative claim.
@@ -151,7 +153,7 @@ When a downstream node or subagent needs facts from the current node, the handof
 }
 ```
 
-`downstream_context` must include at least one `target_nodes` entry and a `summary`. `context-pack <node-id>` reads dependency handoffs and these `downstream_context` records to generate the smallest context packet for a downstream node or subagent.
+`downstream_context` must include a `summary`. `target_nodes` may name specific downstream nodes; omit it or use an empty array only for terminal notes or intentionally broad recovery context. `context-pack <node-id>` reads dependency handoffs and these `downstream_context` records to generate the smallest context packet for a downstream node or subagent.
 
 ## Passed
 

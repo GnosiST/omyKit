@@ -17,6 +17,8 @@
 
 `status` 必须是 `passed`、`failed`、`blocked` 或 `skipped`。
 
+为了方便执行，`complete` 和 `reject` 可以接收 workflow 目录外的 handoff 文件。校验通过后，controller 会把该文件复制到 `.omykit/workflows/<workflow-id>/handoffs/`，并在 workflow state 中记录复制后的路径，确保看板、scorecard、resume 和 context-pack 都读取同一份规范证据。
+
 ## 入口决策
 
 通过的 intake 节点必须记录 `intake_decision`。这样路由、workflow 选择、关键假设和提问策略可以被审计，而不是只靠自然语言声明。
@@ -151,7 +153,7 @@
 }
 ```
 
-`downstream_context` 必须包含至少一个 `target_nodes` 和一个 `summary`。`context-pack <node-id>` 会读取依赖 handoff 和这些 `downstream_context`，生成给下游或子智能体的最小上下文包。
+`downstream_context` 必须包含 `summary`。`target_nodes` 可以指定具体下游节点；只有终态说明或刻意作为宽泛恢复上下文时，才省略或使用空数组。`context-pack <node-id>` 会读取依赖 handoff 和这些 `downstream_context`，生成给下游或子智能体的最小上下文包。
 
 ## Passed
 

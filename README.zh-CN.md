@@ -127,10 +127,14 @@ node scripts/omykit-workflow.mjs orchestrate --json
 node scripts/omykit-workflow.mjs upgrade --all
 node scripts/omykit-workflow.mjs doctor --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --git-removal-plan --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --untrack-runtime --apply --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --reset-runtime --apply --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-controller 仍然保留 `tasks`、`dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。任务类 Codex 请求会先进入任务收件箱，由合并门禁判断是合并进当前 workflow、链接为后续问题，还是创建新 workflow。`doctor` 会写入 `.omykit/health/health-report.json`，检查旧项目改造完整度、active workflow 指针、任务收件箱可解析性、旧 artifact 缺口、过期看板、后台命令续接信号、清理候选和下一步建议。`doctor --fix` 只做安全兼容修复，不会伪造 handoff、用量、模型、skill 或验证证据。`cleanup` 默认 dry-run；`cleanup --apply` 也只是把安全候选归档到 `.omykit/archive/`，不会直接删除。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以用 `--template auto` 在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；显式指定模板会覆盖自动选择。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示任务收件箱、工作流组、冲突仲裁信号、每个节点和 worker 实际使用的 skill、执行方案与确认状态、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
+controller 仍然保留 `tasks`、`dispatch-plan`、`context-pack`、`assign` 和 `record-run` 等低层原子命令，供 Codex 内部、CI 或排障使用；它们不是普通用户默认要选择的命令。任务类 Codex 请求会先进入任务收件箱，由合并门禁判断是合并进当前 workflow、链接为后续问题，还是创建新 workflow。`doctor` 会写入 `.omykit/health/health-report.json`，检查旧项目改造完整度、本地隔离、命名空间冲突、active workflow 指针、任务收件箱可解析性、旧 artifact 缺口、过期看板、后台命令续接信号、已被 Git 跟踪的 runtime 或旧 workflow 产物、清理候选和下一步建议。`doctor --fix` 只做安全兼容修复和本地 `.git/info/exclude` 忽略修复；不会伪造 handoff、用量、模型、skill 或验证证据，也默认不修改项目 `.gitignore`。`cleanup` 默认 dry-run；`cleanup --apply` 只把安全候选归档到 `.omykit/archive/`；`cleanup --untrack-runtime --apply` 会保留本地 `.omykit/` 但把它从 Git index 撤出；`cleanup --reset-runtime --apply` 会撤出 runtime 并归档本地 `.omykit/`；`cleanup --uninstall-local --apply` 会把整个 `.omykit/` runtime 移到本地非项目归档位置。这些 cleanup 命令都不会自动 commit、push 或重写 Git 历史；如果敏感 workflow 产物已经推送，需要人工确认后做 Git history cleanup。`board` 命令会写入 `.omykit/workflows/<workflow-id>/board.json` 和 `board.html`。新的追踪型 workflow 可以用 `--template auto` 在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；显式指定模板会覆盖自动选择。看板语言默认跟随 workflow 语言，也可以用 `--lang zh-CN` 显式覆盖。handoff 和 assignment 提供记录时，看板还会展示任务收件箱、工作流组、冲突仲裁信号、每个节点和 worker 实际使用的 skill、执行方案与确认状态、推荐模型、实际模型记录、delivery 知识同步审查、Agent 通讯录、交接包、压缩上下文包和后台命令续接记录。这是本地静态视图，不是实时服务。
 
 ## 仓库内容
 
@@ -186,6 +190,7 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 - 开始实现或派发 worker 前，先给出执行方案、推荐方案、取舍，并记录用户确认或明确自动授权。
 - 在任务边界和关键阶段变化时使用工作流，不要每个文件读取、编辑或命令都重跑。
 - 只有追踪型多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作才启用 controller。
+- runtime state 默认只留本地：使用唯一 `.omykit/` 命名空间、本地 `.git/info/exclude`、doctor 隔离检查；已被 Git 跟踪但仍需本地保留时用 `cleanup --untrack-runtime --apply`，需要重置或剥离项目本地运行态时用 `cleanup --reset-runtime --apply` 或 `cleanup --uninstall-local --apply`。
 - 创建追踪型 workflow 不等于任务完成；长任务要继续按 `resume/orchestrate -> 内部启动或派发 -> work -> handoff -> complete/reject/block/unblock` 循环推进，直到 delivery 通过或记录真实阻塞。
 - 多智能体工作由自动编排计划根据任务适配度选择主线程、子智能体、后台线程或 worktree；主对话保持当前模型作为 orchestrator-observer；当计划返回 `dispatch_worker` 时创建真实 worker，并且只在当前运行时工具和策略允许时传入节点推荐模型 override。
 - 历史 `.omykit/workflows/*` 产物需要适配最新版 controller 时，使用 `upgrade --all` 补齐 controller 元数据、命令边界、节点卡和新版看板投影；升级时不得伪造缺失的 handoff、token、skill、模型或验证证据。
@@ -194,7 +199,7 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 - 每个节点选择最低足够模型档位；由模型配置给出推荐模型，实际 provider/model 只有在执行环境暴露时才记录。
 - Codex 新线程和子智能体运行面可能支持模型 override；只有当前运行时工具和策略允许时，才在创建 worker 时按节点推荐模型传入。若某个客户端或工具策略无法覆盖模型，记录 `usage_observation` 中的推荐/实际差异和不可观测原因。
 - 执行环境没有暴露精确 token 或实际 worker 模型时，记录 `usage_observation` 的 `unavailable` 原因，不要伪造指标。
-- 把上下文压缩视为有损过程：worker 接收有边界的 context-pack，而不是完整聊天历史；context-pack 内嵌序列化大小测量和 `context_loss_guard`，handoff 必须携带 `downstream_context` 以及可取回的来源/证据路径。
+- 把上下文压缩视为有损过程：worker 接收有边界的 context-pack，而不是完整聊天历史；context-pack 内嵌序列化大小测量和 `context_loss_guard`，会喂给后续节点或恢复流程的 handoff 必须携带 `downstream_context` 以及可取回的来源/证据路径。
 - 使用看板里的任务/上下文大小提醒拆分过大的节点、缩短依赖 handoff 摘要，或把大块证据正文改为可取回路径后再派发 worker。
 - 把漂移当作 workflow 事件处理：非阻塞漂移进入 handoff notes 和 downstream risks；验收、安全、目标项目、破坏性操作或模板漂移必须带证据 block 或 reject 受影响节点。
 - 当同类 specialist skill 都可能适用时，记录 `skill_decisions`：为什么选它、未选候选、用户不满意时换哪个 skill 重做，以及实际反馈结果。
