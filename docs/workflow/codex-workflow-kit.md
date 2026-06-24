@@ -71,7 +71,7 @@ For long or high-observability work, omyKit can use a local controller:
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, audits intake decisions, generates compact node context packs, records command-run recovery metadata, projects skill/agent/model/usage evidence to the board, recommends ready nodes and right-sized models, and keeps compact recovery cheap. It does not call models, replace Codex, or make Lite tasks heavy by default.
+The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, audits intake decisions, generates automatic orchestration plans, creates compact node context packs when needed, records command-run recovery metadata, projects skill/agent/model/usage evidence to the board, recommends ready work surfaces and right-sized models, upgrades old workflow artifacts, and keeps compact recovery cheap. It does not call models, replace Codex, or make Lite tasks heavy by default.
 
 See [controller.md](controller.md), [task-graph.md](task-graph.md), and [handoff-protocol.md](handoff-protocol.md).
 

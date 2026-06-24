@@ -21,8 +21,11 @@ $omykit help
 $omykit 初始化项目
 $omykit 改造旧项目
 $omykit 开始一个需求
+$omykit 开始执行：<长任务>
+$omykit 继续工作流
 $omykit 生成看板并打开
 $omykit 查看工作流状态
+$omykit 升级旧工作流
 $omykit 交付检查
 $omykit 更新自己
 ```
@@ -122,6 +125,13 @@ $omykit 改造旧项目
 $omykit 开始一个需求
 ```
 
+追踪型长任务：
+
+```text
+$omykit 开始执行：<任务>
+$omykit 继续工作流
+```
+
 带本地服务的应用任务：
 
 ```text
@@ -139,6 +149,12 @@ $omykit 交付检查
 ```text
 $omykit 生成看板并打开
 $omykit 查看工作流状态
+```
+
+旧 workflow 产物：
+
+```text
+$omykit 升级旧工作流
 ```
 
 ## 可选 MCP / Plugins
