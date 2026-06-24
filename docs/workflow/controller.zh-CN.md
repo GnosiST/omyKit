@@ -170,7 +170,7 @@ node scripts/omykit-workflow.mjs context-pack 03-plan --workflow <workflow-id> -
 .omykit/workflows/<workflow-id>/context-packs/<node-id>.json
 ```
 
-交接包只包含 `workflow_id`、目标节点合同、依赖 handoff 摘要、来自上游 `downstream_context` 的携带信息、最近相关事件、活跃后台命令和恢复指针。它不会复制整段对话或整个项目源码。子智能体或恢复后的 Codex 应优先读取交接包；只有当前节点需要精确修改、引用原文、排查失败根因或安全判断时，才加载完整文件。
+交接包只包含 `workflow_id`、目标节点合同、依赖 handoff 摘要、来自上游 `downstream_context` 的携带信息、最近相关事件、活跃后台命令、恢复指针、确定性的 `context_usage` 测量和 `context_loss_guard`。它不会复制整段对话或整个项目源码。子智能体或恢复后的 Codex 应优先读取交接包；只有当前节点需要精确修改、引用原文、排查失败根因或安全判断时，才加载完整文件。要把对话压缩视为有损过程：续接时以 context-pack 加来源/证据路径为准，而不是依赖聊天记忆。
 
 ## 后台命令记录
 
@@ -280,9 +280,9 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、执行方案和确认状态、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、执行方案和确认状态、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、任务合同大小、上下文来源分布、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
 
-token、上下文、skill 和实际模型总量是来源感知的。只有 handoff 或 ledger event 提供了用量来源时才聚合；缺失节点会显示为未记录，不会被当成 0 成本。运行环境不可观测的用量会通过 `usage_observation` 和缺失记录分开展示。推荐模型来自所选 `model_profile` 和节点策略；当 Codex runtime 策略允许时，worker 创建应把这些推荐模型作为 model override 传入。实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
+token、上下文、skill 和实际模型总量是来源感知的。Provider token 只有 handoff 或 ledger event 提供来源时才聚合；缺失 token 节点会显示为未记录，不会被当成 0 成本。上下文用量在缺少精确 worker 记录时，会由 controller 做确定性投影：已生成的 context-pack 文件大小、节点上下文估算、任务合同、依赖 handoff 摘要、下游 context、最近事件和 workflow 文件大小提示。运行环境不可观测的用量会通过 `usage_observation` 和缺失记录分开展示。推荐模型来自所选 `model_profile` 和节点策略；当 Codex runtime 策略允许时，worker 创建应把这些推荐模型作为 model override 传入。实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
 
 看板语言按这个顺序确定：显式 `--lang`、workflow metadata 语言、最新 handoff 语言、标题语言推断。只有需要覆盖 workflow 语言时才手动传 `--lang zh-CN`。在 Codex Desktop 中，Codex 应返回生成的 `board.html` 本地链接，并在可用时用内置浏览器打开。CLI 的 `--open` fallback 会让操作系统尝试用系统默认浏览器打开 HTML；如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 

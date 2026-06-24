@@ -86,7 +86,7 @@ pending -> ready -> running -> passed
 
 不要把逻辑并行组当成真实物理并发证明；除非时间戳或 agent activity 记录能证明。
 
-用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。Codex Desktop worker 工具支持模型 override，因此主控应把编排计划里的推荐模型传给子智能体或新线程，同时保持主线程模型稳定。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。若非 Codex runtime 无法 override 或无法暴露模型 metadata，记录推荐/实际差异和 `model_unavailable_reason`。
+用 `model_tier` 避免简单工作过度消耗：`fast` 用于清晰低风险任务，`standard` 用于常规实现和验证，`frontier` 用于架构、设计判断、高风险审查或未解决歧义。当前 `model_profile` 会把档位映射到推荐的具体模型，也可以按节点覆盖。只有当前 Codex worker 工具和策略允许模型 override 时，主控才应把编排计划里的推荐模型传给子智能体或新线程，同时保持主线程模型稳定。实际 provider/model 名称只记录在 handoff 执行元数据中，因为 controller 只推荐模型，不调用模型。若运行时无法 override 或无法暴露模型 metadata，记录推荐/实际差异和 `model_unavailable_reason`。
 
 ## 重试限制
 

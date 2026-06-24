@@ -76,6 +76,8 @@ scan -> focus -> deep
 
 只有下一步依赖精确编辑、引用出处、安全/法律/隐私判断或失败根因时，才回到完整源码、完整日志或原始交付物。
 
+context-pack 是 compact 后续接的恢复合同，不是有损记忆转储。它会包含序列化大小 `context_usage` 估算和 `context_loss_guard`。如果看板提示任务合同或 context-pack 过大，先拆分节点、压缩依赖摘要，或把大块证据正文改成可取回文件路径，再派发 worker。
+
 ## 可选本地压缩适用范围
 
 可选本地压缩只适合在缩小范围仍不够时处理大型 tool outputs、JSON arrays、search results、logs、diffs、RAG chunks、长文档、会话交接和输出整形。它不应该成为 omyKit 默认依赖。

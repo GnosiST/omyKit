@@ -42,6 +42,9 @@ const SKILL_ALTERNATIVE_DECISIONS = new Set(["backup", "rejected", "next_retry",
 const INTAKE_CONFIRMATION_STATUSES = new Set(["pending", "confirmed", "auto_authorized", "changed", "rejected"]);
 const USAGE_OBSERVATION_STATUSES = new Set(["recorded", "unavailable", "not_applicable", "not_recorded"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
+const ESTIMATED_BYTES_PER_TOKEN = 4;
+const LARGE_TASK_CONTRACT_ESTIMATED_TOKENS = 1500;
+const LARGE_CONTEXT_PACK_ESTIMATED_TOKENS = 6000;
 const COLLABORATION_FIELDS = [
   "worker_profile",
   "claimed_by",
@@ -198,6 +201,14 @@ const BOARD_LABELS = {
     contextCoverage: "Context coverage",
     contextTotal: "Approx context tokens",
     contextMissing: "Missing context records",
+    contextRecorded: "Measured nodes",
+    contextBytes: "Context bytes",
+    contextInputFiles: "Input files",
+    contextSources: "Context sources",
+    taskSize: "Task Size",
+    taskSizeTotal: "Approx task tokens",
+    taskSizeBytes: "Task bytes",
+    contextSourceBreakdown: "Context source breakdown",
     timeUsage: "Time",
     elapsed: "Elapsed",
     estimatedRemaining: "Estimated remaining",
@@ -451,6 +462,14 @@ const BOARD_LABELS = {
     contextCoverage: "上下文覆盖率",
     contextTotal: "估算上下文 token",
     contextMissing: "未记录上下文的节点",
+    contextRecorded: "已测量节点",
+    contextBytes: "上下文字节",
+    contextInputFiles: "输入文件",
+    contextSources: "上下文来源",
+    taskSize: "任务大小",
+    taskSizeTotal: "估算任务 token",
+    taskSizeBytes: "任务字节",
+    contextSourceBreakdown: "上下文来源分布",
     timeUsage: "时间",
     elapsed: "已用时",
     estimatedRemaining: "预计剩余",
@@ -617,6 +636,23 @@ function now() {
 
 function dateStamp() {
   return now().slice(0, 10);
+}
+
+function jsonBytes(value) {
+  return Buffer.byteLength(JSON.stringify(value ?? null, null, 2), "utf8");
+}
+
+function estimateTokensFromBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return Math.max(1, Math.ceil(bytes / ESTIMATED_BYTES_PER_TOKEN));
+}
+
+function fileSizeIfExists(file) {
+  try {
+    return fs.existsSync(file) ? fs.statSync(file).size : null;
+  } catch {
+    return null;
+  }
 }
 
 function workflowsRoot(cwd = process.cwd()) {
@@ -3204,11 +3240,39 @@ function normalizeContextUsage(value, fallbackLevel) {
   };
 }
 
+function measuredContextUsage(source, fallbackLevel, bytes, inputFiles, notes) {
+  return normalizeContextUsage({
+    source,
+    context_level: fallbackLevel || null,
+    source_bytes: Number.isFinite(bytes) ? bytes : undefined,
+    estimated_tokens: estimateTokensFromBytes(bytes),
+    input_files: Number.isFinite(inputFiles) ? inputFiles : undefined,
+    notes,
+  }, fallbackLevel);
+}
+
 function mergeContextUsage(target, usage) {
   if (!usage?.recorded) return;
   if (Number.isFinite(usage.source_bytes)) target.source_bytes += usage.source_bytes;
   if (Number.isFinite(usage.estimated_tokens)) target.estimated_tokens += usage.estimated_tokens;
   if (Number.isFinite(usage.input_files)) target.input_files += usage.input_files;
+}
+
+function countContextSource(target, usage) {
+  if (!usage?.recorded) return;
+  const source = usage.source || "unknown";
+  if (!target.has(source)) {
+    target.set(source, {
+      source,
+      nodes: [],
+      source_bytes: 0,
+      estimated_tokens: 0,
+      input_files: 0,
+    });
+  }
+  const entry = target.get(source);
+  if (usage.node_id) entry.nodes.push(usage.node_id);
+  mergeContextUsage(entry, usage);
 }
 
 function parseTimestamp(value) {
@@ -3711,6 +3775,148 @@ function deriveContextUsageFromAgents(agentActivity, fallbackLevel) {
   };
 }
 
+function contextPackPath(workflowDir, nodeId) {
+  return path.join(workflowDir, "context-packs", `${nodeId}.json`);
+}
+
+function readContextPackUsage(workflowDir, nodeId, fallbackLevel) {
+  const file = contextPackPath(workflowDir, nodeId);
+  const bytes = fileSizeIfExists(file);
+  if (!Number.isFinite(bytes)) return normalizeContextUsage(null, fallbackLevel);
+  try {
+    const payload = readJson(file);
+    const embedded = normalizeContextUsage(payload.context_usage, fallbackLevel);
+    if (embedded.recorded) return embedded;
+  } catch {
+    // Fall through to file-size measurement; stale or malformed packs are still useful as size evidence.
+  }
+  return measuredContextUsage(
+    "controller_context_pack_file",
+    fallbackLevel,
+    bytes,
+    null,
+    "Measured serialized context-pack file. Excludes exact source files the worker may load later.",
+  );
+}
+
+function dependencyHandoffEstimate(handoffs, state, dependencyId) {
+  const handoff = latestHandoffForNode(state.nodes?.[dependencyId] || {}, handoffs, dependencyId);
+  return {
+    node_id: dependencyId,
+    status: state.nodes?.[dependencyId]?.status || handoff?.status || null,
+    handoff: handoff?.path || null,
+    summary: handoff?.summary || null,
+    outputs: handoff?.outputs || [],
+    downstream_context: handoff?.downstream_context
+      ? {
+        target_nodes: handoff.downstream_context.target_nodes || [],
+        summary: handoff.downstream_context.summary || null,
+        required_inputs: handoff.downstream_context.required_inputs || [],
+        evidence: handoff.downstream_context.evidence || [],
+        carry_forward_risks: handoff.downstream_context.carry_forward_risks || [],
+      }
+      : null,
+  };
+}
+
+function downstreamContextEstimatesForNode(handoffs, nodeId) {
+  return handoffs.records
+    .filter((handoff) => handoff.downstream_context)
+    .filter((handoff) => {
+      const targets = handoff.downstream_context.target_nodes || [];
+      return targets.length === 0 || targets.includes(nodeId);
+    })
+    .map((handoff) => ({
+      source_node_id: handoff.node_id || null,
+      source_handoff: handoff.path || null,
+      target_nodes: handoff.downstream_context.target_nodes || [],
+      summary: handoff.downstream_context.summary || null,
+      required_inputs: handoff.downstream_context.required_inputs || [],
+      evidence: handoff.downstream_context.evidence || [],
+      carry_forward_risks: handoff.downstream_context.carry_forward_risks || [],
+    }));
+}
+
+function buildNodeContextEstimatePayload(workflowDir, state, handoffs, allEvents, node, card, fallbackLevel) {
+  return {
+    node_contract: {
+      node_id: node.id,
+      title: card.title || node.title,
+      type: node.type,
+      status: state.nodes?.[node.id]?.status || "missing",
+      objective: card.objective || node.objective || nodeObjective(node),
+      acceptance: card.acceptance || node.acceptance || [],
+      context_level: fallbackLevel,
+      worker_profile: card.worker_profile || node.worker_profile || null,
+      model_tier: card.model_tier || node.model_tier || null,
+      allowed_outputs: card.allowed_outputs || node.allowed_outputs || [],
+      allowed_scope: card.allowed_scope || [],
+    },
+    dependency_handoffs: (node.depends_on || []).map((dependency) => dependencyHandoffEstimate(handoffs, state, dependency)),
+    downstream_contexts: downstreamContextEstimatesForNode(handoffs, node.id),
+    recent_events: allEvents
+      .filter((event) => !event.node_id || event.node_id === node.id || (node.depends_on || []).includes(event.node_id))
+      .slice(-8)
+      .map((event) => ({
+        at: event.at || null,
+        event: event.event || null,
+        node_id: event.node_id || null,
+        handoff: event.handoff || null,
+        reason: event.reason || null,
+      })),
+    required_files: ["state.json", "graph.json", `nodes/${node.id}.json`],
+    dependency_files: (node.depends_on || []).map((dependency) => `handoffs/${dependency}.json or latest handoff summary`),
+    workflow_files_bytes: {
+      node_card: fileSizeIfExists(path.join(workflowDir, "nodes", `${node.id}.json`)),
+      state: fileSizeIfExists(path.join(workflowDir, "state.json")),
+      graph: fileSizeIfExists(path.join(workflowDir, "graph.json")),
+    },
+    handoff_contract: {
+      required: true,
+      output_path: `handoffs/${node.id}.json`,
+      record_downstream_context: true,
+      record_context_usage: true,
+    },
+  };
+}
+
+function deriveContextUsageFromController(workflowDir, state, handoffs, allEvents, node, card, fallbackLevel) {
+  const contextPackUsage = readContextPackUsage(workflowDir, node.id, fallbackLevel);
+  if (contextPackUsage.recorded) return contextPackUsage;
+  const payload = buildNodeContextEstimatePayload(workflowDir, state, handoffs, allEvents, node, card, fallbackLevel);
+  const inputFiles = payload.required_files.length + payload.dependency_files.length;
+  return measuredContextUsage(
+    "controller_context_estimate",
+    fallbackLevel,
+    jsonBytes(payload),
+    inputFiles,
+    "Estimated from node contract, dependency handoff summaries, downstream context, recent events, and workflow file sizes. Excludes exact source files loaded during implementation.",
+  );
+}
+
+function measureTaskSize(node, card, display) {
+  const payload = {
+    node_id: node.id,
+    type: node.type,
+    title: display.title || card.title || node.title,
+    objective: display.objective || card.objective || node.objective || nodeObjective(node),
+    acceptance: display.acceptance || card.acceptance || node.acceptance || [],
+    depends_on: node.depends_on || [],
+    allowed_outputs: card.allowed_outputs || node.allowed_outputs || [],
+    allowed_scope: card.allowed_scope || [],
+    context_level: node.context_level || card.context_level || "focus",
+    worker_profile: card.worker_profile || node.worker_profile || null,
+    model_tier: card.model_tier || node.model_tier || null,
+  };
+  const bytes = jsonBytes(payload);
+  return {
+    source: "controller_node_contract",
+    source_bytes: bytes,
+    estimated_tokens: estimateTokensFromBytes(bytes),
+    fields: ["title", "objective", "acceptance", "depends_on", "allowed_outputs", "allowed_scope"],
+  };
+}
+
 function readNodeLedgerEvents(allEvents, nodeId) {
   return allEvents
     .filter((event) => event.node_id === nodeId)
@@ -3790,9 +3996,13 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
       ? card.estimated_minutes
       : policy.estimated_minutes;
   const explicitContextUsage = normalizeContextUsage(handoff?.context_usage, node.context_level || card.context_level || "focus");
+  const agentContextUsage = deriveContextUsageFromAgents(agentActivity, node.context_level || card.context_level || "focus");
   const contextUsage = explicitContextUsage.recorded
     ? explicitContextUsage
-    : deriveContextUsageFromAgents(agentActivity, node.context_level || card.context_level || "focus");
+    : agentContextUsage.recorded
+      ? agentContextUsage
+      : deriveContextUsageFromController(workflowDir, state, handoffs, allEvents, node, card, node.context_level || card.context_level || "focus");
+  const taskSize = measureTaskSize(node, card, display);
   const timing = normalizeTiming(handoff, timeline, entry, estimatedMinutes);
   return {
     id: node.id,
@@ -3862,6 +4072,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     agent_activity: agentActivity,
     token_usage: tokenUsage,
     context_usage: contextUsage,
+    task_size: taskSize,
     timing,
     timeline,
     open_risks: ["failed", "blocked"].includes(entry.status) && entry.reason ? [entry.reason] : [],
@@ -4220,11 +4431,13 @@ function buildContextUsage(projectedNodes) {
   const totals = { source_bytes: 0, estimated_tokens: 0, input_files: 0 };
   const byNode = [];
   const byAgent = new Map();
+  const bySource = new Map();
   const missingNodes = [];
   for (const node of projectedNodes) {
     if (node.context_usage.recorded) {
       mergeContextUsage(totals, node.context_usage);
       byNode.push({ node_id: node.id, ...node.context_usage });
+      countContextSource(bySource, { node_id: node.id, ...node.context_usage });
     } else {
       missingNodes.push(node.id);
     }
@@ -4250,6 +4463,26 @@ function buildContextUsage(projectedNodes) {
     coverage_percent: projectedNodes.length === 0 ? 100 : Math.round((byNode.length / projectedNodes.length) * 100),
     by_node: byNode,
     by_agent: [...byAgent.values()],
+    by_source: [...bySource.values()],
+  };
+}
+
+function buildTaskSize(projectedNodes) {
+  const totals = { source_bytes: 0, estimated_tokens: 0 };
+  const byNode = [];
+  for (const node of projectedNodes) {
+    if (!node.task_size) continue;
+    if (Number.isFinite(node.task_size.source_bytes)) totals.source_bytes += node.task_size.source_bytes;
+    if (Number.isFinite(node.task_size.estimated_tokens)) totals.estimated_tokens += node.task_size.estimated_tokens;
+    byNode.push({ node_id: node.id, ...node.task_size });
+  }
+  return {
+    totals,
+    measured_nodes: byNode.length,
+    by_node: byNode,
+    largest_nodes: [...byNode]
+      .sort((left, right) => (right.estimated_tokens || 0) - (left.estimated_tokens || 0))
+      .slice(0, 5),
   };
 }
 
@@ -4533,12 +4766,64 @@ function downstreamContextsForNode(projectedNodes, nodeId) {
     }));
 }
 
+function contextPackComponents(payload) {
+  return [
+    ["node", payload.node],
+    ["dependency_handoffs", payload.dependency_handoffs || []],
+    ["downstream_contexts", payload.downstream_contexts || []],
+    ["assignments", payload.assignments || []],
+    ["handoff_contract", payload.handoff_contract || {}],
+    ["context_policy", payload.context_policy || {}],
+    ["active_commands", payload.active_commands || []],
+    ["recent_events", payload.recent_events || []],
+    ["resume_pointers", payload.resume_pointers || {}],
+    ["context_loss_guard", payload.context_loss_guard || {}],
+  ].map(([name, value]) => ({
+    name,
+    source_bytes: jsonBytes(value),
+    estimated_tokens: estimateTokensFromBytes(jsonBytes(value)),
+  }));
+}
+
+function attachContextPackMeasurement(payload) {
+  const firstPassBytes = jsonBytes(payload);
+  const withUsage = {
+    ...payload,
+    context_usage: {
+      source: "controller_context_pack",
+      context_level: payload.context_policy?.level || payload.node?.context_level || null,
+      source_bytes: firstPassBytes,
+      estimated_tokens: estimateTokensFromBytes(firstPassBytes),
+      input_files: (payload.context_policy?.required_files?.length || 0) + (payload.context_policy?.dependency_files?.length || 0),
+      notes: "Measured serialized context pack. Exact source files loaded later must be recorded separately by the worker when available.",
+    },
+    context_measurement: {
+      source: "controller_context_pack",
+      method: `serialized_json_bytes_div_${ESTIMATED_BYTES_PER_TOKEN}`,
+      source_bytes: firstPassBytes,
+      estimated_tokens: estimateTokensFromBytes(firstPassBytes),
+      components: contextPackComponents(payload),
+      excludes: [
+        "Full conversation history",
+        "Full project source files not explicitly loaded by the worker",
+        "Provider-reported model token counters",
+      ],
+    },
+  };
+  const finalBytes = jsonBytes(withUsage);
+  withUsage.context_usage.source_bytes = finalBytes;
+  withUsage.context_usage.estimated_tokens = estimateTokensFromBytes(finalBytes);
+  withUsage.context_measurement.source_bytes = finalBytes;
+  withUsage.context_measurement.estimated_tokens = estimateTokensFromBytes(finalBytes);
+  return withUsage;
+}
+
 function buildContextPackPayload(board, nodeId) {
   const nodes = Object.values(board.columns).flat();
   const node = nodes.find((item) => item.id === nodeId);
   if (!node) throw new Error(`Unknown node: ${nodeId}`);
   const maxSourceFiles = Math.max(1, Math.min(8, node.context_level === "scan" ? 4 : 8));
-  return {
+  return attachContextPackMeasurement({
     schema_version: SCHEMA_VERSION,
     workflow_id: board.workflow_id,
     generated_at: now(),
@@ -4582,6 +4867,18 @@ function buildContextPackPayload(board, nodeId) {
         "Do not load full source files unless this node needs exact edits, quotes, or failure root cause.",
       ],
     },
+    context_loss_guard: {
+      principle: "Conversation compaction is lossy; treat this context pack plus source/evidence pointers as the recovery contract.",
+      preserve: [
+        "node objective and acceptance",
+        "dependency handoff summaries",
+        "downstream_context from upstream nodes",
+        "active command recovery pointers",
+        "exact evidence/source paths for later retrieval",
+      ],
+      worker_rule: "Do not rely on memory of earlier chat when the context pack or source file disagrees.",
+      handoff_required_fields: ["summary", "work_items", "outputs", "verification", "downstream_context", "context_usage"],
+    },
     active_commands: board.commands?.active || [],
     recent_events: (board.recent_events || []).filter((event) => !event.node_id || event.node_id === node.id || (node.depends_on || []).includes(event.node_id)).slice(-8),
     resume_pointers: {
@@ -4591,7 +4888,7 @@ function buildContextPackPayload(board, nodeId) {
       node_card: `nodes/${node.id}.json`,
       board: "board.json",
     },
-  };
+  });
 }
 
 function buildHandoffPackets(projectedNodes) {
@@ -4632,7 +4929,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en") {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -4702,6 +4999,40 @@ function buildRecommendations(projectedNodes, usage, context, skills, models, ev
       isZh ? "上下文记录可以帮助后续优化 compact、检索和子智能体拆分策略。" : "Context records are needed to optimize future workflow cost and compact behavior.",
       isZh ? "后续节点记录 context_usage.source_bytes、estimated_tokens、input_files 和 source。" : "Record context_usage.source_bytes, estimated_tokens, input_files, and source for future nodes.",
       context.missing_nodes,
+    ));
+  }
+  const largeContextNodes = (context.by_node || [])
+    .filter((item) => (item.estimated_tokens || 0) >= LARGE_CONTEXT_PACK_ESTIMATED_TOKENS)
+    .map((item) => item.node_id);
+  if (largeContextNodes.length > 0) {
+    items.push(recommendation(
+      "large-context-pack",
+      "medium",
+      isZh ? "部分节点上下文包过大" : "Some node context packs are large",
+      isZh
+        ? `节点上下文估算达到 ${LARGE_CONTEXT_PACK_ESTIMATED_TOKENS} tokens 以上，compact 或 worker 交接时更容易丢失细节。`
+        : `Estimated node context is at or above ${LARGE_CONTEXT_PACK_ESTIMATED_TOKENS} tokens, which increases loss risk during compaction or worker handoff.`,
+      isZh
+        ? "拆分节点、缩小依赖 handoff 摘要，或把大证据改为路径引用后重新生成 context-pack。"
+        : "Split the node, shrink dependency handoff summaries, or replace large evidence bodies with retrievable path references, then regenerate the context pack.",
+      largeContextNodes,
+    ));
+  }
+  const largeTaskNodes = (taskSize?.by_node || [])
+    .filter((item) => (item.estimated_tokens || 0) >= LARGE_TASK_CONTRACT_ESTIMATED_TOKENS)
+    .map((item) => item.node_id);
+  if (largeTaskNodes.length > 0) {
+    items.push(recommendation(
+      "large-task-contract",
+      "medium",
+      isZh ? "部分节点任务合同过大" : "Some node task contracts are large",
+      isZh
+        ? `节点目标、验收或范围本身过大，超过 ${LARGE_TASK_CONTRACT_ESTIMATED_TOKENS} tokens 时应优先拆成更小的可验收节点。`
+        : `The node objective, acceptance, or scope is too large; above ${LARGE_TASK_CONTRACT_ESTIMATED_TOKENS} tokens, prefer splitting into smaller verifiable nodes.`,
+      isZh
+        ? "把大节点拆成单职责节点，并用 downstream_context 传递必要约束，而不是让一个 worker 背完整历史。"
+        : "Split large nodes into single-responsibility nodes and pass required constraints through downstream_context instead of making one worker carry the full history.",
+      largeTaskNodes,
     ));
   }
   if (skills.missing_nodes.length > 0) {
@@ -5176,6 +5507,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const critical = criticalPath(graph);
   const usage = buildUsage(projectedNodes);
   const context = buildContextUsage(projectedNodes);
+  const taskSize = buildTaskSize(projectedNodes);
   const skills = buildSkillUsage(projectedNodes);
   const models = buildModelUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
@@ -5187,7 +5519,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, skills, models, evolution, risks, project, commands, assignments, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands, assignments, language);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -5271,6 +5603,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     assignments,
     usage,
     context,
+    task_size: taskSize,
     skills,
     models,
     commands,
@@ -6120,6 +6453,18 @@ function renderUsageGroups(groups, text) {
   });
 }
 
+function renderContextUsageGroups(groups, text) {
+  return renderObjectList(groups, text.none, (group) => {
+    return `<strong>${escapeHtml(group.source)}</strong><p>${escapeHtml(text.nodes)}: ${renderNodeLinks(group.nodes || [], text)}</p><p>${escapeHtml(text.contextTotal)}: ${escapeHtml(group.estimated_tokens || text.notRecorded)}</p><p>${escapeHtml(text.contextBytes)}: ${escapeHtml(group.source_bytes || text.notRecorded)}</p><p>${escapeHtml(text.contextInputFiles)}: ${escapeHtml(group.input_files || text.notRecorded)}</p>`;
+  });
+}
+
+function renderTaskSizeRows(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    return `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a><p>${escapeHtml(text.taskSizeTotal)}: ${escapeHtml(item.estimated_tokens || text.notRecorded)} · ${escapeHtml(text.taskSizeBytes)}: ${escapeHtml(item.source_bytes || text.notRecorded)}</p><p class="muted">${escapeHtml(text.source)}: ${escapeHtml(item.source || text.notRecorded)}</p>`;
+  });
+}
+
 function renderSkillGroups(groups, text) {
   return renderObjectList(groups, text.noSkillsUsed, (group) => {
     const meta = [
@@ -6236,6 +6581,8 @@ function renderNodeCard(node, text) {
       <dt>${escapeHtml(text.modelTier)}</dt><dd>${escapeHtml(node.model_tier)}</dd>
       <dt>${escapeHtml(text.recommendedModel)}</dt><dd>${escapeHtml(node.recommended_model || text.none)}</dd>
       <dt>${escapeHtml(text.actualModel)}</dt><dd>${escapeHtml(node.actual_models.map((item) => item.model).join(", ") || text.notRecorded)}</dd>
+      <dt>${escapeHtml(text.contextUsage)}</dt><dd>${escapeHtml(node.context_usage?.recorded ? `${node.context_usage.estimated_tokens || text.notRecorded} ${text.tokens} · ${node.context_usage.source}` : text.notRecorded)}</dd>
+      <dt>${escapeHtml(text.taskSize)}</dt><dd>${escapeHtml(node.task_size?.estimated_tokens || text.notRecorded)} ${escapeHtml(text.tokens)}</dd>
       <dt>${escapeHtml(text.claimed)}</dt><dd>${escapeHtml(node.claimed_by || text.unclaimed)}</dd>
       <dt>${escapeHtml(text.retry)}</dt><dd>${escapeHtml(node.retry_count)}</dd>
       <dt>${escapeHtml(text.tokens)}</dt><dd>${escapeHtml(formatTokens(node.token_usage, text))}</dd>
@@ -6256,7 +6603,7 @@ function renderEdgeList(edges, empty = "No edges") {
 }
 
 function renderTaskTracker(nodes, text) {
-  return `<div class="task-table" role="table">
+  return `<div class="task-table task-tracker-table" role="table">
     <div class="task-row task-head" role="row">
       <span>${escapeHtml(text.nodes)}</span>
       <span>${escapeHtml(text.actualWork)}</span>
@@ -6265,6 +6612,7 @@ function renderTaskTracker(nodes, text) {
       <span>${escapeHtml(text.changedFiles)}</span>
       <span>${escapeHtml(text.verification)}</span>
       <span>${escapeHtml(text.tokenUsage)}</span>
+      <span>${escapeHtml(text.contextUsage)}</span>
       <span>${escapeHtml(text.openRisks)}</span>
     </div>
     ${nodes
@@ -6276,6 +6624,9 @@ function renderTaskTracker(nodes, text) {
         const files = node.changed_files.map((file) => file.path).join(", ") || text.noChangedFiles;
         const checks = node.required_checks.map((item) => `${item.command}: ${item.result}`).join("; ") || text.none;
         const risks = [...node.open_risks, ...node.non_blocking_notes].join("; ") || text.none;
+        const context = node.context_usage?.recorded
+          ? `${node.context_usage.estimated_tokens || text.notRecorded} ${text.tokens} · ${node.context_usage.source}`
+          : text.notRecorded;
         return `<div class="task-row" role="row" data-node-id="${escapeHtml(node.id)}" data-status="${escapeHtml(node.status)}">
           <span><a href="#node-${escapeHtml(node.id)}"><strong>${escapeHtml(node.id)}</strong></a><br><small>${escapeHtml(node.display_title || node.title)}</small><br><span class="status ${escapeHtml(node.status)}">${escapeHtml(statusTitle(node.status, text))}</span></span>
           <span>${escapeHtml(truncateText(work, 240))}</span>
@@ -6284,6 +6635,7 @@ function renderTaskTracker(nodes, text) {
           <span>${escapeHtml(truncateText(files, 180))}</span>
           <span>${escapeHtml(truncateText(checks, 220))}</span>
           <span>${escapeHtml(formatTokens(node.token_usage, text))}</span>
+          <span>${escapeHtml(context)}</span>
           <span>${escapeHtml(truncateText(risks, 180))}</span>
         </div>`;
       })
@@ -6325,7 +6677,7 @@ function renderTaskInbox(taskInbox, workstreams, conflicts, text) {
       ${renderMetric(text.conflicts, (conflicts || []).length)}
     </div>
     <h3>${escapeHtml(text.taskMergeGate)}</h3>
-    <div class="task-table" role="table">
+    <div class="task-table task-inbox-table" role="table">
       <div class="task-row task-head" role="row">
         <span>${escapeHtml(text.taskInbox)}</span>
         <span>${escapeHtml(text.taskBrief)}</span>
@@ -6452,6 +6804,7 @@ function renderBoardHtml(board) {
     .column { min-width: 170px; background: #fdfefe; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .task-table { display: grid; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
     .task-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.4fr) minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(200px, 1.2fr) minmax(110px, 0.8fr) minmax(140px, 1fr); gap: 0; border-top: 1px solid var(--line); background: #fff; }
+    .task-tracker-table .task-row { grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 1.4fr) minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(200px, 1.2fr) minmax(110px, 0.8fr) minmax(150px, 0.9fr) minmax(140px, 1fr); }
     .task-row:first-child { border-top: 0; }
     .task-row > span { padding: 10px; border-left: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
     .task-row > span:first-child { border-left: 0; }
@@ -6648,12 +7001,20 @@ function renderBoardHtml(board) {
       <h2>${escapeHtml(text.contextUsage)} / ${escapeHtml(text.timeUsage)}</h2>
       <div class="metrics">
         ${renderMetric(text.contextTotal, board.context.totals.estimated_tokens || text.notRecorded)}
+        ${renderMetric(text.contextBytes, board.context.totals.source_bytes || text.notRecorded)}
+        ${renderMetric(text.contextInputFiles, board.context.totals.input_files || text.notRecorded)}
+        ${renderMetric(text.contextRecorded, board.context.recorded_nodes)}
         ${renderMetric(text.contextCoverage, `${board.context.coverage_percent}%`)}
+        ${renderMetric(text.taskSizeTotal, board.task_size?.totals?.estimated_tokens || text.notRecorded)}
         ${renderMetric(text.elapsed, formatDuration(board.timing.elapsed_minutes, text))}
         ${renderMetric(text.estimatedRemaining, formatDuration(board.timing.estimated_remaining_minutes, text))}
         ${renderMetric(text.averageNodeTime, formatDuration(board.timing.average_node_minutes, text))}
       </div>
       <p><strong>${escapeHtml(text.contextMissing)}:</strong> ${escapeHtml(board.context.missing_nodes.join(", ") || text.none)}</p>
+      <h3>${escapeHtml(text.contextSourceBreakdown)}</h3>
+      ${renderContextUsageGroups(board.context.by_source || [], text)}
+      <h3>${escapeHtml(text.taskSize)}</h3>
+      ${renderTaskSizeRows(board.task_size?.largest_nodes || [], text)}
     </section>
 
     <section class="grid-2" id="handoff-commands">

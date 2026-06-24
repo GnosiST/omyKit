@@ -73,6 +73,8 @@ For controller-backed workflows, resume after compact or interruption from durab
 
 Return to full source files, full logs, or original artifacts only when the next action depends on exact edits, citations, security/legal/privacy judgment, or failure root cause.
 
+Context packs are the compact recovery contract, not a lossy memory dump. They include a serialized-size `context_usage` estimate and `context_loss_guard`. If the board flags a large task contract or large context pack, split the node, reduce dependency summaries, or replace bulky evidence bodies with retrievable file paths before dispatching a worker.
+
 ## Optional Local Compression Fit
 
 Optional local compression is useful only for large tool outputs, JSON arrays, search results, logs, diffs, RAG chunks, long docs, conversation handoffs, and output shaping after narrowing fails. It should not become a default omyKit dependency.

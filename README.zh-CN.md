@@ -170,7 +170,7 @@ Controller 是本地确定性机制。它不调用模型，不自动启动 agent
 
 Controller 是模板驱动的。内置 YAML 模板把图拓扑、agent 角色、模型配置、运行配置、安全限位和 scorecard 分层定义；因此同类任务可以复用稳定流程，不同 issue 只改变输入、证据和产物。`init --template auto` 会在 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 和 `mission.orchestration` 中自动选择；用户显式指定模板时仍优先尊重用户选择。可以用 `templates list`、`templates show <id>` 和 `templates validate` 查看或校验已安装模板。
 
-`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、任务收件箱、合并门禁决策、工作流组、冲突仲裁信号、入口决策、workflow 进化候选、delivery 知识同步审查、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、用量观测状态、token 与上下文覆盖率、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、事件和自动生成的整改建议，不引入服务端或数据库。token、上下文、skill 使用和实际模型只聚合有记录的证据；运行环境不可观测的指标会和缺失记录分开显示，不会猜测或当成 0。
+`board` 命令会生成面向工具的 `board.json` 和面向浏览器查看的 `board.html`。它展示所选模板、Scorecard 结果、任务收件箱、合并门禁决策、工作流组、冲突仲裁信号、入口决策、workflow 进化候选、delivery 知识同步审查、可点击任务追踪表、每个节点实际完成的工作项、变更文件摘要、已记录的 skill 使用、验证结果、证据是否存在、下游交接上下文、生成的交接包、后台命令续接记录、子智能体活动、推荐模型档位、推荐具体模型、实际模型记录、用量观测状态、token 与上下文覆盖率、任务合同大小、上下文来源分布、节点耗时、ETA 估算、项目快照、依赖/打回流、worker 分道、blocker、decision、重试、事件和自动生成的整改建议，不引入服务端或数据库。Provider token 只聚合有记录的执行证据；运行环境不可观测的指标会和缺失记录分开显示，不会猜测或当成 0。上下文总量会合并已记录的 handoff/agent context，以及 controller 从生成的 context-pack 或节点合同中确定性测量出的估算值，并标明来源。
 
 ## 工作流模型
 
@@ -192,8 +192,10 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 - 追踪型工作先选择最接近的 workflow 模板；需要定制时优先增改模板/profile YAML，不把一次性逻辑硬编码进 controller。
 - 复杂需求需要需求洞察、任务拆解、多个工作流/工作分支路由、执行监听、集成验票和交付学习时，使用 `mission.orchestration`。
 - 每个节点选择最低足够模型档位；由模型配置给出推荐模型，实际 provider/model 只有在执行环境暴露时才记录。
-- 当前 Codex 新线程和子智能体运行面支持模型 override；创建 worker 时应按节点推荐模型传入。若某个客户端或工具策略确实无法覆盖模型，记录 `usage_observation` 中的推荐/实际差异和不可观测原因。
+- Codex 新线程和子智能体运行面可能支持模型 override；只有当前运行时工具和策略允许时，才在创建 worker 时按节点推荐模型传入。若某个客户端或工具策略无法覆盖模型，记录 `usage_observation` 中的推荐/实际差异和不可观测原因。
 - 执行环境没有暴露精确 token 或实际 worker 模型时，记录 `usage_observation` 的 `unavailable` 原因，不要伪造指标。
+- 把上下文压缩视为有损过程：worker 接收有边界的 context-pack，而不是完整聊天历史；context-pack 内嵌序列化大小测量和 `context_loss_guard`，handoff 必须携带 `downstream_context` 以及可取回的来源/证据路径。
+- 使用看板里的任务/上下文大小提醒拆分过大的节点、缩短依赖 handoff 摘要，或把大块证据正文改为可取回路径后再派发 worker。
 - 把漂移当作 workflow 事件处理：非阻塞漂移进入 handoff notes 和 downstream risks；验收、安全、目标项目、破坏性操作或模板漂移必须带证据 block 或 reject 受影响节点。
 - 当同类 specialist skill 都可能适用时，记录 `skill_decisions`：为什么选它、未选候选、用户不满意时换哪个 skill 重做，以及实际反馈结果。
 - 追踪型交付必须记录 `evolution_candidates`；已复盘但没有可复用 workflow 经验时使用空数组。

@@ -344,7 +344,7 @@
 
 如果用户对产物不满意，不要盲目叠加所有同类 skill。先查看对应节点的 `skill_decisions[].fallback_policy`；若已有 `next_skill`，保留已验证事实和功能，只把不满意的质量维度交给下一个更擅长的 skill 重做或修改。重做后把 `user_feedback.status`、`outcome` 和新证据写回 handoff。反复有效或反复失败的选择经验，作为 delivery `evolution_candidates` 交给 `codex-workflow-evolution` 判断是否进入通用 omyKit 规则。
 
-token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确用量时记录精确值；否则使用 `manual`、`estimated`，或者不记录。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。Codex Desktop 创建 worker 支持模型 override，所以节点 handoff 应记录推荐模型，并在执行环境暴露时记录实际模型。若运行时策略或 metadata 隐藏实际模型或 token 计数，增加节点级 `usage_observation`，将 `model_status` 或 `token_status` 设为 `unavailable`，并写明对应不可观测原因。看板会把运行时不可观测和未记录分开展示。
+token、上下文和模型记录必须有来源。只要出现 `token_usage` 或 `context_usage` 对象，`source` 就是必填字段。能拿到 provider/tool 报告的精确 token 用量时记录精确值；否则使用 `usage_observation.token_status=unavailable`，或者不记录 token。不要在环境没有暴露 Codex Desktop 或聊天 token 时编造数字。上下文大小不是 provider token 消耗：controller 生成的 context-pack 会写入确定性的序列化大小估算，worker 运行时若暴露更精确的来源/context 记录再补充。`model_tier` 是不绑定供应商的策略字段（`fast`、`standard`、`frontier`）；实际 provider/model 只通过 `model`、`model_provider`、`token_usage.model`、`agent_activity[].model`、`agent_activity[].model_provider` 或 `agent_activity[].token_usage.model` 记录为执行事实。Codex Desktop 创建 worker 可能在当前工具策略允许时支持模型 override，所以节点 handoff 应记录推荐模型，并在执行环境暴露时记录实际模型。若运行时策略或 metadata 隐藏实际模型或 token 计数，增加节点级 `usage_observation`，将 `model_status` 或 `token_status` 设为 `unavailable`，并写明对应不可观测原因。看板会把运行时不可观测和未记录分开展示。
 
 ## Failed And Reject
 
@@ -411,5 +411,6 @@ token、上下文和模型记录必须有来源。只要出现 `token_usage` 或
 - 只记录实际使用过的 skill；可取得时写清用途和证据。
 - 执行环境暴露实际模型时记录模型名；否则在 worker activity 写 `model_unavailable_reason`，并在节点级 `usage_observation.model_status=unavailable` 写明原因。
 - token 用量必须带来源；无法取得精确用量时记录 `usage_observation.token_status=unavailable` 和原因，不要估成 0。
+- 把 compact 视为有损过程。未来节点需要的事实必须进入 `downstream_context` 和证据/来源路径；worker 交接或续接依赖生成的 context-pack，而不是完整聊天历史。
 
 节点状态见 [task-graph.zh-CN.md](task-graph.zh-CN.md)，命令见 [controller.zh-CN.md](controller.zh-CN.md)。
