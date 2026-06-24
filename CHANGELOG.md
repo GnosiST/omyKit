@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added a project-level Task Inbox and Merge Gate so repeated `$omykit` task briefs can be recorded, merged into active workflows, linked as follow-ups to completed workflows, or split into new workflows; boards, doctor, and orchestration plans now project task intake, workstreams, and write-scope conflicts.
 - Treat completed historical workflows with obsolete evidence schemas as archive-only cleanup candidates, preserving them under `.omykit/archive/` instead of fabricating missing handoff evidence.
 - Added the omyKit repository project profile and validator checks so `doctor` has a durable profile target and health/cleanup entrypoints cannot silently regress.
 - Added project-level workflow health diagnosis and residue cleanup: `doctor` writes `.omykit/health/health-report.json`, `doctor --fix` safely repairs compatibility issues, and `cleanup` defaults to dry-run before archive-only cleanup under `.omykit/archive/`.

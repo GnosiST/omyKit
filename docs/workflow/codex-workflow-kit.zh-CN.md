@@ -24,7 +24,7 @@ Codex Workflow Kit 是一个以 Codex 为控制面的操作层，用于初始化
 ## 核心流程
 
 ```text
-intake -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> review -> deliver -> learn
+intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> review -> deliver -> learn
 ```
 
 在任务边界和有意义的阶段变化时应用流程。当当前路由仍然适用时，不要因为常规文件读取、编辑、shell 命令或中间检查而重启工作流。
@@ -71,7 +71,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把 skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，诊断项目 workflow 健康状态，归档安全清理候选，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，不伪造缺失证据，也不会让 Lite 任务默认变重。
+Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，把重复 brief 记录到 `.omykit/tasks/tasks.jsonl` 并通过合并门禁判断 `merge_current`、`linked_follow_up` 或 `new_workflow`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把任务收件箱、skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，诊断项目 workflow 健康状态，归档安全清理候选，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，不伪造缺失证据，也不会让 Lite 任务默认变重。
 
 参见 [controller.zh-CN.md](controller.zh-CN.md)、[task-graph.zh-CN.md](task-graph.zh-CN.md) 和 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。
 

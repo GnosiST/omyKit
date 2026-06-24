@@ -58,12 +58,32 @@ Codex should choose the project-local controller script when present, otherwise 
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
 
+## Task Inbox And Merge Gate
+
+When the user repeatedly says `$omykit fix bug: ...`, `$omykit do UI: ...`, or adds a same-family follow-up, do not make the user manually choose merge, parallelism, or conflict handling. Codex first appends the brief to the project-level `.omykit/tasks/tasks.jsonl`, then lets the controller decide:
+
+- `merge_current`: the active workflow is still moving and the task belongs to the same goal or same problem family.
+- `linked_follow_up`: the related workflow is terminal and the new brief is a same-family follow-up.
+- `new_workflow`: no suitable active workflow exists, or the goal/template is materially different.
+
+The task inbox records language, template recommendation, relation, tags, suggested write scope, conflict risk, and linked workflow. The board projects the task inbox, workstreams, and conflict-arbiter items. `doctor` checks for invalid task inbox JSONL. `orchestrate` carries task-intake summaries into the plan.
+
+These are controller primitives, not normal user commands:
+
+```bash
+node scripts/omykit-workflow.mjs tasks add "fix bug: the secondary page has the same UI issue" --lang en
+node scripts/omykit-workflow.mjs tasks list --json
+```
+
+Users normally state intent in chat. Use `tasks list` only when debugging why a task was merged, split, or linked.
+
 ## Project Health
 
 Use `doctor` when an existing project or historical workflow feels partially upgraded, confusing, or stale. It writes `.omykit/health/health-report.json` and checks the project-level workflow layer:
 
 - `.omykit/` and workflow directory presence.
 - active workflow pointer validity.
+- task inbox parseability, same-family task groups, and write-scope conflict signals.
 - workflow validation errors and compatibility upgrade gaps.
 - terminal nodes that claim completion but lack readable handoff evidence.
 - stale or missing board projections.
@@ -85,14 +105,15 @@ Creating a workflow is not completion. `init` only creates durable state. For lo
 Execution loop:
 
 1. `resume` and `orchestrate` identify running, failed, blocked, ready, parallelizable, and externally claimed nodes.
-2. The orchestration plan chooses main-thread, same-turn subagent, background-thread, or worktree execution; the user should not have to choose this primitive manually.
-3. If the node will be delegated or resumed after compaction, Codex internally generates `context-pack <node-id>` first.
-4. Codex performs that node's real work in the current project or sends the bounded context pack to a worker.
-5. For real worker/thread/worktree execution, Codex records the assignment with `assign` after the worker exists.
-6. For dev servers, test watchers, long builds, or screenshot services, record command metadata with `record-run` when recovery depends on logs, pid, or resume commands.
-7. Codex writes a structured handoff with work items, evidence, `downstream_context`, skills/model/usage when available, delivery `evolution_candidates`, and delivery `knowledge_sync`.
-8. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
-9. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
+2. Check the task inbox, fold same-family briefs into the current workflow input, and route overlaps through the conflict-arbiter view instead of opening unrelated duplicate workflows.
+3. The orchestration plan chooses main-thread, same-turn subagent, background-thread, or worktree execution; the user should not have to choose this primitive manually.
+4. If the node will be delegated or resumed after compaction, Codex internally generates `context-pack <node-id>` first.
+5. Codex performs that node's real work in the current project or sends the bounded context pack to a worker.
+6. For real worker/thread/worktree execution, Codex records the assignment with `assign` after the worker exists.
+7. For dev servers, test watchers, long builds, or screenshot services, record command metadata with `record-run` when recovery depends on logs, pid, or resume commands.
+8. Codex writes a structured handoff with work items, evidence, `downstream_context`, skills/model/usage when available, delivery `evolution_candidates`, and delivery `knowledge_sync`.
+9. Codex runs `complete`, `reject`, `block`, or `unblock` after a recorded blocker is resolved.
+10. The loop repeats until delivery passes, a real blocker needs the user, or the user asks to stop.
 
 Use `$omykit 开始执行：<任务>` or `$omykit 创建并执行工作流：<任务>` when you want Codex to create/resume and keep advancing. Use `$omykit 只创建工作流：<任务>` only when you want the skeleton and manual continuation commands.
 
@@ -189,6 +210,8 @@ In a target project, prefer a project-local `scripts/omykit-workflow.mjs` if pre
 node scripts/omykit-workflow.mjs init "feature title"
 node scripts/omykit-workflow.mjs init "bug title" --template bugfix.standard
 node scripts/omykit-workflow.mjs init "UI redesign" --template frontend-ui.strict --lang zh-CN
+node scripts/omykit-workflow.mjs tasks add "fix bug: homepage UI issue from screenshot" --lang en
+node scripts/omykit-workflow.mjs tasks list --json
 node scripts/omykit-workflow.mjs workflows
 node scripts/omykit-workflow.mjs workflows use <workflow-id>
 node scripts/omykit-workflow.mjs templates list --lang zh-CN

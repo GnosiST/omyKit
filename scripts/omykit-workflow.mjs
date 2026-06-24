@@ -310,6 +310,17 @@ const BOARD_LABELS = {
     pid: "PID",
     log: "Log",
     resumeCommand: "Resume command",
+    taskInbox: "Task Inbox",
+    taskBrief: "Brief",
+    taskDecision: "Decision",
+    taskRelation: "Relation",
+    taskWorkstream: "Workstream",
+    taskConflictRisk: "Conflict risk",
+    taskMergeGate: "Merge Gate",
+    workstreams: "Workstreams",
+    conflicts: "Conflicts",
+    conflictArbiter: "Conflict Arbiter",
+    tags: "Tags",
   },
   "zh-CN": {
     pageTitle: "omyKit 看板",
@@ -552,6 +563,17 @@ const BOARD_LABELS = {
     pid: "PID",
     log: "日志",
     resumeCommand: "续接命令",
+    taskInbox: "任务收件箱",
+    taskBrief: "任务摘要",
+    taskDecision: "决策",
+    taskRelation: "关系",
+    taskWorkstream: "工作流组",
+    taskConflictRisk: "冲突风险",
+    taskMergeGate: "合并门禁",
+    workstreams: "工作流组",
+    conflicts: "冲突",
+    conflictArbiter: "冲突仲裁",
+    tags: "标签",
   },
 };
 const DEFAULT_NODE_TRANSLATIONS = {
@@ -619,6 +641,14 @@ function readActiveWorkflowId(cwd = process.cwd()) {
 function writeActiveWorkflowId(workflowId, cwd = process.cwd()) {
   ensureDir(omykitRoot(cwd));
   fs.writeFileSync(activeWorkflowFile(cwd), `${workflowId}\n`);
+}
+
+function tasksRoot(cwd = process.cwd()) {
+  return path.join(omykitRoot(cwd), "tasks");
+}
+
+function tasksFile(cwd = process.cwd()) {
+  return path.join(tasksRoot(cwd), "tasks.jsonl");
 }
 
 function slugify(value) {
@@ -1171,6 +1201,8 @@ function parseArgs(argv) {
 function commandHelp() {
   return `Usage:
   node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template auto|change.standard|bugfix.standard|frontend-ui.strict|mission.orchestration] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs tasks add "task brief" [--lang en|zh-CN] [--json]
+  node scripts/omykit-workflow.mjs tasks list [--json]
   node scripts/omykit-workflow.mjs workflows [list|use <workflow-id>]
   node scripts/omykit-workflow.mjs templates [list|validate|show <template-id>] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs status [--workflow workflow-id]
@@ -1195,6 +1227,7 @@ function commandHelp() {
 
 Codex chat intents:
   $omykit 开始执行：<任务>       create or resume a tracked workflow and keep advancing nodes
+  $omykit 修 bug / 做需求：<任务> first record the request in the task inbox, then merge, follow up, or create a workflow as the controller decides
   $omykit 创建工作流：<任务>     create a workflow, then continue unless you say "只创建"
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
   $omykit 继续工作流             resume, auto-orchestrate, start ready work, and write handoffs as work completes
@@ -1217,7 +1250,7 @@ Long task loop:
   init/resume -> orchestrate -> start or dispatch ready work internally -> do real work -> write handoff JSON -> complete/reject/block/unblock -> repeat until delivery passes or a real blocker is recorded.
 
 Internal commands:
-  dispatch-plan, context-pack, assign, record-run, start, complete, reject, block, and unblock are controller primitives Codex should run as needed. Users normally ask for intent, not these primitives.`;
+  tasks, dispatch-plan, context-pack, assign, record-run, start, complete, reject, block, and unblock are controller primitives Codex should run as needed. Users normally ask for intent, not these primitives.`;
 }
 
 function listWorkflowDirs(root = workflowsRoot()) {
@@ -2759,6 +2792,213 @@ function splitCsv(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function readTaskInbox(cwd = process.cwd()) {
+  const file = tasksFile(cwd);
+  const tasks = [];
+  const invalid = [];
+  if (!fs.existsSync(file)) return { file, tasks, invalid };
+  fs.readFileSync(file, "utf8").split(/\r?\n/).filter((line) => line.trim()).forEach((line, index) => {
+    try {
+      tasks.push({ ...JSON.parse(line), line: index + 1 });
+    } catch (error) {
+      invalid.push({ line: index + 1, error: error.message });
+    }
+  });
+  return { file, tasks, invalid };
+}
+
+function activeWorkflowSummaryForTask(cwd = process.cwd()) {
+  const workflowId = readActiveWorkflowId(cwd);
+  if (!workflowId) return null;
+  const workflowDir = path.join(workflowsRoot(cwd), workflowId);
+  if (!fs.existsSync(path.join(workflowDir, "graph.json")) || !fs.existsSync(path.join(workflowDir, "state.json"))) return null;
+  const { graph, state } = loadWorkflow(workflowDir);
+  return {
+    workflow_id: graph.workflow_id || workflowId,
+    workflow_dir: workflowDir,
+    template_id: graph.metadata?.template_id || null,
+    title: graph.title || workflowId,
+    all_terminal: workflowAllNodesTerminal(graph, state),
+  };
+}
+
+function taskTagsFromBrief(brief) {
+  const text = String(brief || "");
+  const tags = new Set();
+  if (/(bug|fix|修 bug|修复|缺陷|问题|报错|失败|不对)/i.test(text)) tags.add("bug");
+  if (/(ui|ux|界面|视觉|样式|布局|字体|字号|间距|卡片|图标|icon|tabbar|页面|截图|货不对版)/i.test(text)) tags.add("ui");
+  if (/(小程序|mini[- ]?program|wechat|微信)/i.test(text)) tags.add("miniapp");
+  if (/(二级|设置页|首页|服务页|页面|screen|page)/i.test(text)) tags.add("surface");
+  if (/(同类|一样|上面|继续|也|补充|遗漏|没测到|覆盖)/i.test(text)) tags.add("follow_up");
+  if (/(多个|并行|全量|所有|每个|批量|多页面|多端)/i.test(text)) tags.add("multi");
+  return [...tags];
+}
+
+function suggestedTaskTemplate(tags, brief) {
+  if (tags.includes("multi")) return "mission.orchestration";
+  if (tags.includes("ui")) return "frontend-ui.strict";
+  if (tags.includes("bug")) return "bugfix.standard";
+  return resolveInitTemplateId(brief, AUTO_TEMPLATE_ID);
+}
+
+function suggestedTaskWriteScope(tags, brief) {
+  const text = String(brief || "");
+  const scope = new Set();
+  if (tags.includes("ui")) {
+    scope.add("styles/tokens/**");
+    scope.add("components/**");
+  }
+  if (/(tabbar|底部导航|导航|图标|icon)/i.test(text)) {
+    scope.add("app.json");
+    scope.add("assets/icons/**");
+  }
+  if (/(首页|home)/i.test(text)) scope.add("pages/home/**");
+  if (/(服务页|service)/i.test(text)) scope.add("pages/service/**");
+  if (/(设置页|setting|settings)/i.test(text)) scope.add("pages/settings/**");
+  if (/(二级|页面|screen|page)/i.test(text)) scope.add("pages/**");
+  if (scope.size === 0) scope.add("**/*");
+  return [...scope];
+}
+
+function taskScopesOverlap(left = [], right = []) {
+  const a = new Set(left);
+  const b = new Set(right);
+  for (const item of a) {
+    if (b.has(item)) return true;
+    if (item.endsWith("/**")) {
+      const prefix = item.slice(0, -3);
+      if ([...b].some((candidate) => candidate === prefix || candidate.startsWith(`${prefix}/`) || candidate.startsWith(prefix))) return true;
+    }
+  }
+  for (const item of b) {
+    if (item.endsWith("/**")) {
+      const prefix = item.slice(0, -3);
+      if ([...a].some((candidate) => candidate === prefix || candidate.startsWith(`${prefix}/`) || candidate.startsWith(prefix))) return true;
+    }
+  }
+  return false;
+}
+
+function taskRelationForBrief(tags, activeWorkflow, requestedTemplateId) {
+  if (tags.includes("follow_up")) return "same_problem_family";
+  if (activeWorkflow && requestedTemplateId === activeWorkflow.template_id) return "same_workflow";
+  return "new_request";
+}
+
+function taskConflictRisk(tasks, scope, relation) {
+  if (relation === "same_problem_family" && tasks.some((task) => taskScopesOverlap(task.suggested_write_scope, scope))) return "medium";
+  if (tasks.some((task) => task.status === "open" && taskScopesOverlap(task.suggested_write_scope, scope))) return "medium";
+  return "low";
+}
+
+function taskDecisionFor(activeWorkflow, tags, requestedTemplateId, relation) {
+  if (!activeWorkflow) return "new_workflow";
+  const relatedToActive = relation === "same_problem_family" || requestedTemplateId === activeWorkflow.template_id;
+  if (activeWorkflow.all_terminal) return relatedToActive ? "linked_follow_up" : "new_workflow";
+  if (relatedToActive) return "merge_current";
+  return "new_workflow";
+}
+
+function createTaskRecord(brief, options = {}, cwd = process.cwd()) {
+  const language = options.lang ? normalizeBoardLanguage(options.lang) : inferLanguageFromText(brief);
+  const existing = readTaskInbox(cwd).tasks;
+  const activeWorkflow = activeWorkflowSummaryForTask(cwd);
+  const tags = taskTagsFromBrief(brief);
+  const requestedTemplateId = suggestedTaskTemplate(tags, brief);
+  const relation = taskRelationForBrief(tags, activeWorkflow, requestedTemplateId);
+  const suggestedWriteScope = suggestedTaskWriteScope(tags, brief);
+  const decision = taskDecisionFor(activeWorkflow, tags, requestedTemplateId, relation);
+  const linkedWorkflowId = ["merge_current", "linked_follow_up"].includes(decision) ? activeWorkflow?.workflow_id || null : null;
+  const templateId = linkedWorkflowId ? activeWorkflow?.template_id || requestedTemplateId : requestedTemplateId;
+  const conflictRisk = taskConflictRisk(existing, suggestedWriteScope, relation);
+  const record = {
+    schema_version: SCHEMA_VERSION,
+    task_id: `${dateStamp()}-${slugify(brief).slice(0, 48)}-${existing.length + 1}`,
+    at: now(),
+    brief,
+    language,
+    status: "open",
+    decision,
+    relation,
+    linked_workflow_id: linkedWorkflowId,
+    template_id: templateId,
+    tags,
+    suggested_write_scope: suggestedWriteScope,
+    conflict_risk: conflictRisk,
+    workstream: tags.includes("ui") ? "ui-quality" : tags.includes("bug") ? "bugfix" : "general",
+    runtime_boundary: "controller_records_and_recommends; codex_runtime_dispatches_workers",
+  };
+  return record;
+}
+
+function appendTaskRecord(record, cwd = process.cwd()) {
+  appendText(tasksFile(cwd), `${JSON.stringify(record)}\n`);
+  return tasksFile(cwd);
+}
+
+function taskInboxSummary(tasks) {
+  const byDecision = {};
+  const byStatus = {};
+  for (const task of tasks) {
+    byDecision[task.decision || "unknown"] = (byDecision[task.decision || "unknown"] || 0) + 1;
+    byStatus[task.status || "unknown"] = (byStatus[task.status || "unknown"] || 0) + 1;
+  }
+  return {
+    total: tasks.length,
+    open: tasks.filter((task) => task.status === "open").length,
+    by_decision: byDecision,
+    by_status: byStatus,
+  };
+}
+
+function buildTaskWorkstreams(tasks) {
+  const groups = new Map();
+  for (const task of tasks) {
+    const key = task.workstream || "general";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(task);
+  }
+  return [...groups.entries()].map(([id, items]) => ({
+    id,
+    kind: id === "ui-quality" ? "ui_surface" : id,
+    tasks: items.map((task) => task.task_id),
+    suggested_write_scope: [...new Set(items.flatMap((task) => task.suggested_write_scope || []))],
+    decision: items.some((task) => task.decision === "linked_follow_up") ? "linked_follow_up" : items[0]?.decision || "unknown",
+  }));
+}
+
+function buildTaskConflicts(tasks) {
+  const conflicts = [];
+  for (let i = 0; i < tasks.length; i += 1) {
+    for (let j = i + 1; j < tasks.length; j += 1) {
+      const left = tasks[i];
+      const right = tasks[j];
+      if (taskScopesOverlap(left.suggested_write_scope, right.suggested_write_scope)) {
+        conflicts.push({
+          kind: "scope_overlap",
+          severity: left.conflict_risk === "high" || right.conflict_risk === "high" ? "high" : "medium",
+          task_ids: [left.task_id, right.task_id],
+          shared_scope: left.suggested_write_scope.filter((item) => right.suggested_write_scope.includes(item)),
+          action: "route_through_conflict_arbiter_before_parallel_write",
+        });
+      }
+    }
+  }
+  return conflicts;
+}
+
+function buildTaskInboxProjection(cwd = process.cwd(), workflowId = null) {
+  const tasks = readTaskInbox(cwd).tasks
+    .filter((task) => !workflowId || task.linked_workflow_id === workflowId)
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  return {
+    summary: taskInboxSummary(tasks),
+    tasks,
+    workstreams: buildTaskWorkstreams(tasks),
+    conflicts: buildTaskConflicts(tasks),
+  };
 }
 
 function normalizeExecutionSurface(value, fallback = "subagent") {
@@ -4943,6 +5183,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const commands = buildCommandRunProjection(readCommandRuns(workflowDir));
   const handoffPackets = buildHandoffPackets(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
+  const taskInbox = buildTaskInboxProjection(projectRootFromWorkflow(workflowDir), graph.workflow_id);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
@@ -5001,7 +5242,16 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       next_recommended_action: nextRecommendedAction(graph, state, language),
       critical_path: critical,
       latest_ledger_event: recentEvents[recentEvents.length - 1] || null,
+      task_inbox_items: taskInbox.summary.total,
+      task_conflicts: taskInbox.conflicts.length,
+      workstreams: taskInbox.workstreams.length,
     },
+    task_inbox: {
+      summary: taskInbox.summary,
+      tasks: taskInbox.tasks,
+    },
+    workstreams: taskInbox.workstreams,
+    conflicts: taskInbox.conflicts,
     columns,
     flow: {
       nodes: projectedNodes.map((node) => ({
@@ -5379,9 +5629,12 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
       : "The user states intent; Codex orchestration internally handles parallelism, subagents, context packs, assignments, and node progression from this plan.",
     manual_command_policy: {
       user_primary_intents: ["start_execute", "continue", "status", "board", "delivery", "upgrade"],
-      internal_primitives: ["dispatch-plan", "context-pack", "assign", "record-run", "start", "complete", "reject", "block", "unblock"],
+      internal_primitives: ["tasks", "dispatch-plan", "context-pack", "assign", "record-run", "start", "complete", "reject", "block", "unblock"],
       manual_dispatch_required: false,
     },
+    task_intake: board.task_inbox || { summary: taskInboxSummary([]), tasks: [] },
+    workstreams: board.workstreams || [],
+    conflicts: board.conflicts || [],
     summary: {
       ready: board.summary.ready,
       running: board.summary.running,
@@ -5978,6 +6231,59 @@ function renderTaskTracker(nodes, text) {
   </div>`;
 }
 
+function renderTaskInbox(taskInbox, workstreams, conflicts, text) {
+  const tasks = taskInbox?.tasks || [];
+  const summary = taskInbox?.summary || taskInboxSummary([]);
+  const taskRows = tasks.length > 0
+    ? tasks.map((task) => `<div class="task-row" role="row">
+        <span><strong>${escapeHtml(task.task_id || text.none)}</strong><br><small>${escapeHtml(task.at || "")}</small></span>
+        <span>${escapeHtml(task.brief || text.none)}</span>
+        <span>${escapeHtml(task.decision || text.notRecorded)}<br><small>${escapeHtml(task.relation || text.none)}</small></span>
+        <span>${escapeHtml(task.template_id || text.none)}<br><small>${escapeHtml(task.linked_workflow_id || text.none)}</small></span>
+        <span>${renderInlineItems(task.suggested_write_scope || [], text.none)}</span>
+        <span>${escapeHtml(task.tags?.join(", ") || text.none)}</span>
+        <span>${escapeHtml(task.conflict_risk || text.none)}</span>
+        <span>${escapeHtml(task.workstream || text.none)}</span>
+      </div>`).join("")
+    : `<p class="muted">${escapeHtml(text.none)}</p>`;
+  const streamHtml = renderObjectList(workstreams || [], text.none, (stream) => {
+    return `<strong>${escapeHtml(stream.id)}</strong> <span class="muted">${escapeHtml(stream.kind || "")}</span>
+      <p><strong>${escapeHtml(text.taskDecision)}:</strong> ${escapeHtml(stream.decision || text.none)}</p>
+      <p><strong>${escapeHtml(text.nodes)}:</strong> ${escapeHtml((stream.tasks || []).join(", ") || text.none)}</p>
+      <p><strong>${escapeHtml(text.writeScope)}:</strong> ${renderInlineItems(stream.suggested_write_scope || [], text.none)}</p>`;
+  });
+  const conflictHtml = renderObjectList(conflicts || [], text.none, (conflict) => {
+    return `<strong>${escapeHtml(conflict.kind || text.conflictArbiter)}</strong> <span class="muted">${escapeHtml(conflict.severity || "")}</span>
+      <p><strong>${escapeHtml(text.nodes)}:</strong> ${escapeHtml((conflict.task_ids || []).join(", ") || text.none)}</p>
+      <p><strong>${escapeHtml(text.writeScope)}:</strong> ${renderInlineItems(conflict.shared_scope || [], text.none)}</p>
+      <p><strong>${escapeHtml(text.actionHint)}:</strong> ${escapeHtml(conflict.action || text.none)}</p>`;
+  });
+  return `<div class="metrics">
+      ${renderMetric(text.total, summary.total || 0)}
+      ${renderMetric(text.ready, summary.open || 0)}
+      ${renderMetric(text.workstreams, (workstreams || []).length)}
+      ${renderMetric(text.conflicts, (conflicts || []).length)}
+    </div>
+    <h3>${escapeHtml(text.taskMergeGate)}</h3>
+    <div class="task-table" role="table">
+      <div class="task-row task-head" role="row">
+        <span>${escapeHtml(text.taskInbox)}</span>
+        <span>${escapeHtml(text.taskBrief)}</span>
+        <span>${escapeHtml(text.taskDecision)}</span>
+        <span>${escapeHtml(text.template)}</span>
+        <span>${escapeHtml(text.writeScope)}</span>
+        <span>${escapeHtml(text.tags || "Tags")}</span>
+        <span>${escapeHtml(text.taskConflictRisk)}</span>
+        <span>${escapeHtml(text.taskWorkstream)}</span>
+      </div>
+      ${taskRows}
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <section><h3>${escapeHtml(text.workstreams)}</h3>${streamHtml}</section>
+      <section><h3>${escapeHtml(text.conflictArbiter)}</h3>${conflictHtml}</section>
+    </div>`;
+}
+
 function renderBoardHtml(board) {
   const text = boardText(board.language);
   const columnsHtml = COLUMN_STATUSES.map(
@@ -6201,6 +6507,11 @@ function renderBoardHtml(board) {
     <section class="panel" id="recommendations">
       <h2>${escapeHtml(text.improvementPlan)}</h2>
       ${renderRecommendations(board.recommendations || board.improvement_plan, text)}
+    </section>
+
+    <section class="panel" id="task-inbox">
+      <h2>${escapeHtml(text.taskInbox)}</h2>
+      ${renderTaskInbox(board.task_inbox, board.workstreams, board.conflicts, text)}
     </section>
 
     <section class="panel" id="workflow-evolution">
@@ -6969,6 +7280,7 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
     : listAllWorkflowDirs(root);
   const validDirs = listWorkflowDirs(root);
   const activeId = readActiveWorkflowId(cwd);
+  const taskInbox = readTaskInbox(cwd);
   const issues = [];
   const cleanupCandidates = [];
   const project = {
@@ -6981,6 +7293,8 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
     has_agents_md: fs.existsSync(path.join(cwd, "AGENTS.md")),
     has_readme: fs.existsSync(path.join(cwd, "README.md")),
     has_project_profile: fs.existsSync(path.join(cwd, "docs", "workflow", "project-profile.md")),
+    task_inbox: taskInboxSummary(taskInbox.tasks),
+    task_inbox_invalid_lines: taskInbox.invalid,
     repo_local_skill_dirs: [".codex/skills", ".agents/skills"]
       .filter((relative) => fs.existsSync(path.join(cwd, relative))),
   };
@@ -7037,6 +7351,17 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       summary: "Repo-local skill directories exist.",
       detail: "Keep them only when the project intentionally vendors skills for team or CI use; otherwise prefer global omyKit.",
       next_action: "Compare repo-local skills with global install before relying on them.",
+    }));
+  }
+  if (taskInbox.invalid.length > 0) {
+    issues.push(doctorIssue({
+      id: "task_inbox_invalid_jsonl",
+      severity: "warning",
+      scope: "project",
+      path: projectRelativePath(taskInbox.file, cwd),
+      summary: "Task inbox contains invalid JSONL records.",
+      detail: taskInbox.invalid.map((item) => `line ${item.line}: ${item.error}`).join("; "),
+      next_action: "Repair the invalid JSONL line or archive the broken task inbox before relying on merge decisions.",
     }));
   }
 
@@ -7287,6 +7612,68 @@ function cmdInit(positional, options) {
   const plan = buildOrchestrationPlan(board, buildDispatchPlan(board, { surface: "auto" }));
   const planFile = writeOrchestrationPlan(workflowDir, plan);
   printOrchestrationPlan(plan, planFile);
+}
+
+function printTaskRecord(record) {
+  const isZh = record.language === "zh-CN";
+  console.log(`${isZh ? "任务已登记" : "Task recorded"}: ${record.task_id}`);
+  console.log(`${isZh ? "决策" : "Decision"}: ${record.decision}`);
+  console.log(`${isZh ? "关系" : "Relation"}: ${record.relation}`);
+  console.log(`${isZh ? "模板" : "Template"}: ${record.template_id}`);
+  console.log(`${isZh ? "关联工作流" : "Linked workflow"}: ${record.linked_workflow_id || (isZh ? "无" : "none")}`);
+  console.log(`${isZh ? "写入范围" : "Write scope"}: ${record.suggested_write_scope.join(", ")}`);
+  console.log(`${isZh ? "冲突风险" : "Conflict risk"}: ${record.conflict_risk}`);
+}
+
+function printTaskInbox(projection, language = "en") {
+  const isZh = language === "zh-CN";
+  console.log(`${isZh ? "任务收件箱" : "Task inbox"}: ${projection.summary.total}`);
+  console.log(`${isZh ? "打开任务" : "Open tasks"}: ${projection.summary.open}`);
+  console.log(`${isZh ? "工作流组" : "Workstreams"}: ${projection.workstreams.length}`);
+  console.log(`${isZh ? "冲突" : "Conflicts"}: ${projection.conflicts.length}`);
+  for (const task of projection.tasks) {
+    console.log(`- ${task.task_id}: ${task.decision} ${task.relation} ${task.template_id} ${task.linked_workflow_id || "-"} :: ${task.brief}`);
+  }
+}
+
+function cmdTasks(positional, options) {
+  const action = positional[0] || "list";
+  const language = options.lang ? normalizeBoardLanguage(options.lang) : "en";
+  if (action === "add") {
+    const brief = positional.slice(1).join(" ").trim();
+    if (!brief) throw new Error("tasks add requires a task brief");
+    const record = createTaskRecord(brief, options);
+    appendTaskRecord(record);
+    if (record.linked_workflow_id) {
+      const workflowDir = path.join(workflowsRoot(), record.linked_workflow_id);
+      if (fs.existsSync(workflowDir)) {
+        appendLedger(workflowDir, {
+          event: "task.add",
+          task_id: record.task_id,
+          decision: record.decision,
+          relation: record.relation,
+          conflict_risk: record.conflict_risk,
+          suggested_write_scope: record.suggested_write_scope,
+        });
+      }
+    }
+    if (options.json) {
+      console.log(JSON.stringify(record, null, 2));
+      return;
+    }
+    printTaskRecord(record);
+    return;
+  }
+  if (action === "list") {
+    const projection = buildTaskInboxProjection(process.cwd());
+    if (options.json) {
+      console.log(JSON.stringify(projection, null, 2));
+      return;
+    }
+    printTaskInbox(projection, language);
+    return;
+  }
+  throw new Error(`Unknown tasks action: ${action}`);
 }
 
 function cmdStatus(options) {
@@ -7860,6 +8247,9 @@ function main() {
   switch (command) {
     case "init":
       cmdInit(positional, options);
+      return;
+    case "tasks":
+      cmdTasks(positional, options);
       return;
     case "workflows":
       cmdWorkflows(positional, options);

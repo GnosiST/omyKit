@@ -10,7 +10,7 @@
 | --- | --- |
 | [工作流套件](workflow/codex-workflow-kit.zh-CN.md) | 端到端模型、skill 映射、模式选择和工具哲学。 |
 | [Skill 协调机制](workflow/skill-coordination.zh-CN.md) | 集成 skill 的职责、交接方式和防冲突规则。 |
-| [Workflow controller](workflow/controller.zh-CN.md) | 用于持久任务图、状态和续跑的本地 C-lite controller。 |
+| [Workflow controller](workflow/controller.zh-CN.md) | 用于任务收件箱、合并门禁、持久任务图、状态和续跑的本地 C-lite controller。 |
 | [Workflow 模板](workflow/workflow-templates.zh-CN.md) | 用于可复用 controller 运行的分层 YAML workflow 模板、profiles 和 scorecards。 |
 | [Task graph](workflow/task-graph.zh-CN.md) | 节点类型、状态、依赖、扇出、汇聚、打回、阻塞和重试限制。 |
 | [Handoff protocol](workflow/handoff-protocol.zh-CN.md) | passed、failed、blocked 和 skipped 状态的结构化节点输出。 |

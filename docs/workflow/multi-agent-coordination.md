@@ -60,6 +60,7 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | Requirement | Current implementation | Assessment |
 | --- | --- | --- |
 | Do not run workflow on every step | `omykit` routes only at intake, scope/risk change, or delivery. | Mostly satisfied. |
+| Repeated same-family task handling | Project-level Task Inbox records each brief, the Merge Gate automatically decides `merge_current`, `linked_follow_up`, or `new_workflow`, and overlapping write scopes appear in the conflict-arbiter projection. | First slice implemented; merge judgment is still heuristic and should evolve from real project feedback. |
 | Long tasks continue after workflow creation | Skills, docs, and controller status output require the `resume/orchestrate -> start or dispatch -> work -> handoff -> complete/reject/block` loop. | Rules and orchestration artifact exist; real execution still depends on the active Codex turn. |
 | Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`, with topology, agent, model, runtime, safety, and scorecard layers. | Covers ordinary change, bugfix, strict UI, and broad mission orchestration; future templates should be added only when topology materially differs. |
 | Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
@@ -130,6 +131,7 @@ Runtime `assignments.jsonl` record shape:
 3. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
 4. Scorecards check assignment handoff coverage and active write-scope conflicts.
 5. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
+6. Task Inbox and Merge Gate record repeated user briefs, merge same-family tasks into the current workflow or link them to historical workflows, and show workstreams plus conflict-arbiter items on the board.
 
 ## Remaining Optimization Roadmap
 
@@ -137,7 +139,8 @@ Runtime `assignments.jsonl` record shape:
 2. Add helpers that pull thread summaries and write them back into structured handoffs without loading full worker history into the main thread.
 3. Extend the board into a richer Thread Map with thread status, last message, handoff return, and human-intervention nodes.
 4. Keep write-heavy parallelism conservative: by default, do not let two background threads edit the same file set unless write scopes are disjoint or worktrees isolate them.
-5. Strengthen resume: after compact, the main controller reads active workflow, assignments, context pack, thread summaries, and only then decides which thread to continue or hand off locally.
+5. Upgrade Task Inbox merge heuristics into scoreable rules that use goal, template, file scope, page/module, screenshot evidence, and user feedback to tune same-family thresholds.
+6. Strengthen resume: after compact, the main controller reads active workflow, assignments, context pack, thread summaries, and only then decides which thread to continue or hand off locally.
 
 ## What Not To Do
 

@@ -1184,6 +1184,50 @@ assert.ok(!fs.existsSync(path.join(doctorDir, "context-packs", "99-old.json")));
 assert.ok(fs.existsSync(path.join(tmpDoctor, ".omykit", "archive")));
 fs.rmSync(tmpDoctor, { recursive: true, force: true });
 
+const tmpTasks = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-tasks-"));
+run(["init", "修复首页 UI 货不对版", "--id", "ui-defects", "--template", "frontend-ui.strict", "--lang", "zh-CN"], tmpTasks);
+const firstTask = JSON.parse(run(["tasks", "add", "修 bug：根据截图修首页字体、卡片间距和 TabBar 图标", "--lang", "zh-CN", "--json"], tmpTasks));
+assert.equal(firstTask.decision, "merge_current");
+assert.equal(firstTask.template_id, "frontend-ui.strict");
+assert.ok(firstTask.tags.includes("ui"));
+assert.ok(firstTask.suggested_write_scope.includes("styles/tokens/**"));
+const secondTask = JSON.parse(run(["tasks", "add", "修 bug：二级页面也没测试到，和上面问题一样", "--lang", "zh-CN", "--json"], tmpTasks));
+assert.equal(secondTask.decision, "merge_current");
+assert.equal(secondTask.relation, "same_problem_family");
+assert.equal(secondTask.conflict_risk, "medium");
+const unrelatedTask = JSON.parse(run(["tasks", "add", "撰写接口发布说明", "--lang", "zh-CN", "--json"], tmpTasks));
+assert.equal(unrelatedTask.decision, "new_workflow");
+assert.equal(unrelatedTask.linked_workflow_id, null);
+assert.equal(unrelatedTask.template_id, "change.standard");
+const taskList = JSON.parse(run(["tasks", "list", "--json"], tmpTasks));
+assert.equal(taskList.tasks.length, 3);
+assert.equal(taskList.summary.total, 3);
+assert.ok(taskList.summary.by_decision.merge_current >= 2);
+assert.ok(taskList.summary.by_decision.new_workflow >= 1);
+run(["board", "--lang", "zh-CN"], tmpTasks);
+const taskBoard = readJson(path.join(tmpTasks, ".omykit", "workflows", "ui-defects", "board.json"));
+assert.equal(taskBoard.task_inbox.summary.total, 2);
+assert.ok(taskBoard.workstreams.some((item) => item.kind === "ui_surface"));
+assert.ok(taskBoard.conflicts.some((item) => item.kind === "scope_overlap"));
+const taskDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpTasks));
+assert.equal(taskDoctor.project.task_inbox.total, 3);
+const taskOrchestration = JSON.parse(run(["orchestrate", "--json", "--lang", "zh-CN"], tmpTasks));
+assert.equal(taskOrchestration.task_intake.summary.total, 2);
+const taskStatePath = path.join(tmpTasks, ".omykit", "workflows", "ui-defects", "state.json");
+const taskState = readJson(taskStatePath);
+for (const nodeId of Object.keys(taskState.nodes)) {
+  taskState.nodes[nodeId] = {
+    status: "passed",
+    updated_at: "2099-01-01T00:00:00.000Z",
+    last_handoff: `handoffs/${nodeId}.json`,
+  };
+}
+writeJson(taskStatePath, taskState);
+const followUpTask = JSON.parse(run(["tasks", "add", "修 bug：设置页也存在同类 UI 问题", "--lang", "zh-CN", "--json"], tmpTasks));
+assert.equal(followUpTask.decision, "linked_follow_up");
+assert.equal(followUpTask.linked_workflow_id, "ui-defects");
+fs.rmSync(tmpTasks, { recursive: true, force: true });
+
 const tmpMulti = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-multi-"));
 run(["init", "First task", "--id", "first-task"], tmpMulti);
 run(["init", "Second task", "--id", "second-task"], tmpMulti);

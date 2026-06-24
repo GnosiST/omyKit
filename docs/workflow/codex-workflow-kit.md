@@ -24,7 +24,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 ## Core Flow
 
 ```text
-intake -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> review -> deliver -> learn
+intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> review -> deliver -> learn
 ```
 
 Apply the flow at task boundaries and meaningful phase changes. Do not restart the workflow for routine file reads, edits, shell commands, or intermediate checks when the current route still fits.
@@ -71,7 +71,7 @@ For long or high-observability work, omyKit can use a local controller:
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, audits intake decisions, generates automatic orchestration plans, creates compact node context packs when needed, records command-run recovery metadata, projects skill/agent/model/usage evidence to the board, recommends ready work surfaces and right-sized models, diagnoses project workflow health, archives safe residue cleanup candidates, upgrades old workflow artifacts, and keeps compact recovery cheap. It does not call models, replace Codex, fabricate missing evidence, or make Lite tasks heavy by default.
+The controller stores state under `.omykit/workflows/<workflow-id>/`, records repeated briefs in `.omykit/tasks/tasks.jsonl`, uses a merge gate to decide `merge_current`, `linked_follow_up`, or `new_workflow`, validates handoff files, audits intake decisions, generates automatic orchestration plans, creates compact node context packs when needed, records command-run recovery metadata, projects task inbox, skill, agent, model, and usage evidence to the board, recommends ready work surfaces and right-sized models, diagnoses project workflow health, archives safe residue cleanup candidates, upgrades old workflow artifacts, and keeps compact recovery cheap. It does not call models, replace Codex, fabricate missing evidence, or make Lite tasks heavy by default.
 
 See [controller.md](controller.md), [task-graph.md](task-graph.md), and [handoff-protocol.md](handoff-protocol.md).
 
