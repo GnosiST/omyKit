@@ -3399,18 +3399,31 @@ function latestHandoffForNode(entry, handoffs, nodeId) {
   return records.length > 0 ? records[records.length - 1] : null;
 }
 
+function evidencePathFromValue(value) {
+  if (typeof value === "string" && value) return value;
+  if (value && typeof value === "object" && !Array.isArray(value) && typeof value.path === "string" && value.path) {
+    return value.path;
+  }
+  return null;
+}
+
+function addEvidencePath(paths, value) {
+  const itemPath = evidencePathFromValue(value);
+  if (itemPath) paths.add(itemPath);
+}
+
 function collectEvidencePaths(handoff) {
   if (!handoff || handoff.status === "missing" || handoff.status === "invalid") return [];
   const paths = new Set();
-  for (const value of handoff.outputs || []) paths.add(value);
-  for (const value of handoff.evidence || []) paths.add(value);
+  for (const value of handoff.outputs || []) addEvidencePath(paths, value);
+  for (const value of handoff.evidence || []) addEvidencePath(paths, value);
   for (const item of handoff.work_items || []) {
-    for (const value of item.evidence || []) paths.add(value);
+    for (const value of item.evidence || []) addEvidencePath(paths, value);
   }
   for (const item of handoff.verification || []) {
-    if (item.evidence) paths.add(item.evidence);
+    if (item.evidence) addEvidencePath(paths, item.evidence);
   }
-  for (const value of handoff.downstream_context?.evidence || []) paths.add(value);
+  for (const value of handoff.downstream_context?.evidence || []) addEvidencePath(paths, value);
   return [...paths];
 }
 

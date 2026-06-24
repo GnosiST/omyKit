@@ -692,6 +692,29 @@ fs.mkdirSync(path.join(externalDir, "evidence"), { recursive: true });
 fs.writeFileSync(path.join(externalDir, "evidence", "01-intake-summary.txt"), "external intake evidence\n");
 const externalIntakeHandoff = readJson(intakeHandoff);
 externalIntakeHandoff.workflow_id = "external-handoff";
+externalIntakeHandoff.outputs = [
+  {
+    type: "evidence",
+    path: "evidence/01-intake-summary.txt",
+    description: "Object-shaped output should still be usable as an evidence path.",
+  },
+];
+externalIntakeHandoff.evidence = [
+  {
+    type: "log",
+    path: "evidence/01-intake-summary.txt",
+  },
+];
+externalIntakeHandoff.work_items[0].evidence = [
+  {
+    type: "text",
+    path: "evidence/01-intake-summary.txt",
+  },
+];
+externalIntakeHandoff.verification[0].evidence = {
+  type: "text",
+  path: "evidence/01-intake-summary.txt",
+};
 const externalHandoffPath = path.join(tmpExternalHandoff, "outside-intake-handoff.json");
 writeJson(externalHandoffPath, externalIntakeHandoff);
 run(["complete", "01-intake", "--handoff", externalHandoffPath], tmpExternalHandoff);
