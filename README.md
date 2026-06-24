@@ -22,6 +22,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Low context waste:** load context progressively with `scan -> focus -> deep`.
 - **Compression-aware budgeting:** narrow and summarize first, then use optional local compression only when large retrievable content still matters.
 - **Template-driven task graph:** use reusable workflow templates plus a local C-lite controller and static board for long, resumable, multi-node work.
+- **Task inbox and merge gate:** record repeated task briefs, merge same-family work into active workflows, link follow-ups, or split unrelated requests into new workflows.
 - **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node, pass worker model overrides in Codex Desktop, and show actual recorded models when execution exposes them.
@@ -39,7 +40,8 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 
 ```mermaid
 flowchart LR
-    Intake["Intake<br/>user goal"] --> Route["Route<br/>entry, type, risk"]
+    Intake["Intake<br/>user goal"] --> TaskInbox["Task inbox<br/>merge gate"]
+    TaskInbox --> Route["Route<br/>entry, type, risk"]
     Route --> Budget["Context budget<br/>scan -> focus -> deep"]
     Budget --> Work["Execute<br/>project-native work"]
     Work --> Controller["Controller<br/>task graph, handoffs"]
@@ -129,7 +131,7 @@ node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
-The controller still exposes lower-level primitives such as `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. `doctor` writes `.omykit/health/health-report.json` and inspects retrofit completeness, active workflow pointers, legacy artifact gaps, stale boards, command recovery signals, cleanup candidates, and next recommendations. `doctor --fix` only applies safe compatibility repairs; it does not fabricate handoffs, usage, model, skill, or verification evidence. `cleanup` defaults to dry-run, and `cleanup --apply` archives safe candidates under `.omykit/archive/` instead of deleting them. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
+The controller still exposes lower-level primitives such as `tasks`, `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. Task-specific Codex requests first enter the task inbox so the merge gate can decide whether to merge into the active workflow, link as a follow-up, or create a new workflow. `doctor` writes `.omykit/health/health-report.json` and inspects retrofit completeness, active workflow pointers, task inbox parseability, legacy artifact gaps, stale boards, command recovery signals, cleanup candidates, and next recommendations. `doctor --fix` only applies safe compatibility repairs; it does not fabricate handoffs, usage, model, skill, or verification evidence. `cleanup` defaults to dry-run, and `cleanup --apply` archives safe candidates under `.omykit/archive/` instead of deleting them. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows the task inbox, workstreams, conflict-arbiter signals, recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
@@ -163,23 +165,24 @@ See [Skill coordination](docs/workflow/skill-coordination.md) for what each inte
 
 ## Controller Layer
 
-For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to validate handoffs, show ready nodes, record blockers, generate node context packs, record long-running command recovery metadata, generate a static collaboration board, and support compact recovery.
+For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to record task briefs, run the merge gate, validate handoffs, show ready nodes, record blockers, generate node context packs, record long-running command recovery metadata, generate a static collaboration board, and support compact recovery.
 
 The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Global install copies it to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. `init --template auto` chooses among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`; explicit template requests still override auto. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
-The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, intake decisions, workflow evolution candidates, delivery knowledge sync review, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, usage-observation status, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, recent events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; unavailable runtime metrics are shown separately from missing records and are never guessed.
+The board command produces `board.json` for machine-readable projection and `board.html` for browser review. It shows the selected template, scorecard results, task inbox, merge-gate decisions, workstreams, conflict-arbiter signals, intake decisions, workflow evolution candidates, delivery knowledge sync review, a clickable task tracker with actual node work items, changed-file summaries, recorded skill usage, verification results, evidence availability, downstream handoff context, generated handoff packets, command-run recovery records, agent activity, recommended model tiers, recommended concrete models, actual model records, usage-observation status, token and context coverage, per-node timing, ETA estimates, project snapshot, dependency/reject flow, worker lanes, blockers, decisions, retries, events, and generated improvement actions without introducing a server or database. Token, context, skill-usage, and actual-model totals only aggregate recorded evidence; unavailable runtime metrics are shown separately from missing records and are never guessed.
 
 ## Workflow Model
 
 ```text
-intake -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> deliver -> learn
+intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runtime readiness -> execute -> verify -> deliver -> learn
 ```
 
 Operational rules:
 
 - Route once at task intake, when scope or risk changes, or before delivery.
+- Record task-specific briefs in the task inbox first; merge same-family work, link follow-ups, and split unrelated requests before worker dispatch.
 - At intake, state the goal, route, execution shape or controller template, and material assumptions before implementation.
 - Before implementation or worker dispatch, present execution options, recommend one, explain tradeoffs, and capture user confirmation or explicit auto-authorization.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
