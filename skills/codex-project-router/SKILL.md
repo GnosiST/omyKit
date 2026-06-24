@@ -37,7 +37,7 @@ Route once per task or meaningful phase. Do not re-run routing for routine file 
 6. Select execution shape:
    - direct Lite/Standard workflow for small or straightforward work.
    - tracked controller workflow for multi-node, compact-prone, parallel, rejected, resumable, user-requested tracked, or Strict work.
-   - nearest controller template when tracked: `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`.
+   - nearest controller template when tracked: `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, or `mission.orchestration`.
 7. Route:
    - `init` -> `codex-project-init`.
    - `retrofit` -> `codex-project-retrofit`.

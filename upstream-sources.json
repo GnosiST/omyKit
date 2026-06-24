@@ -258,15 +258,64 @@
       "id": "ppt-master",
       "repo": "hugohe3/ppt-master",
       "url": "https://github.com/hugohe3/ppt-master.git",
-      "baseline": "fdabe40df82364f7213ea231fe16d615a86e761f",
-      "role": "High-signal candidate deck specialist for native editable PPTX generation and polishing when bundled presentation tooling is insufficient",
+      "baseline": "f43e86440bf79d37e717ffa3b473c25f2abc5c56",
+      "role": "High-signal deck specialist for native editable PPTX generation, polishing, templates, animations, speaker notes, and narration when bundled presentation tooling is insufficient",
       "verification": {
         "owner": "hugohe3",
         "owner_type": "User",
-        "stars": 31003,
+        "stars": 31026,
         "fork": false,
         "archived": false,
-        "reference_scope": "Candidate deck-specialist reference only; local trials must record license/source/install/run evidence before any omyKit routing change, and no skill body, templates, sponsor text, images, badges, or branding are copied."
+        "license": "MIT",
+        "reference_scope": "Deck-specialist reference for source-safe local/project trials and deck.proposal routing decisions; no skill body, templates, sponsor text, images, badges, or branding are copied."
+      }
+    },
+    {
+      "id": "guizang-ppt-skill",
+      "repo": "op7418/guizang-ppt-skill",
+      "url": "https://github.com/op7418/guizang-ppt-skill.git",
+      "baseline": "82fe5ae129e8c2a12e1155fcabed6703342749d6",
+      "role": "High-signal HTML deck specialist for polished editorial, Swiss, social-cover, image-prompt, and browser-runtime slide decks",
+      "verification": {
+        "owner": "op7418",
+        "owner_type": "User",
+        "stars": 18771,
+        "fork": false,
+        "archived": false,
+        "license": "AGPL-3.0",
+        "reference_scope": "Optional HTML-deck specialist reference when the selected deck direction is browser/HTML output; AGPL license requires care, and no skill body, runtime code, templates, images, badges, or branding are copied into omyKit."
+      }
+    },
+    {
+      "id": "beautiful-html-templates",
+      "repo": "zarazhangrui/beautiful-html-templates",
+      "url": "https://github.com/zarazhangrui/beautiful-html-templates.git",
+      "baseline": "e5e204fb1f3b06290846e7dcd7aceddabeceec8c",
+      "role": "Template-library reference for selecting external HTML slide template directions without vendoring template files",
+      "verification": {
+        "owner": "zarazhangrui",
+        "owner_type": "User",
+        "stars": 3156,
+        "fork": false,
+        "archived": false,
+        "license": "MIT",
+        "reference_scope": "Optional external template-library reference for deck direction selection; omyKit links the source but does not copy, cache, or vendor template files."
+      }
+    },
+    {
+      "id": "visual-style-ppt-skill",
+      "repo": "irenerachel/visual-style-ppt-skill",
+      "url": "https://github.com/irenerachel/visual-style-ppt-skill.git",
+      "baseline": "a1cca7d97c7a8992593fdf617a8a53e7348b0b3d",
+      "role": "Low-signal local-only style-review candidate for visual PPT direction when a user explicitly requests it",
+      "verification": {
+        "owner": "irenerachel",
+        "owner_type": "User",
+        "stars": 242,
+        "fork": false,
+        "archived": false,
+        "license": "NOASSERTION",
+        "reference_scope": "Tracked only because the user explicitly requested evaluation; not a default route, not a vendored dependency, and not used unless license/source risk is accepted in a local-only or project-local trial."
       }
     },
     {

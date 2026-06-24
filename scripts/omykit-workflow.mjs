@@ -977,6 +977,9 @@ function inferWorkflowTemplateId(title) {
   if (/(bug|fix|regression|error|exception|fail|failure|crash|修复|报错|故障|缺陷|失败|崩溃|回归)/i.test(text)) {
     return "bugfix.standard";
   }
+  if (/(ppt|pptx|powerpoint|presentation|slide deck|slides?|deck|keynote|pitch deck|proposal deck|演示文稿|幻灯片|路演|汇报|提案PPT|PPT提案|商业计划书PPT|融资PPT)/i.test(text)) {
+    return "deck.proposal";
+  }
   if (/(ui|ux|frontend|front-end|page|screen|layout|visual|design|figma|shadcn|tailwind|react component|界面|页面|前端|视觉|设计|组件|交互|样式)/i.test(text)) {
     return "frontend-ui.strict";
   }
@@ -1303,7 +1306,7 @@ function parseArgs(argv) {
 
 function commandHelp() {
   return `Usage:
-  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template auto|change.standard|bugfix.standard|frontend-ui.strict|mission.orchestration] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs init "feature title" [--id workflow-id] [--mode Standard] [--template auto|change.standard|bugfix.standard|frontend-ui.strict|deck.proposal|mission.orchestration] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs tasks add "task brief" [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs tasks list [--json]
   node scripts/omykit-workflow.mjs workflows [list|use <workflow-id>]
@@ -3204,6 +3207,7 @@ function taskTagsFromBrief(brief) {
   const text = String(brief || "");
   const tags = new Set();
   if (/(bug|fix|修 bug|修复|缺陷|问题|报错|失败|不对)/i.test(text)) tags.add("bug");
+  if (/(ppt|pptx|powerpoint|presentation|slide deck|slides?|deck|keynote|pitch deck|proposal deck|演示文稿|幻灯片|路演|汇报|提案PPT|PPT提案|商业计划书PPT|融资PPT)/i.test(text)) tags.add("deck");
   if (/(ui|ux|界面|视觉|样式|布局|字体|字号|间距|卡片|图标|icon|tabbar|页面|截图|货不对版)/i.test(text)) tags.add("ui");
   if (/(小程序|mini[- ]?program|wechat|微信)/i.test(text)) tags.add("miniapp");
   if (/(二级|设置页|首页|服务页|页面|screen|page)/i.test(text)) tags.add("surface");
@@ -3213,6 +3217,7 @@ function taskTagsFromBrief(brief) {
 }
 
 function suggestedTaskTemplate(tags, brief) {
+  if (tags.includes("deck") && !tags.includes("bug")) return "deck.proposal";
   if (tags.includes("multi")) return "mission.orchestration";
   if (tags.includes("ui")) return "frontend-ui.strict";
   if (tags.includes("bug")) return "bugfix.standard";
@@ -3222,6 +3227,15 @@ function suggestedTaskTemplate(tags, brief) {
 function suggestedTaskWriteScope(tags, brief) {
   const text = String(brief || "");
   const scope = new Set();
+  if (tags.includes("deck")) {
+    scope.add("decks/**");
+    scope.add("slides/**");
+    scope.add("presentations/**");
+    scope.add("*.pptx");
+    scope.add("*.key");
+    scope.add("*.pdf");
+    scope.add("*.html");
+  }
   if (tags.includes("ui")) {
     scope.add("styles/tokens/**");
     scope.add("components/**");
@@ -3303,7 +3317,7 @@ function createTaskRecord(brief, options = {}, cwd = process.cwd()) {
     tags,
     suggested_write_scope: suggestedWriteScope,
     conflict_risk: conflictRisk,
-    workstream: tags.includes("ui") ? "ui-quality" : tags.includes("bug") ? "bugfix" : "general",
+    workstream: tags.includes("deck") ? "deck-proposal" : tags.includes("ui") ? "ui-quality" : tags.includes("bug") ? "bugfix" : "general",
     runtime_boundary: "controller_records_and_recommends; codex_runtime_dispatches_workers",
   };
   return record;

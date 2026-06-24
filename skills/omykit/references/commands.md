@@ -12,7 +12,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `开始执行`, `创建并执行工作流`, `跑完整个工作流`, `推进工作流`, `continue execution` | `controller` execute |
 | `创建工作流`, `初始化 workflow`, `开始追踪任务`, `create workflow` | `controller` execute unless user says skeleton only |
 | `只创建工作流`, `只初始化 workflow`, `先建骨架`, `不要执行`, `skeleton only` | `controller` skeleton only |
-| `使用 bugfix 模板`, `使用 UI 模板`, `查看 workflow 模板`, `templates list` | `controller` |
+| `使用 bugfix 模板`, `使用 UI 模板`, `使用 PPT 模板`, `查看 workflow 模板`, `templates list` | `controller` |
 | `查看进度`, `工作流状态`, `下一步`, `当前节点`, `继续工作流`, `解除阻塞`, `resume workflow`, `unblock workflow` | `controller` |
 | `工作流列表`, `切换工作流`, `使用这个 workflow`, `active workflow`, `list workflows` | `controller` |
 | `查看编排计划`, `自动编排`, `orchestration plan`, `next action` | `controller` |
@@ -27,7 +27,7 @@ Use this reference only when the entry phrase is ambiguous or the user asks how 
 | `生成看板`, `打开看板`, `workflow board`, `visual board` | `controller` |
 | `初始化项目`, `新项目`, `从零开始`, `start new project` | `init` |
 | `初始化旧项目`, `改造旧项目`, `接入现有项目`, `retrofit` | `retrofit` |
-| `开始一个需求`, `做一个功能`, `修 bug`, `重构`, `设计一个页面`, `做 PPT`, `剪视频` | `change` |
+| `开始一个需求`, `做一个功能`, `修 bug`, `重构`, `设计一个页面`, `做 PPT`, `生成提案 deck`, `制作路演 PPT`, `做汇报幻灯片`, `剪视频` | `change` |
 | `交付检查`, `发布前检查`, `验收`, `handoff`, `ship it` | `delivery` |
 | `收尾`, `整理文档`, `同步知识`, `知识同步`, `neat-freak`, `tidy docs`, `sync up` | `delivery` knowledge sync |
 | `版本管理`, `回滚`, `历史版本`, `定制化修改`, `release readiness` | Route by task stage, then include `codex-version-readiness` |
@@ -57,6 +57,8 @@ $omykit 修复工作流健康
 $omykit 清理旧工作流残留
 $omykit 修 bug：登录后跳转错误
 $omykit 做 UI：设置页响应式优化
+$omykit 做 PPT：融资路演提案
+$omykit 生成提案 deck：新产品发布方案
 $omykit 做调研：对比三种数据导出方案
 $omykit 交付检查
 $omykit 收尾：同步文档和记忆

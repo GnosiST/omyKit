@@ -21,3 +21,10 @@ runtime_profiles:
     description:
       en: Prefer markdown and repository validation scripts; avoid runtime setup unrelated to documentation output.
       zh-CN: 优先使用 Markdown 和仓库验证脚本，避免与文档产物无关的运行时准备。
+  - id: deck-production
+    name:
+      en: Deck Production
+      zh-CN: PPT 生产
+    description:
+      en: Prefer bundled presentation tooling, Canva, project templates, or existing local deck tools first; trial third-party deck specialists only with source, license, install, run, and output evidence.
+      zh-CN: 优先使用 bundled presentation 工具、Canva、项目模板或现有本地 PPT 工具；只有具备来源、license、安装、运行和输出证据时才试验第三方 PPT specialist。

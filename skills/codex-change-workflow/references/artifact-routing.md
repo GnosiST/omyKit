@@ -13,8 +13,10 @@ Load only the section for the current deliverable.
 ## Deck
 
 - Start with audience, objective, narrative, slide count, brand constraints.
-- Use imagegen for raster visuals; use Canva/presentations for deck construction.
-- When native editable PPTX quality cannot be met with bundled presentations, Canva, project templates, or existing PPT tooling, record a `capability_gaps` item and trial a high-signal deck specialist locally or project-locally before changing omyKit routing. `hugohe3/ppt-master` is a candidate for this gap, not a default dependency.
+- For tracked work, prefer the `deck.proposal` template so intake records direction options, selected production surface, specialist choices, fallback policy, and source/license boundaries.
+- Use imagegen for raster visuals; use bundled `presentations`, Canva, project templates, or existing deck tooling for construction first.
+- Add specialists by non-overlapping direction, not by stacking: `hugohe3/ppt-master` for native editable PPTX gaps, `op7418/guizang-ppt-skill` for HTML deck gaps, `zarazhangrui/beautiful-html-templates` as an external template-reference source, and `irenerachel/visual-style-ppt-skill` only as a user-approved local style-review candidate because no license was detected.
+- Record `skill_decisions` when several deck skills could apply. Record `capability_gaps` before local/project trials or omyKit routing changes, including source, license, install/run, real-output, and rollback evidence.
 - Verify rendered slides for overflow, contrast, image quality, and export.
 
 ## Video

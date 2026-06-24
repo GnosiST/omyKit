@@ -61,6 +61,7 @@ flowchart TD
 | 功能或 bug 修复 | `codex-change-workflow` | 中间件需要时用 `codex-runtime-readiness`；需要回滚时用 `codex-version-readiness`；交付前用 `codex-delivery-gate`。 |
 | 长任务追踪 | `codex-change-workflow` | 使用 workflow controller 管理任务图、handoff、打回、阻塞和 compact 后恢复。 |
 | 文档或研究交付物 | `codex-change-workflow` | `codex-context-budget`、`codex-delivery-gate`；只有持久或发布相关时才用 version readiness。 |
+| 提案或演示文稿 PPT | 使用 `deck.proposal` 的 `codex-change-workflow` | `codex-context-budget`，优先 bundled `presentations`/Canva/项目模板；可选 deck specialist 通过 `skill_decisions` 和 `capability_gaps` 记录，再进入 `codex-delivery-gate`。 |
 | 发布准备 | `codex-delivery-gate` | `codex-version-readiness`、运行时检查、交付物类型门禁。 |
 | 阶段知识收口 | `codex-delivery-gate` | 只有 docs、AGENTS/CLAUDE 规则或记忆可能过期时才用 `neat-freak`；否则记录 `knowledge_sync.status=not_needed`。 |
 | 用户不满意 specialist 产物 | 当前主 workflow | 查看节点 `skill_decisions[].fallback_policy`，只把不满意的质量维度交给更合适的同类或窄能力 skill 重做。 |

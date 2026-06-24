@@ -4,7 +4,7 @@
 
 Controller 使用有向无环图。每个节点只负责一类事情，并声明依赖、验收条件和 handoff 要求。
 
-Graph 通常由 `change.standard`、`bugfix.standard`、`frontend-ui.strict` 或 `mission.orchestration` 等 workflow 模板编译而来。你仍然可以查看和编辑生成后的 `graph.json`，但持久改动通常应进入 template/profile YAML，让流程保持可复用。
+Graph 通常由 `change.standard`、`bugfix.standard`、`frontend-ui.strict`、`deck.proposal` 或 `mission.orchestration` 等 workflow 模板编译而来。你仍然可以查看和编辑生成后的 `graph.json`，但持久改动通常应进入 template/profile YAML，让流程保持可复用。
 
 ## 节点类型
 

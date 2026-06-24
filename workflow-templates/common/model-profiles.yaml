@@ -83,3 +83,26 @@ model_profiles:
         reason:
           en: Use for design judgment, client-facing work, broad reviews, migrations, and high-risk synthesis.
           zh-CN: 用于设计判断、客户可见工作、广泛评审、迁移和高风险综合判断。
+  - id: deck-quality
+    name:
+      en: Deck Quality
+      zh-CN: PPT 质量档
+    policy:
+      en: Use frontier tier for narrative, visual direction, and client-facing review; use standard tier for production and verification; keep simple packaging on fast tier.
+      zh-CN: 叙事、视觉方向和客户可见评审使用 frontier；生产和验证使用 standard；简单打包使用 fast。
+    model_map:
+      - tier: fast
+        model: GPT-5.4-Mini
+        reason:
+          en: Use for bounded intake normalization, export packaging, filename checks, and short summaries.
+          zh-CN: 用于有边界的接收整理、导出打包、文件名检查和短摘要。
+      - tier: standard
+        model: GPT-5.4
+        reason:
+          en: Stable model for slide outline production, artifact edits, export verification, and ordinary office-quality synthesis.
+          zh-CN: 用于页面大纲生产、产物修改、导出验证和常规办公质量综合。
+      - tier: frontier
+        model: GPT-5.5
+        reason:
+          en: Use for high-quality proposal strategy, narrative synthesis, visual direction, and final client-facing deck review.
+          zh-CN: 用于高质量提案策略、叙事综合、视觉方向和最终客户可见 PPT 评审。

@@ -8,11 +8,11 @@ omyKit uses external repositories as reference signals, not vendored doctrine. U
 
 Tracked references live in [`upstream-sources.json`](../../upstream-sources.json).
 
-Officiality means "the exact upstream or home repository omyKit tracks for that capability", not endorsement by the repository owner. The verification snapshot below was checked through the GitHub repository API on 2026-06-23; star counts drift and should be refreshed when source reputation materially affects a decision.
+Officiality means "the exact upstream or home repository omyKit tracks for that capability", not endorsement by the repository owner. The verification snapshot below was checked through the GitHub repository API on 2026-06-23; deck-specific additions were checked on 2026-06-24. Star counts drift and should be refreshed when source reputation materially affects a decision.
 
 Low-signal sources that duplicate omyKit's PM, taste, catalog, or meta-UX lanes are intentionally not tracked here. High-signal optional references may be tracked for source integrity, but they remain opt-in and do not become default routes.
 
-| Source | Developer / owner | Stars on 2026-06-22 | Status | Reference scope in omyKit |
+| Source | Developer / owner | Snapshot stars | Status | Reference scope in omyKit |
 | --- | --- | ---: | --- | --- |
 | [obra/Superpowers](https://github.com/obra/Superpowers) | `obra` / User | 235,582 | Not forked, active | Execution discipline, planning, TDD, debugging, review, and verification signals only; no workflow text copied. |
 | [github/spec-kit](https://github.com/github/spec-kit) | `github` / Organization | 114,714 | Not forked, active | Strict SDD and constitution signals for durable projects; no templates copied. |
@@ -30,6 +30,10 @@ Low-signal sources that duplicate omyKit's PM, taste, catalog, or meta-UX lanes 
 | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | `pbakaus` / User | 40,513 | Not forked, active | Installed local design-skill family reference; omyKit records routing boundaries and does not copy additional upstream text. |
 | [motiondivision/motion](https://github.com/motiondivision/motion) | `motiondivision` / Organization | 32,471 | Not forked, active | Official Motion GitHub reference; Motion AI Kit docs remain the source for paid AI Kit behavior. |
 | [remotion-dev/remotion](https://github.com/remotion-dev/remotion) | `remotion-dev` / Organization | 50,849 | Not forked, active | Video-rendering platform reference; no dependency bundled. |
+| [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) | `hugohe3` / User | 31,026 | Not forked, active, MIT | Deck-specialist reference for native editable PPTX trials and `deck.proposal` routing decisions; no skill body, templates, sponsor text, images, badges, or branding copied. |
+| [op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) | `op7418` / User | 18,771 | Not forked, active, AGPL-3.0 | Optional HTML-deck specialist reference; AGPL license requires care, and omyKit does not copy runtime code, templates, images, badges, or branding. |
+| [zarazhangrui/beautiful-html-templates](https://github.com/zarazhangrui/beautiful-html-templates) | `zarazhangrui` / User | 3,156 | Not forked, active, MIT | External HTML slide template-library reference; omyKit links the source but does not cache or vendor template files. |
+| [irenerachel/visual-style-ppt-skill](https://github.com/irenerachel/visual-style-ppt-skill) | `irenerachel` / User | 242 | Not forked, active, no license detected | User-requested low-signal style-review candidate only; not a default route or vendored dependency. |
 | [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) | `FFmpeg` / Organization | 61,333 | Not forked, active | Media-processing reference; omyKit does not vendor FFmpeg. |
 | [docker/compose](https://github.com/docker/compose) | `docker` / Organization | 37,579 | Not forked, active | Runtime dependency orchestration reference. |
 | [moby/moby](https://github.com/moby/moby) | `moby` / Organization | 71,728 | Not forked, active | Container runtime ecosystem reference; Docker Compose remains the preferred project-level route. |

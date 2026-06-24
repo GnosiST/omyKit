@@ -115,3 +115,53 @@ agent_sets:
         scope:
           en: Package final evidence, residual risk, knowledge sync, and workflow evolution candidates.
           zh-CN: 汇总最终证据、剩余风险、知识同步和 workflow 进化候选。
+  - id: deck-agents
+    name:
+      en: Deck Agents
+      zh-CN: PPT 智能体
+    description:
+      en: Roles for proposal or presentation work that needs story, visual direction, slide production, export verification, and source-safe specialist selection.
+      zh-CN: 面向提案或演示文稿工作的角色组合，覆盖叙事、视觉方向、幻灯片生产、导出验证和来源安全的 specialist 选择。
+    agents:
+      - id: deck-strategist
+        role:
+          en: Deck strategist
+          zh-CN: PPT 策略师
+        scope:
+          en: Clarify audience, objective, decision moment, narrative arc, constraints, and direction options.
+          zh-CN: 澄清受众、目标、决策场景、叙事主线、约束和方向选项。
+      - id: content-architect
+        role:
+          en: Content architect
+          zh-CN: 内容架构师
+        scope:
+          en: Structure the storyline, section logic, slide outline, source mapping, and speaker-note needs.
+          zh-CN: 组织故事线、章节逻辑、页面大纲、来源映射和演讲备注需求。
+      - id: visual-director
+        role:
+          en: Visual director
+          zh-CN: 视觉导演
+        scope:
+          en: Choose visual style, template strategy, asset needs, and same-lane deck specialist routing.
+          zh-CN: 选择视觉风格、模板策略、资产需求和同类 PPT specialist 路由。
+      - id: deck-builder
+        role:
+          en: Deck builder
+          zh-CN: PPT 生成者
+        scope:
+          en: Build or revise deck artifacts with the selected primary production surface and bounded supporting tools.
+          zh-CN: 使用选定的主生产面和有边界的支持工具生成或修改 PPT 产物。
+      - id: deck-qa
+        role:
+          en: Deck QA
+          zh-CN: PPT 验收者
+        scope:
+          en: Verify exports, editability or HTML behavior, rendering, structure, citations, and residual risk.
+          zh-CN: 验证导出、可编辑性或 HTML 行为、渲染、结构、引用和剩余风险。
+      - id: delivery
+        role:
+          en: Delivery owner
+          zh-CN: 交付负责人
+        scope:
+          en: Package final artifacts, evidence, source-safety notes, and workflow evolution candidates.
+          zh-CN: 汇总最终产物、证据、来源安全说明和 workflow 进化候选。

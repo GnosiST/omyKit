@@ -11,6 +11,7 @@ omyKit workflow templates define reusable task maps for the controller. They are
 | `change.standard` | Standard | Scoped feature, refactor, documentation, or maintenance work. |
 | `bugfix.standard` | Standard | Reproduce, diagnose, fix, verify, review, and deliver bug fixes. |
 | `frontend-ui.strict` | Strict | Design-sensitive frontend work that needs UI direction, implementation, browser/visual QA, review, and delivery. |
+| `deck.proposal` | Strict | Proposal or presentation deck work that needs direction options, source-safe specialist selection, artifact production, export verification, and delivery evidence. |
 | `mission.orchestration` | Strict | Broad requirements that need insight, task decomposition, workflow routing, monitored execution, integration gates, and learning. |
 
 Use the nearest template first. `init --template auto` selects from these templates by task brief; explicit `--template <id>` overrides auto. Do not make every task use the strictest graph; the controller is useful when state, handoff, retry, parallelism, or compact recovery matters.
@@ -31,6 +32,7 @@ workflow-templates/
     change.standard.yaml
     bugfix.standard.yaml
     frontend-ui.strict.yaml
+    deck.proposal.yaml
     mission.orchestration.yaml
 ```
 
@@ -56,6 +58,7 @@ node scripts/omykit-workflow.mjs templates validate
 node scripts/omykit-workflow.mjs init "Coordinate a complex release" --template auto
 node scripts/omykit-workflow.mjs init "Fix checkout bug" --template bugfix.standard
 node scripts/omykit-workflow.mjs init "Redesign settings page" --template frontend-ui.strict --lang zh-CN
+node scripts/omykit-workflow.mjs init "Create an investor pitch deck" --template deck.proposal
 node scripts/omykit-workflow.mjs scorecard --workflow <workflow-id>
 ```
 
@@ -99,6 +102,7 @@ For Chinese user prompts, `$omykit` should initialize tracked workflows with `--
 
 - Keep templates generic. Do not put target-project ports, credentials, product rules, or stack-specific assumptions into omyKit templates.
 - Add a new template when the graph topology differs meaningfully.
+- Use `deck.proposal` when the artifact is a PPT, presentation, slide deck, pitch deck, or proposal deck. The template separates story, direction, production, polish, verification, and delivery so bundled presentation tooling, Canva, PPT Master, Guizang, and external template references can cooperate without competing for the same job.
 - Add or edit a scorecard when evidence expectations differ but flow stays the same. Common tracked delivery scorecards require `evolution_candidates` and `knowledge_sync`, and recommend `skill_decisions` when specialist skills are used, so workflow learning, docs/memory cleanup, and same-lane skill selection are reviewable.
 - Add a runtime profile when verification setup differs but graph topology does not.
 - Add a model profile when cost/quality policy or concrete model recommendation differs but node responsibilities stay the same.

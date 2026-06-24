@@ -1,0 +1,149 @@
+schema_version: "1"
+scorecard_id: deck-delivery
+name:
+  en: Deck Delivery
+  zh-CN: PPT 交付
+description:
+  en: Evidence checks for proposal or presentation workflows that combine story, visual direction, deck production, specialist selection, and export verification.
+  zh-CN: 面向提案或演示文稿工作流的证据检查，覆盖叙事、视觉方向、PPT 生产、specialist 选择和导出验证。
+checks:
+  - id: intake-decision-recorded
+    title:
+      en: Intake decision records route and custom-answer policy
+      zh-CN: 入口决策记录路由和自定义答案策略
+    severity: required
+    evidence:
+      type: intake_decision_recorded
+  - id: intake-options-confirmed
+    title:
+      en: Intake records deck direction options and confirmation
+      zh-CN: 入口记录 PPT 方向选项和确认
+    severity: required
+    evidence:
+      type: intake_execution_options_confirmed
+  - id: terminal-handoff-summary
+    title:
+      en: Terminal nodes have handoff summaries
+      zh-CN: 终态节点有交接摘要
+    severity: required
+    evidence:
+      type: terminal_handoff_summary
+  - id: terminal-work-items
+    title:
+      en: Terminal nodes record actual deck work items
+      zh-CN: 终态节点记录实际 PPT 工作项
+    severity: required
+    evidence:
+      type: terminal_work_items
+  - id: downstream-context-recorded
+    title:
+      en: Passed handoff nodes carry compact downstream context
+      zh-CN: 通过的交接节点携带压缩下游上下文
+    severity: recommended
+    evidence:
+      type: downstream_context_recorded
+  - id: changed-files-summary
+    title:
+      en: Deck files explain their main changes
+      zh-CN: PPT 产物文件说明主要改动
+    severity: recommended
+    evidence:
+      type: changed_files_summary
+  - id: verification-recorded
+    title:
+      en: Export or render verification is recorded
+      zh-CN: 导出或渲染验证已记录
+    severity: required
+    evidence:
+      type: verification_recorded
+  - id: verification-evidence-exists
+    title:
+      en: Verification evidence paths exist
+      zh-CN: 验证证据路径存在
+    severity: recommended
+    evidence:
+      type: verification_evidence_exists
+  - id: skills-used-recorded
+    title:
+      en: Terminal nodes record skills used when applicable
+      zh-CN: 终态节点记录使用过的 skills
+    severity: recommended
+    evidence:
+      type: skills_used_recorded
+  - id: skill-selection-decision-recorded
+    title:
+      en: Terminal nodes explain deck specialist selection and fallback
+      zh-CN: 终态节点说明 PPT specialist 选择和替换策略
+    severity: required
+    evidence:
+      type: skill_selection_decision_recorded
+  - id: capability-gap-triaged
+    title:
+      en: Deck capability gaps are triaged before changing omyKit routing
+      zh-CN: PPT 能力缺口在改变 omyKit 路由前完成分流
+    severity: recommended
+    evidence:
+      type: capability_gap_triaged
+  - id: token-usage-source
+    title:
+      en: Terminal nodes record token source or unavailable reason
+      zh-CN: 终态节点记录 token 来源或不可观测原因
+    severity: recommended
+    evidence:
+      type: token_usage_source
+  - id: context-usage-source
+    title:
+      en: Terminal nodes record context source when available
+      zh-CN: 终态节点记录上下文来源
+    severity: recommended
+    evidence:
+      type: context_usage_source
+  - id: model-tier-policy
+    title:
+      en: Model tier follows deck complexity policy
+      zh-CN: 模型档位符合 PPT 复杂度策略
+    severity: required
+    evidence:
+      type: model_tier_policy
+  - id: model-usage-recorded
+    title:
+      en: Terminal nodes record actual model usage or unavailable reason
+      zh-CN: 终态节点记录实际模型或不可观测原因
+    severity: recommended
+    evidence:
+      type: model_usage_recorded
+  - id: subagent-model-recorded-or-explained
+    title:
+      en: Subagent activities record or explain actual model usage
+      zh-CN: 子智能体活动记录或说明实际模型
+    severity: recommended
+    evidence:
+      type: subagent_model_recorded_or_explained
+  - id: required-not-failed
+    title:
+      en: Required nodes are not failed or blocked
+      zh-CN: 必需节点未失败或阻塞
+    severity: required
+    evidence:
+      type: required_nodes_not_failed_or_blocked
+  - id: evolution-review-recorded
+    title:
+      en: Delivery nodes record workflow evolution review
+      zh-CN: 交付节点记录 workflow 进化复盘
+    severity: required
+    evidence:
+      type: evolution_review_recorded
+  - id: knowledge-sync-reviewed
+    title:
+      en: Delivery nodes record knowledge sync review
+      zh-CN: 交付节点记录知识同步审查
+    severity: required
+    evidence:
+      type: knowledge_sync_reviewed
+  - id: board-language
+    title:
+      en: Board language follows workflow language
+      zh-CN: 看板语言跟随工作流语言
+    severity: required
+    evidence:
+      type: board_language

@@ -39,7 +39,7 @@ For controller and board requests, use the first available script:
 Map user intent to commands:
 
 - task brief, bug, UI issue, test request, or follow-up work -> internally run `tasks add "<brief>" --lang <user-language>` first so the controller can decide `merge_current`, `linked_follow_up`, or `new_workflow`; users should not need to choose merge, parallel, or conflict primitives manually
-- create or execute tracked workflow -> after task intake, run `init --template auto --lang <user-language>` only when the task decision requires a new workflow and no suitable active workflow exists; controller auto-selects `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`, and explicit user template requests override auto
+- create or execute tracked workflow -> after task intake, run `init --template auto --lang <user-language>` only when the task decision requires a new workflow and no suitable active workflow exists; controller auto-selects `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, or `mission.orchestration`, and explicit user template requests override auto
 - continue execution -> `resume`, then `orchestrate --json --lang <user-language>`; follow the orchestration plan internally instead of asking the user to choose subagent, thread, context-pack, or assignment commands
 - skeleton-only workflow -> run only `init` when the user explicitly says `只创建`, `只初始化`, `skeleton only`, or `do not execute`
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
@@ -88,7 +88,7 @@ Include these concise groups:
 - execute long work: `$omykit 开始执行：<任务>`, `$omykit 创建并执行工作流：<任务>`, `$omykit 继续工作流`, `$omykit 推进下一步`
 - skeleton only: `$omykit 只创建工作流：<任务>`, `$omykit 只初始化 workflow：<任务>`
 - tracked workflow: `$omykit 创建工作流：<任务>`, `$omykit 查看工作流状态`, `$omykit 下一步`, `$omykit 查看当前节点`, `$omykit 解除阻塞`, `$omykit 查看工作流列表`, `$omykit 切换工作流：<id>`
-- task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
+- task-specific shortcuts: `$omykit 修 bug：<问题>`, `$omykit 做 UI：<页面>`, `$omykit 做 PPT：<提案/汇报>`, `$omykit 生成提案 deck：<主题>`, `$omykit 做调研：<主题>`, `$omykit 跑测试：<范围>`
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
 - health and cleanup: `$omykit 诊断工作流健康`, `$omykit 修复工作流健康`, `$omykit 清理旧工作流残留`
@@ -202,9 +202,10 @@ For tracked controller work, select the nearest reusable template instead of inv
 - `change.standard`: scoped feature, refactor, docs, or maintenance work
 - `bugfix.standard`: reproduce, diagnose, fix, verify, review, and delivery loops
 - `frontend-ui.strict`: design-sensitive UI work with visual QA and review
+- `deck.proposal`: proposal or presentation deck work with direction options, source-safe specialist selection, artifact production, export verification, and delivery evidence
 - `mission.orchestration`: broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning
 
-Do not force strict UI, bugfix, or mission templates onto unrelated work. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
+Do not force strict UI, bugfix, deck, or mission templates onto unrelated work. For PPT/deck work, the intake should offer 2-3 directions, recommend one, and allow a custom answer before generating the artifact. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
 
 Scorecards audit recorded evidence. Treat failed required scorecard checks as delivery blockers unless the user explicitly accepts the residual risk. Treat recommended scorecard warnings as improvement suggestions, not automatic blockers.
 

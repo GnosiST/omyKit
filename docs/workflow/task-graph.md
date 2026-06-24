@@ -4,7 +4,7 @@ Language: [English](task-graph.md) | [简体中文](task-graph.zh-CN.md)
 
 The controller uses a directed acyclic graph. Each node has one responsibility, explicit dependencies, acceptance criteria, and a handoff requirement.
 
-Graphs are normally compiled from workflow templates such as `change.standard`, `bugfix.standard`, `frontend-ui.strict`, or `mission.orchestration`. You can still inspect and edit the generated `graph.json`, but durable changes should usually be made in template/profile YAML so the workflow remains reusable.
+Graphs are normally compiled from workflow templates such as `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, or `mission.orchestration`. You can still inspect and edit the generated `graph.json`, but durable changes should usually be made in template/profile YAML so the workflow remains reusable.
 
 ## Node Types
 

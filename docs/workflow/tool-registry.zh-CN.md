@@ -42,7 +42,10 @@
 | imagegen | OpenAI 第一方工具 | [OpenAI Images docs](https://platform.openai.com/docs/guides/images) | 位图资产生成/编辑 | Bitmap visuals、moodboards、slide images、thumbnails、hero images、cutouts。 | SVG/icon systems、确定性 UI code、已有 vector assets。 |
 | Canva | 平台连接器 | 已安装 Canva connector/plugin；omyKit 不跟踪低信号 skill repo | 设计/deck 生产 | Canva-native presentations、social formats、brand kits。 | Code-native UI 或本地 editable files。 |
 | presentations | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | Deck 创建/编辑 | PPTX/slide artifacts 和 rendered verification。 | App UI 或非 slide docs。 |
-| [PPT Master](https://github.com/hugohe3/ppt-master) | 高信号候选 deck specialist | [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) (31,003★) | 原生可编辑 PPTX 工作流 | 只有 bundled `presentations`、Canva、项目模板或现有 PPT 工具无法满足原生可编辑 deck 生成/美化要求，且用户或目标项目确实受益于本地试验时才使用。 | 默认 deck 路由、复制其 skill body/templates/assets/branding，或没有 source、license、security、install 和真实输出证据就提交进 omyKit 主线。 |
+| [PPT Master](https://github.com/hugohe3/ppt-master) | 高信号 deck specialist | [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) (31,026★, MIT) | 原生可编辑 PPTX 工作流 | 原生可编辑 PPTX 生成、美化、跟随自定义 `.pptx` 模板、动画、演讲备注或旁白；在 bundled `presentations`、Canva、项目模板或现有 PPT 工具不足时使用。 | 复制其 skill body/templates/assets/branding、没有 source/install/output 证据就使用，或把它强制用于每个 PPT。 |
+| [Guizang PPT Skill](https://github.com/op7418/guizang-ppt-skill) | 高信号 HTML deck specialist | [op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) (18,771★, AGPL-3.0) | 精美 HTML 幻灯片 | editorial、Swiss、社交封面、图片提示词或浏览器运行时 slide deck，且 HTML 输出可以接受或更合适。 | 原生可编辑 PPTX 需求、复制 AGPL skill/runtime/templates 到 omyKit，或没有独立 HTML 交付需求时混进 PPTX 路由。 |
+| [Beautiful HTML Templates](https://github.com/zarazhangrui/beautiful-html-templates) | 外部模板库参考 | [zarazhangrui/beautiful-html-templates](https://github.com/zarazhangrui/beautiful-html-templates) (3,156★, MIT) | HTML deck 模板方向 | 规划 PPT 方向时选择外部 HTML slide template 方向；目标项目实际使用模板前需要 license/attribution 审查。 | 把模板文件 vendoring 进 omyKit、替代用户项目模板，或把模板目录当成 workflow 规则。 |
+| [visual-style-ppt-skill](https://github.com/irenerachel/visual-style-ppt-skill) | 低信号 local-only 候选 | [irenerachel/visual-style-ppt-skill](https://github.com/irenerachel/visual-style-ppt-skill) (242★, 未检测到 license) | PPT 视觉风格评审 | 只有用户明确要求这个来源，并接受本地/项目本地 license 风险时，才作为风格评审思路候选。 | 默认路由、复制内容，或在未澄清 license 的客户交付中使用。 |
 | documents/PDF | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | 文档交付物 | DOCX/PDF 创建、编辑、redline、render checks。 | 纯 markdown 工作。 |
 | spreadsheets | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | 数据表 | CSV/XLSX analysis、formulas、charts、exports。 | 自由文本 docs 或 code data models。 |
 | Remotion/ffmpeg | 成熟基础设施 / 官方 GitHub | [remotion-dev/remotion](https://github.com/remotion-dev/remotion) (50,849★) / [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) (61,333★) | 视频渲染 | 确定性视频 composition 和 export。 | 需要 desktop app 的纯手工编辑。 |
@@ -71,7 +74,7 @@
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
 - 平台特定项目：先发现并优先使用该平台官方 CLI 或自动化 API，再考虑 Computer Use。小程序项目如果可用微信开发者工具 CLI，就用它处理支持的 preview、upload、build checks；只有 CLI 覆盖不了的纯 GUI 步骤才降级到 Computer Use。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
-- Deck-specialist 缺口：先用 bundled `presentations`、Canva、项目模板或现有 deck 工具。只有这些能力不足，且 `hugohe3/ppt-master` 这类高信号 specialist 可能实质改善原生可编辑 PPTX 时，才记录 `capability_gaps`，先做 local-only 或 project-local 试验，再由 `codex-workflow-evolution` 根据证据决定是否提升。
+- PPT/提案工作：任务是 PPT、presentation、slides、pitch deck 或提案 deck 时使用 `deck.proposal`。入口先给 2-3 个方向，例如原生可编辑 PPTX、Canva/品牌模板、HTML 视觉 deck，推荐一个并允许自定义答案。优先用 bundled `presentations`、Canva、项目模板或现有 deck 工具；只有原生可编辑 PPTX 缺口才用 `ppt-master`，只有 HTML deck 缺口才用 `guizang-ppt-skill`，`beautiful-html-templates` 只作为外部模板参考，`visual-style-ppt-skill` 只有接受 license 风险后作为 local-only 风格评审候选。
 
 只有 specialist skill 已安装、职责狭窄，并且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
 
@@ -92,7 +95,7 @@
 5. 如果本地/项目试验在多个 artifact class 或项目类型里反复有效，再创建 `evolution_candidate`，交给 `codex-workflow-evolution` 审查。
 6. omyKit 规则变更走 branch/PR；只有 owner 明确批准的维护工作，在验证后才直接进入主线。
 
-以 PPT Master 为例：它上游活跃、MIT、非 fork、信号较强，因此有资格进入“记录后的本地试验”，但不是自动默认依赖。
+对于 deck specialist：`ppt-master` 适合原生可编辑 PPTX，因为上游活跃、MIT、非 fork 且信号强；`guizang-ppt-skill` 只有在选择 HTML deck 方向且能接受 AGPL 义务时才合适；`beautiful-html-templates` 是模板方向参考，不是 vendored library；`visual-style-ppt-skill` 低信号且 license 不清，只能在用户明确接受风险时 local-only 使用。
 
 ## 同类能力选择
 
@@ -119,7 +122,7 @@
 | 动效 | `motion-ai-kit`。 | 已选择或明确要求 GSAP 时才补匹配的 `gsap-*`。 |
 | GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；确认性能风险时使用 browser profiling 和定向代码修复。 |
 | shadcn/ui 资源 | 先看项目依赖和官方文档。 | 只有需要当前生态发现时才补 `awesome-shadcn-ui`；不要把社区目录内容持久化进 omyKit。 |
-| Deck 交付物 | Bundled `presentations`、Canva、项目模板和现有 PPT 工具。 | 只有原生可编辑 PPTX 生成或美化是未满足质量线时，才本地试验 `ppt-master`；是否进入 omyKit 必须经过 `capability_gaps` 和进化审查。 |
+| Deck 交付物 | `deck.proposal` 加 bundled `presentations`、Canva、项目模板和现有 PPT 工具。 | 原生可编辑 PPTX 缺口补 `ppt-master`，HTML 视觉 deck 补 `guizang-ppt-skill`，外部模板方向参考 `beautiful-html-templates`，`visual-style-ppt-skill` 只作为用户批准的本地风格评审候选。必须记录 `skill_decisions` 和 `capability_gaps`；默认不要叠加同类 PPT skill。 |
 | 上下文压缩 | 先用 `codex-context-budget`：避免读取、索引、聚焦、紧凑输出，再摘要。 | 只有大型重复内容仍有价值、可取回原文，且路径是本地可信时，才使用可选本地压缩。 |
 | 持久 workflow 状态 | 当前 `codex-change-workflow` 加 Workflow Controller。 | 只用于多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作；不要把它当单独 route。 |
 | Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |

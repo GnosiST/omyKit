@@ -1,0 +1,265 @@
+schema_version: "1"
+template_id: deck.proposal
+template_version: "1.0"
+name:
+  en: Proposal Deck
+  zh-CN: PPT 提案
+description:
+  en: Workflow for proposal or presentation decks that need direction options, source-safe specialist selection, artifact production, export verification, and delivery evidence.
+  zh-CN: 面向提案或演示文稿的工作流，覆盖方向选项、来源安全的 specialist 选择、产物生产、导出验证和交付证据。
+default_mode: Strict
+layers:
+  agents: deck-agents
+  model_profile: deck-quality
+  runtime_profile: deck-production
+  safety_limits: strict-delivery
+  scorecards:
+    - deck-delivery
+nodes:
+  - id: 01-intake
+    type: intake
+    title:
+      en: Deck Intake
+      zh-CN: PPT 需求接收
+    objective:
+      en: Capture audience, decision objective, source materials, output format, editable/export expectations, language, deadline, and 2-3 deck direction options with custom answers allowed.
+      zh-CN: 固化受众、决策目标、资料来源、输出格式、可编辑/导出预期、语言、期限，并给出 2-3 个 PPT 方向选项且允许自定义答案。
+    depends_on: []
+    required: true
+    retry_limit: 1
+    context_level: scan
+    owner: codex
+    worker_profile: deck-strategist
+    agent: deck-strategist
+    parallel_group: discovery
+    join_policy: all_required
+    handoff_target: 02-storyline
+    task_complexity: standard
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 15
+    acceptance:
+      en:
+        - Audience, goal, source materials, output format, editability/export needs, language, execution options, recommendation, confirmation, and custom-answer policy are explicit.
+      zh-CN:
+        - 受众、目标、资料来源、输出格式、可编辑/导出需求、语言、执行方案、推荐方案、确认状态和自定义答案策略已经明确。
+  - id: 02-storyline
+    type: research
+    title:
+      en: Storyline
+      zh-CN: 故事线
+    objective:
+      en: Build the narrative arc, section logic, slide inventory, source-to-slide map, and open content gaps before visual production.
+      zh-CN: 在视觉生产前建立叙事主线、章节逻辑、页面清单、资料到页面的映射和未闭合内容缺口。
+    depends_on:
+      - 01-intake
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: content-architect
+    agent: content-architect
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 03-direction
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 35
+    acceptance:
+      en:
+        - Narrative arc, slide list, source mapping, citation needs, and content gaps are recorded with evidence paths.
+      zh-CN:
+        - 已记录叙事主线、页面列表、资料映射、引用需求和内容缺口，并附证据路径。
+  - id: 03-direction
+    type: design
+    title:
+      en: Direction And Specialist Choice
+      zh-CN: 方向与 specialist 选择
+    objective:
+      en: Select the deck production direction and same-lane specialist mix: bundled presentations/Canva/project template first, PPT Master only for native editable PPTX gaps, Guizang only for polished HTML decks, Beautiful HTML Templates only as an external template reference, and visual-style-ppt-skill only as a local style-review candidate after license risk is accepted.
+      zh-CN: 选择 PPT 生产方向和同类 specialist 组合：优先 bundled presentations、Canva 或项目模板；只有原生可编辑 PPTX 缺口才试验 PPT Master；只有精美 HTML deck 方向才用 Guizang；Beautiful HTML Templates 只作为外部模板参考；visual-style-ppt-skill 只有在接受 license 风险后才作为本地风格评审候选。
+    depends_on:
+      - 02-storyline
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: visual-director
+    agent: visual-director
+    parallel_group: strategy
+    join_policy: all_required
+    handoff_target: 04-plan
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - Direction, visual style, production surface, specialist selection basis, skipped alternatives, fallback policy, and source/license boundaries are recorded in skill_decisions or capability_gaps.
+      zh-CN:
+        - 方向、视觉风格、生产面、specialist 选择依据、未选候选、fallback 策略和来源/license 边界已记录到 skill_decisions 或 capability_gaps。
+  - id: 04-plan
+    type: plan
+    title:
+      en: Deck Production Plan
+      zh-CN: PPT 生产计划
+    objective:
+      en: Convert the selected direction into bounded build, asset, note, export, and verification tasks with explicit write scope and artifact paths.
+      zh-CN: 把选定方向拆成有边界的生成、资产、备注、导出和验证任务，并明确写入范围和产物路径。
+    depends_on:
+      - 03-direction
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: content-architect
+    agent: content-architect
+    parallel_group: planning
+    join_policy: all_required
+    handoff_target: 05-build
+    task_complexity: complex
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 25
+    acceptance:
+      en:
+        - Build steps, asset needs, slide ownership, output paths, verification checks, and reject conditions are clear.
+      zh-CN:
+        - 生成步骤、资产需求、页面归属、输出路径、验证检查和打回条件已经清楚。
+  - id: 05-build
+    type: implement
+    title:
+      en: Build Deck
+      zh-CN: 生成 PPT
+    objective:
+      en: Produce or revise the deck artifacts with the selected primary surface and only the supporting specialists justified by the direction decision.
+      zh-CN: 使用已选主生产面生成或修改 PPT 产物，只加入方向决策中有依据的支持 specialist。
+    depends_on:
+      - 04-plan
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: deck-builder
+    agent: deck-builder
+    parallel_group: production
+    join_policy: all_required
+    handoff_target: 06-polish
+    task_complexity: complex
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 60
+    acceptance:
+      en:
+        - Deck artifact changes are created or revised, scoped to the selected direction, and recorded with changed files and evidence.
+      zh-CN:
+        - PPT 产物已按选定方向生成或修改，范围受控，并记录变更文件和证据。
+  - id: 06-polish
+    type: implement
+    title:
+      en: Polish And Package
+      zh-CN: 美化与打包
+    objective:
+      en: Apply visual polish, speaker notes, export packaging, and citation/source-safety cleanup without copying third-party templates, skill bodies, images, badges, or branding into omyKit.
+      zh-CN: 做视觉美化、演讲备注、导出打包和引用/来源安全收口，不把第三方模板、skill body、图片、badge 或 branding 复制进 omyKit。
+    depends_on:
+      - 05-build
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: deck-builder
+    agent: deck-builder
+    parallel_group: production
+    join_policy: all_required
+    handoff_target: 07-verify
+    task_complexity: complex
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 40
+    acceptance:
+      en:
+        - Polished artifacts, export package, source-safety notes, and skipped specialist reasons are recorded.
+      zh-CN:
+        - 已记录美化产物、导出包、来源安全说明和未使用 specialist 的原因。
+  - id: 07-verify
+    type: verify
+    title:
+      en: Deck QA
+      zh-CN: PPT 验收
+    objective:
+      en: Verify the deck by opening/rendering or inspecting exports, checking editability or HTML behavior when relevant, reviewing slide order, text fit, evidence/citations, and rejecting incomplete work.
+      zh-CN: 通过打开/渲染或检查导出验证 PPT，按需检查可编辑性或 HTML 行为、页面顺序、文字适配、证据/引用，并打回不完整工作。
+    depends_on:
+      - 06-polish
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: deck-qa
+    agent: deck-qa
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 08-delivery
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 35
+    acceptance:
+      en:
+        - Verification evidence confirms render/export behavior and deck quality, or failures are rejected to the correct upstream node.
+      zh-CN:
+        - 验证证据确认渲染/导出行为和 PPT 质量；若失败，打回正确上游节点。
+  - id: 08-delivery
+    type: delivery
+    title:
+      en: Deck Delivery
+      zh-CN: PPT 交付
+    objective:
+      en: Package final deck artifacts, verification evidence, residual risks, source-safety notes, knowledge sync, and workflow evolution candidates.
+      zh-CN: 汇总最终 PPT 产物、验证证据、剩余风险、来源安全说明、知识同步和 workflow 进化候选。
+    depends_on:
+      - 07-verify
+    required: true
+    retry_limit: 1
+    context_level: focus
+    owner: codex
+    worker_profile: delivery
+    agent: delivery
+    parallel_group: delivery
+    join_policy: manual_review
+    handoff_target: null
+    task_complexity: standard
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 20
+    acceptance:
+      en:
+        - Final handoff includes artifact paths, verification, skipped checks, specialist decisions, source-safety notes, residual risk, and reusable workflow lessons when applicable.
+      zh-CN:
+        - 最终交接包含产物路径、验证、跳过检查、specialist 决策、来源安全说明、剩余风险，以及适用时的可复用 workflow 经验。
