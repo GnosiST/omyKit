@@ -191,7 +191,7 @@ It writes:
 .omykit/workflows/<workflow-id>/context-packs/<node-id>.json
 ```
 
-The pack contains `workflow_id`, the target node contract, dependency handoff summaries, upstream `downstream_context`, recent relevant events, active command runs, resume pointers, deterministic `context_usage` measurement, and a `context_loss_guard`. It does not copy the whole conversation or the whole project source. A subagent or resumed Codex thread should read the context pack first, then load exact source files only when the node needs edits, quotes, root-cause analysis, or safety-sensitive judgment. Treat conversation compaction as lossy: recovery should trust the context pack plus source/evidence pointers over informal chat memory.
+The pack contains `workflow_id`, `workflow_metadata` for the selected template and variant, the target node contract, dependency handoff summaries, node-type `handoff_contract` required-field hints, upstream `downstream_context`, recent relevant events, active command runs, resume pointers, deterministic `context_usage` measurement, and a `context_loss_guard`. It does not copy the whole conversation or the whole project source. A subagent or resumed Codex thread should read the context pack first, then load exact source files only when the node needs edits, quotes, root-cause analysis, or safety-sensitive judgment. Treat conversation compaction as lossy: recovery should trust the context pack plus source/evidence pointers over informal chat memory.
 
 ## Command Run Records
 

@@ -5278,6 +5278,52 @@ function attachContextPackMeasurement(payload) {
   return withUsage;
 }
 
+function handoffContractForNode(node, board) {
+  const passedFields = ["outputs", "verification"];
+  if (node.type === "intake") passedFields.push("intake_decision");
+  if (node.type === "delivery") passedFields.push("evolution_candidates", "knowledge_sync");
+  return {
+    required: true,
+    output_path: `handoffs/${node.id}.json`,
+    common_required_fields: ["workflow_id", "node_id", "status", "summary"],
+    status_required_fields: {
+      passed: passedFields,
+      failed: ["reject_to", "reason", "evidence", "required_fix"],
+      blocked: ["blocker_type", "blocked_scope"],
+      skipped: ["reason"],
+    },
+    structured_field_requirements: {
+      work_items: ["title", "status"],
+      changed_files: ["path"],
+      verification: ["command", "result"],
+      skills_used: ["name", "purpose"],
+      agent_activity: ["agent_id", "role", "scope", "task", "status"],
+      intake_decision: [
+        "goal",
+        "route.entry",
+        "route.project_type",
+        "route.mode",
+        "route.next_skill",
+        "workflow.shape",
+        "assumptions[]",
+        "custom_answers_allowed",
+        "execution_options[].id",
+        "execution_options[].label",
+        "execution_options[].summary",
+        "selected_option",
+        "confirmation.status",
+      ],
+      delivery: ["evolution_candidates[]", "knowledge_sync.status"],
+    },
+    record_work_items: true,
+    record_verification: ["passed"].includes(node.status) || ["implement", "verify", "review", "delivery"].includes(node.type),
+    record_skills_used_when_used: true,
+    record_agent_activity_when_delegated: true,
+    record_token_context_model_when_available: true,
+    language: board.language,
+  };
+}
+
 function buildContextPackPayload(board, nodeId) {
   const nodes = Object.values(board.columns).flat();
   const node = nodes.find((item) => item.id === nodeId);
@@ -5288,6 +5334,15 @@ function buildContextPackPayload(board, nodeId) {
     workflow_id: board.workflow_id,
     generated_at: now(),
     language: board.language,
+    workflow_metadata: {
+      workflow_id: board.workflow_id,
+      title: board.title,
+      mode: board.mode,
+      template_id: board.template?.template_id || null,
+      template_version: board.template?.template_version || null,
+      template_name: board.template?.name || null,
+      deck_variant: board.template?.deck_variant || null,
+    },
     controller: board.controller,
     node: {
       node_id: node.id,
@@ -5307,16 +5362,7 @@ function buildContextPackPayload(board, nodeId) {
     dependency_handoffs: dependencyHandoffSummaries(node, nodes),
     downstream_contexts: downstreamContextsForNode(nodes, node.id),
     assignments: board.assignments?.by_node.find((item) => item.node_id === node.id)?.assignments || [],
-    handoff_contract: {
-      required: true,
-      output_path: `handoffs/${node.id}.json`,
-      record_work_items: true,
-      record_verification: ["passed"].includes(node.status) || ["implement", "verify", "review", "delivery"].includes(node.type),
-      record_skills_used_when_used: true,
-      record_agent_activity_when_delegated: true,
-      record_token_context_model_when_available: true,
-      language: board.language,
-    },
+    handoff_contract: handoffContractForNode(node, board),
     context_policy: {
       level: node.context_level,
       max_source_files: maxSourceFiles,
@@ -6054,6 +6100,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       template_version: graph.metadata?.template_version || null,
       name: graph.metadata?.template_name || null,
       description: graph.metadata?.template_description || null,
+      deck_variant: graph.metadata?.deck_variant || null,
       layers: graph.metadata?.layers || {},
     },
     controller: {
@@ -9697,14 +9744,14 @@ function cmdBlock(positional, options) {
   const { graph, state } = loadWorkflow(workflowDir);
   requireNode(graph, nodeId);
   const entry = state.nodes[nodeId];
-  const completedAt = now();
+  const blockedAt = now();
   state.nodes[nodeId] = stateEntry("blocked", String(reason), entry.last_handoff || null, {
-    started_at: entry.started_at || completedAt,
-    completed_at: completedAt,
+    started_at: entry.started_at || blockedAt,
+    blocked_at: blockedAt,
   });
   clearActive(state, nodeId);
   saveState(workflowDir, state);
-  appendLedger(workflowDir, { at: completedAt, event: "node.block", node_id: nodeId, reason: String(reason) });
+  appendLedger(workflowDir, { at: blockedAt, event: "node.block", node_id: nodeId, reason: String(reason) });
   appendText(path.join(workflowDir, "blockers.md"), `- ${now()} ${nodeId}: ${reason}\n`);
   printStatus(graph, state);
 }

@@ -191,7 +191,7 @@ node scripts/omykit-workflow.mjs context-pack 03-plan --workflow <workflow-id> -
 .omykit/workflows/<workflow-id>/context-packs/<node-id>.json
 ```
 
-交接包只包含 `workflow_id`、目标节点合同、依赖 handoff 摘要、来自上游 `downstream_context` 的携带信息、最近相关事件、活跃后台命令、恢复指针、确定性的 `context_usage` 测量和 `context_loss_guard`。它不会复制整段对话或整个项目源码。子智能体或恢复后的 Codex 应优先读取交接包；只有当前节点需要精确修改、引用原文、排查失败根因或安全判断时，才加载完整文件。要把对话压缩视为有损过程：续接时以 context-pack 加来源/证据路径为准，而不是依赖聊天记忆。
+交接包只包含 `workflow_id`、所选模板和变体的 `workflow_metadata`、目标节点合同、依赖 handoff 摘要、按节点类型投影的 `handoff_contract` 必填字段提示、来自上游 `downstream_context` 的携带信息、最近相关事件、活跃后台命令、恢复指针、确定性的 `context_usage` 测量和 `context_loss_guard`。它不会复制整段对话或整个项目源码。子智能体或恢复后的 Codex 应优先读取交接包；只有当前节点需要精确修改、引用原文、排查失败根因或安全判断时，才加载完整文件。要把对话压缩视为有损过程：续接时以 context-pack 加来源/证据路径为准，而不是依赖聊天记忆。
 
 ## 后台命令记录
 

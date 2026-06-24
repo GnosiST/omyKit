@@ -73,7 +73,7 @@ For controller-backed workflows, resume after compact or interruption from durab
 
 Return to full source files, full logs, or original artifacts only when the next action depends on exact edits, citations, security/legal/privacy judgment, or failure root cause.
 
-Context packs are the compact recovery contract, not a lossy memory dump. They include a serialized-size `context_usage` estimate and `context_loss_guard`. If the board flags a large task contract or large context pack, split the node, reduce dependency summaries, or replace bulky evidence bodies with retrievable file paths before dispatching a worker.
+Context packs are the compact recovery contract, not a lossy memory dump. They include `workflow_metadata` for the active workflow/template/variant, node-type handoff contract hints, a serialized-size `context_usage` estimate, and `context_loss_guard`. If the board flags a large task contract or large context pack, split the node, reduce dependency summaries, or replace bulky evidence bodies with retrievable file paths before dispatching a worker.
 
 ## Optional Local Compression Fit
 

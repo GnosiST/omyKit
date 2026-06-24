@@ -105,6 +105,21 @@ assert.equal(deckGraph.metadata.layers.model_profile, "deck-quality");
 assert.equal(deckGraph.metadata.layers.runtime_profile, "deck-production");
 assert.ok(deckGraph.nodes.some((node) => node.id === "03-direction" && node.agent === "visual-director"));
 assert.ok(deckGraph.nodes.some((node) => node.scorecard === "deck-delivery"));
+run(["board", "--workflow", "pitch-deck", "--lang", "zh-CN"], tmpDeck);
+const deckBoard = readJson(path.join(workflowDirFor(tmpDeck), "board.json"));
+assert.equal(deckBoard.template.template_id, "deck.proposal");
+assert.equal(deckBoard.template.template_version, deckGraph.metadata.template_version);
+assert.equal(deckBoard.template.deck_variant, "create");
+run(["context-pack", "01-intake", "--workflow", "pitch-deck", "--lang", "zh-CN"], tmpDeck);
+const deckContextPack = readJson(path.join(workflowDirFor(tmpDeck), "context-packs", "01-intake.json"));
+assert.equal(deckContextPack.workflow_metadata.workflow_id, "pitch-deck");
+assert.equal(deckContextPack.workflow_metadata.template_id, "deck.proposal");
+assert.equal(deckContextPack.workflow_metadata.template_version, deckGraph.metadata.template_version);
+assert.equal(deckContextPack.workflow_metadata.deck_variant, "create");
+assert.ok(deckContextPack.handoff_contract.common_required_fields.includes("workflow_id"));
+assert.ok(deckContextPack.handoff_contract.status_required_fields.passed.includes("intake_decision"));
+assert.ok(deckContextPack.handoff_contract.structured_field_requirements.intake_decision.includes("route.entry"));
+assert.ok(deckContextPack.handoff_contract.structured_field_requirements.intake_decision.includes("custom_answers_allowed"));
 fs.rmSync(tmpDeck, { recursive: true, force: true });
 
 const tmpDeckVariants = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-deck-variants-"));
@@ -912,6 +927,9 @@ assert.equal(contextPack.context_usage.source, "controller_context_pack");
 assert.ok(contextPack.context_usage.estimated_tokens > 0);
 assert.ok(contextPack.context_measurement.components.some((item) => item.name === "context_loss_guard"));
 assert.match(contextPack.context_loss_guard.principle, /compaction is lossy/);
+assert.ok(contextPack.handoff_contract.status_required_fields.failed.includes("required_fix"));
+assert.ok(contextPack.handoff_contract.structured_field_requirements.verification.includes("command"));
+assert.ok(contextPack.handoff_contract.structured_field_requirements.agent_activity.includes("agent_id"));
 
 const researchPackOutput = run(["context-pack", "02-research", "--lang", "zh-CN"]);
 assert.match(researchPackOutput, /Context pack generated: 02-research/);
@@ -992,6 +1010,8 @@ const blockOutput = run(["block", "02-design", "--reason", "Waiting for user con
 assert.match(blockOutput, /Blocked nodes: 02-design design - Design/);
 state = readJson(path.join(dir, "state.json"));
 assert.equal(state.nodes["02-design"].status, "blocked");
+assert.ok(state.nodes["02-design"].blocked_at);
+assert.ok(!state.nodes["02-design"].completed_at);
 
 const runRecordOutput = run([
   "record-run",
@@ -1026,6 +1046,10 @@ run(["init", "中文阻塞恢复测试", "--id", "blocked-flow"], tmpBlocked);
 const blockedOnlyOutput = run(["block", "01-intake", "--reason", "等待用户确认"], tmpBlocked);
 assert.match(blockedOnlyOutput, /阻塞节点: 01-intake intake - 需求接收/);
 assert.match(blockedOnlyOutput, /继续执行: node scripts\/omykit-workflow\.mjs orchestrate --workflow blocked-flow/);
+let blockedState = readJson(path.join(workflowDirFor(tmpBlocked), "state.json"));
+assert.equal(blockedState.nodes["01-intake"].status, "blocked");
+assert.ok(blockedState.nodes["01-intake"].blocked_at);
+assert.ok(!blockedState.nodes["01-intake"].completed_at);
 const blockedPlan = JSON.parse(run(["orchestrate", "--json"], tmpBlocked));
 assert.equal(blockedPlan.execution_mode, "blocked_requires_human_or_external_resolution");
 assert.equal(blockedPlan.human_intervention_required, true);
