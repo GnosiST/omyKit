@@ -72,6 +72,14 @@ if ! grep -q 'execution options' "$omykit_skill"; then
   echo "omyKit skill is missing pre-execution option guidance: $omykit_skill" >&2
   exit 1
 fi
+if ! grep -q 'doctor --lang' "$omykit_skill"; then
+  echo "omyKit skill is missing workflow health doctor guidance: $omykit_skill" >&2
+  exit 1
+fi
+if ! grep -q 'cleanup --dry-run' "$omykit_skill"; then
+  echo "omyKit skill is missing workflow cleanup dry-run guidance: $omykit_skill" >&2
+  exit 1
+fi
 if ! grep -q 'Use Computer Use only when no suitable official/bundled connector' "$omykit_skill"; then
   echo "omyKit skill is missing official-tool-first Computer Use fallback guidance: $omykit_skill" >&2
   exit 1

@@ -71,7 +71,7 @@ intake -> route -> context budget -> spec/brief -> runtime readiness -> execute 
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把 skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，也不会让 Lite 任务默认变重。
+Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handoff 文件，审计入口决策，生成自动编排计划，在需要时生成压缩节点上下文包，记录后台命令续接元数据，把 skill、agent、模型和用量证据投影到看板，推荐 ready 工作的执行面和合适模型，诊断项目 workflow 健康状态，归档安全清理候选，升级旧 workflow 产物，并降低 compact 后续跑成本。它不调用模型，不替代 Codex，不伪造缺失证据，也不会让 Lite 任务默认变重。
 
 参见 [controller.zh-CN.md](controller.zh-CN.md)、[task-graph.zh-CN.md](task-graph.zh-CN.md) 和 [handoff-protocol.zh-CN.md](handoff-protocol.zh-CN.md)。
 
@@ -117,4 +117,4 @@ already running service -> compatible stopped container/local image -> project c
 
 新项目使用 `$omykit 初始化项目`。现有项目使用 `$omykit 改造旧项目`。在项目 profile 提供具体工具、命令和门禁之前，生成的规则应保持通用。
 
-安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，workflow、spec、代码智能、文档、设计、动效、生态资源发现和上下文压缩的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，持久任务图见 [controller.zh-CN.md](controller.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。
+安装和首次使用见 [setup.zh-CN.md](setup.zh-CN.md)，本仓库 profile 见 [project-profile.zh-CN.md](project-profile.zh-CN.md)，语言策略见 [language-policy.zh-CN.md](language-policy.zh-CN.md)，回滚与历史准备度见 [versioning.zh-CN.md](versioning.zh-CN.md)，workflow、spec、代码智能、文档、设计、动效、生态资源发现和上下文压缩的按需选择规则见 [tool-registry.zh-CN.md](tool-registry.zh-CN.md)，外部参考检查见 [upstream-watch.zh-CN.md](upstream-watch.zh-CN.md)，持久任务图见 [controller.zh-CN.md](controller.zh-CN.md)，证据驱动的 workflow 改进见 [evolution.zh-CN.md](evolution.zh-CN.md)。

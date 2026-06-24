@@ -71,7 +71,7 @@ For long or high-observability work, omyKit can use a local controller:
 skill route -> task graph -> node execution -> structured handoff -> verify/reject/block -> delivery
 ```
 
-The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, audits intake decisions, generates automatic orchestration plans, creates compact node context packs when needed, records command-run recovery metadata, projects skill/agent/model/usage evidence to the board, recommends ready work surfaces and right-sized models, upgrades old workflow artifacts, and keeps compact recovery cheap. It does not call models, replace Codex, or make Lite tasks heavy by default.
+The controller stores state under `.omykit/workflows/<workflow-id>/`, validates handoff files, audits intake decisions, generates automatic orchestration plans, creates compact node context packs when needed, records command-run recovery metadata, projects skill/agent/model/usage evidence to the board, recommends ready work surfaces and right-sized models, diagnoses project workflow health, archives safe residue cleanup candidates, upgrades old workflow artifacts, and keeps compact recovery cheap. It does not call models, replace Codex, fabricate missing evidence, or make Lite tasks heavy by default.
 
 See [controller.md](controller.md), [task-graph.md](task-graph.md), and [handoff-protocol.md](handoff-protocol.md).
 
@@ -117,4 +117,4 @@ Every completion should state:
 
 Use `$omykit 初始化项目` for new projects. Use `$omykit 改造旧项目` for existing projects. Keep all generated rules generic until a project profile supplies concrete tools, commands, and gates.
 
-See [setup.md](setup.md) for installation and first-use prompts, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional workflow, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, [controller.md](controller.md) for durable task graphs, and [evolution.md](evolution.md) for evidence-based workflow improvement.
+See [setup.md](setup.md) for installation and first-use prompts, [project-profile.md](project-profile.md) for the omyKit repository profile, [versioning.md](versioning.md) for rollback and history readiness, [tool-registry.md](tool-registry.md) for optional workflow, spec, code-intelligence, docs, design, motion, ecosystem-discovery, and context-compression selection rules, [upstream-watch.md](upstream-watch.md) for external reference checks, [controller.md](controller.md) for durable task graphs, and [evolution.md](evolution.md) for evidence-based workflow improvement.

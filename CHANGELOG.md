@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added the omyKit repository project profile and validator checks so `doctor` has a durable profile target and health/cleanup entrypoints cannot silently regress.
 - Added project-level workflow health diagnosis and residue cleanup: `doctor` writes `.omykit/health/health-report.json`, `doctor --fix` safely repairs compatibility issues, and `cleanup` defaults to dry-run before archive-only cleanup under `.omykit/archive/`.
 - Added a pre-execution option gate: intake handoffs now record multiple execution options, a recommended and selected option, confirmation status, and scorecard coverage before implementation or worker dispatch.
 - Added `mission.orchestration` for broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning.
