@@ -6661,8 +6661,8 @@ function doctorIssue({ id, severity = "warning", scope = "project", path: issueP
   };
 }
 
-function cleanupCandidate({ id, kind, workflow_id = null, paths, reason, safety = "archive_only", action = "archive" }) {
-  return {
+function cleanupCandidate({ id, kind, workflow_id = null, paths, reason, reason_zh = null, safety = "archive_only", action = "archive" }) {
+  const candidate = {
     id,
     kind,
     workflow_id,
@@ -6671,11 +6671,24 @@ function cleanupCandidate({ id, kind, workflow_id = null, paths, reason, safety 
     safety,
     action,
   };
+  if (reason_zh) candidate.reason_zh = reason_zh;
+  return candidate;
+}
+
+function cleanupReasonForDisplay(candidate, language) {
+  if (language === "zh-CN" && candidate.reason_zh) return candidate.reason_zh;
+  return candidate.reason || "";
 }
 
 function workflowStatusSummary(graph, state) {
   if (!graph?.nodes || !state?.nodes) return {};
   return statusCounts(graph.nodes.map((node) => ({ status: state.nodes[node.id]?.status || "missing" })));
+}
+
+function workflowAllNodesTerminal(graph, state) {
+  const nodes = graph?.nodes || [];
+  if (nodes.length === 0) return false;
+  return nodes.every((node) => TERMINAL_STATUSES.has(state?.nodes?.[node.id]?.status));
 }
 
 function workflowSourceFiles(workflowDir) {
@@ -6734,10 +6747,21 @@ function workflowNeedsCompatibilityUpgrade(workflowDir, graph, state) {
   return reasons;
 }
 
-function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null) {
+function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null, state = null, validateErrors = [], activeCommands = []) {
   const candidates = [];
   const workflowId = graph?.workflow_id || path.basename(workflowDir);
   const nodeIds = new Set((graph?.nodes || []).map((node) => node.id));
+  if (validateErrors.length > 0 && workflowAllNodesTerminal(graph, state) && activeCommands.length === 0) {
+    candidates.push(cleanupCandidate({
+      id: `${workflowId}:completed-legacy-workflow`,
+      kind: "completed_legacy_workflow",
+      workflow_id: workflowId,
+      paths: [projectRelativePath(workflowDir, cwd)],
+      reason: "Completed historical workflow fails the current evidence schema. Archive it instead of fabricating missing handoff fields.",
+      reason_zh: "已完结的历史 workflow 不符合当前证据 schema；应归档，不能补造缺失 handoff 字段。",
+    }));
+    return candidates;
+  }
   const board = boardProjectionStatus(workflowDir);
   if (board.stale) {
     candidates.push(cleanupCandidate({
@@ -6746,6 +6770,7 @@ function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null) {
       workflow_id: workflowId,
       paths: [projectRelativePath(board.json_path, cwd), projectRelativePath(board.html_path, cwd)],
       reason: "Board projection is older than workflow source files. It can be regenerated with the board command.",
+      reason_zh: "看板投影早于 workflow 源文件，可用 board 命令重新生成。",
     }));
   }
   if (nodeIds.size > 0) {
@@ -6758,6 +6783,7 @@ function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null) {
           workflow_id: workflowId,
           paths: [projectRelativePath(file, cwd)],
           reason: `Node card ${nodeId} is not present in graph.json.`,
+          reason_zh: `节点卡 ${nodeId} 不存在于 graph.json。`,
         }));
       }
     }
@@ -6770,6 +6796,7 @@ function collectWorkflowCleanupCandidates(workflowDir, cwd, graph = null) {
           workflow_id: workflowId,
           paths: [projectRelativePath(file, cwd)],
           reason: `Context pack ${nodeId} is not present in graph.json.`,
+          reason_zh: `上下文包 ${nodeId} 不存在于 graph.json。`,
         }));
       }
     }
@@ -6794,6 +6821,7 @@ function inspectWorkflowHealth(workflowDir, cwd = process.cwd()) {
       workflow_id: workflowId,
       paths,
       reason: `Workflow directory cannot be loaded (${graphRead.error || stateRead.error}).`,
+      reason_zh: `工作流目录无法加载（${graphRead.error || stateRead.error}）。`,
     }));
     issues.push(doctorIssue({
       id: "invalid_workflow_dir",
@@ -6903,7 +6931,19 @@ function inspectWorkflowHealth(workflowDir, cwd = process.cwd()) {
     }));
   }
 
-  cleanupCandidates.push(...collectWorkflowCleanupCandidates(workflowDir, cwd, graph));
+  cleanupCandidates.push(...collectWorkflowCleanupCandidates(workflowDir, cwd, graph, state, validateErrors, commandProjection.active));
+  if (cleanupCandidates.some((candidate) => candidate.kind === "completed_legacy_workflow")) {
+    issues.push(doctorIssue({
+      id: "completed_legacy_workflow_archive_candidate",
+      severity: "warning",
+      scope: "workflow",
+      workflow_id: id,
+      path: relativePath,
+      summary: "Completed legacy workflow should be archived instead of repaired with invented evidence.",
+      detail: "All nodes are terminal, but old handoff artifacts do not satisfy the current evidence schema.",
+      next_action: "Run cleanup --dry-run, then cleanup --apply after review.",
+    }));
+  }
   return {
     workflow_id: id,
     path: relativePath,
@@ -7071,6 +7111,9 @@ function buildDoctorRecommendations({ issues, workflows, cleanupCandidates, vali
   if (has("terminal_node_missing_handoff")) {
     recommendations.push(isZh ? "不要让升级伪造证据；从历史恢复 handoff，或 reject/re-run 缺证据节点。" : "Do not fabricate evidence during upgrade; recover handoffs from history or reject/re-run nodes with missing evidence.");
   }
+  if (has("completed_legacy_workflow_archive_candidate")) {
+    recommendations.push(isZh ? "已完结但旧证据 schema 不合规的历史 workflow 应归档到 .omykit/archive/，不要补造缺失字段。" : "Archive completed legacy workflows with obsolete evidence schemas under .omykit/archive/ instead of inventing missing fields.");
+  }
   if (has("missing_project_profile")) {
     recommendations.push(isZh ? "补齐 docs/workflow/project-profile.md，让旧项目改造有明确项目现状、命令、门禁和遗留问题。" : "Add docs/workflow/project-profile.md so retrofit state, commands, gates, and legacy issues are auditable.");
   }
@@ -7180,7 +7223,7 @@ function printCleanupPlan(report, result = null) {
   const candidates = report.cleanup_candidates || [];
   console.log(`${isZh ? "清理计划" : "Cleanup plan"}: ${candidates.length} ${isZh ? "个候选" : "candidates"}`);
   for (const candidate of candidates.slice(0, 20)) {
-    console.log(`- ${candidate.kind}: ${candidate.paths.join(", ")} (${candidate.reason})`);
+    console.log(`- ${candidate.kind}: ${candidate.paths.join(", ")} (${cleanupReasonForDisplay(candidate, report.language)})`);
   }
   if (candidates.length > 20) {
     console.log(isZh ? `... 另有 ${candidates.length - 20} 个候选，详见报告。` : `... ${candidates.length - 20} more candidates in the report.`);

@@ -76,6 +76,8 @@ Use `doctor` when an existing project or historical workflow feels partially upg
 
 Use `cleanup` after reviewing the doctor report. It defaults to dry-run. `cleanup --apply` archives safe candidates into `.omykit/archive/<timestamp>/` instead of deleting them, so users can recover or inspect old artifacts.
 
+Completed historical workflows that fail the current evidence schema are cleanup candidates when every node is already terminal and no command run is active. Archive those directories instead of inventing missing `intake_decision`, `knowledge_sync`, `evolution_candidates`, agent scope, token, skill, model, or verification records.
+
 ## Long Task Execution
 
 Creating a workflow is not completion. `init` only creates durable state. For long work, Codex should continue after creation unless the user explicitly says `only create`, `skeleton only`, or `do not execute`.

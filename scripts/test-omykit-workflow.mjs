@@ -1144,13 +1144,41 @@ const doctorFixedGraph = readJson(doctorGraphPath);
 assert.equal(doctorFixedGraph.metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
 assert.ok(fs.existsSync(path.join(doctorDir, "assignments.jsonl")));
 assert.ok(fs.existsSync(path.join(doctorDir, "nodes", "01-intake.json")));
+run(["init", "Completed legacy task", "--id", "completed-legacy"], tmpDoctor);
+const completedLegacyDir = path.join(tmpDoctor, ".omykit", "workflows", "completed-legacy");
+const completedLegacyGraphPath = path.join(completedLegacyDir, "graph.json");
+const completedLegacyGraph = readJson(completedLegacyGraphPath);
+completedLegacyGraph.metadata.workflow_artifact_version = "legacy";
+writeJson(completedLegacyGraphPath, completedLegacyGraph);
+const completedLegacyStatePath = path.join(completedLegacyDir, "state.json");
+const completedLegacyState = readJson(completedLegacyStatePath);
+for (const node of completedLegacyGraph.nodes) {
+  const handoffPath = path.join(completedLegacyDir, "handoffs", `${node.id}.json`);
+  writeJson(handoffPath, {
+    workflow_id: "completed-legacy",
+    node_id: node.id,
+    status: "passed",
+    summary: "Legacy handoff predating the current evidence schema.",
+  });
+  completedLegacyState.nodes[node.id] = {
+    status: "passed",
+    updated_at: "2099-01-01T00:00:00.000Z",
+    last_handoff: `handoffs/${node.id}.json`,
+  };
+}
+writeJson(completedLegacyStatePath, completedLegacyState);
+fs.writeFileSync(path.join(tmpDoctor, ".omykit", "active-workflow"), "doctor-task\n");
 const cleanupDryRun = JSON.parse(run(["cleanup", "--json", "--lang", "zh-CN"], tmpDoctor));
 assert.equal(cleanupDryRun.cleanup.applied, false);
 assert.ok(cleanupDryRun.cleanup_candidates.length >= 3);
+assert.ok(cleanupDryRun.cleanup_candidates.some((candidate) => candidate.kind === "completed_legacy_workflow"));
+assert.ok(cleanupDryRun.cleanup_candidates.some((candidate) => candidate.kind === "completed_legacy_workflow" && /已完结/.test(candidate.reason_zh)));
+assert.ok(cleanupDryRun.issues.some((issue) => issue.id === "completed_legacy_workflow_archive_candidate"));
 const cleanupApplied = JSON.parse(run(["cleanup", "--apply", "--json", "--lang", "zh-CN"], tmpDoctor));
 assert.equal(cleanupApplied.cleanup.applied, true);
 assert.ok(cleanupApplied.cleanup.actions.some((action) => action.status === "archived"));
 assert.ok(!fs.existsSync(path.join(tmpDoctor, ".omykit", "workflows", "broken-workflow")));
+assert.ok(!fs.existsSync(completedLegacyDir));
 assert.ok(!fs.existsSync(path.join(doctorDir, "board.json")));
 assert.ok(!fs.existsSync(path.join(doctorDir, "context-packs", "99-old.json")));
 assert.ok(fs.existsSync(path.join(tmpDoctor, ".omykit", "archive")));
