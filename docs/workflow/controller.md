@@ -128,7 +128,13 @@ node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id>
 node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id> --json
 ```
 
-The orchestration plan lists the execution mode, whether Codex should continue automatically, whether human intervention is required, ready actions, suggested worker profile, recommended model tier, recommended concrete model, Codex model override name when known, execution surface, context pack, and handoff contract. It writes `orchestration-plan.json` beside the workflow for recovery.
+The orchestration plan lists the execution mode, whether Codex should continue automatically, whether human intervention is required, the active collaboration topology, ready actions, suggested worker profile, recommended model tier, recommended concrete model, Codex model override name when known, execution surface, context pack, and handoff contract. It writes `orchestration-plan.json` beside the workflow for recovery.
+
+`collaboration_topology` makes multi-agent shape explicit:
+
+- `one_to_one`: exactly one independent, dispatchable worker node is ready.
+- `one_to_many`: two or more independent worker nodes are ready and fit within the parallel safety limit.
+- `many_to_one`: a downstream node depends on multiple upstream nodes or several upstream nodes share the same `handoff_target`; the downstream node waits for the required handoffs according to `join_policy`.
 
 Lower-level primitives remain available for Codex internals, CI, and troubleshooting:
 
@@ -138,7 +144,7 @@ node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-The controller still does not spawn agents or call models by itself. However, `action=dispatch_worker` is an execution contract for the Codex orchestrator, not a user-facing suggestion: if the active runtime exposes a matching subagent/thread/worktree tool, Codex should create the worker with the node context pack and run `assign` only after that worker exists. If the runtime cannot create the requested worker, record the unavailable reason, safely fall back to main-thread execution only when the scope permits, or block the node with the missing capability named.
+The controller still does not spawn agents or call models by itself. However, `action=dispatch_worker` is an execution contract for the Codex orchestrator, not a user-facing suggestion: if the active runtime exposes a matching subagent/thread/worktree tool, Codex should create the worker with the node context pack and run `assign` only after that worker exists. In `one_to_many`, all actions with the same `dispatch_batch_id` belong to the same fan-out batch. In `many_to_one`, the downstream node should not be started until `collaboration_topology.join_targets[].waiting_on` is empty or the configured `join_policy` permits it. If the runtime cannot create the requested worker, record the unavailable reason, safely fall back to main-thread execution only when the scope permits, or block the node with the missing capability named.
 
 Codex Desktop thread and subagent tools may expose model overrides, but active tool policy controls whether a call can set them. When a node has a task-specific recommended model, Codex should pass that model to the worker creation call only when the current runtime tool and policy allow it, or when the user explicitly authorized the concrete model, while keeping the main thread's model stable as orchestrator-observer. If a non-Codex client, permission boundary, or tool policy prevents override, the worker inherits its default model and the handoff should record the recommended-vs-actual gap. If actual model metadata is hidden, record `agent_activity[].model_unavailable_reason` and node-level `usage_observation.model_status=unavailable` instead of inventing a model name.
 

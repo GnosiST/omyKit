@@ -64,15 +64,15 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | Long tasks continue after workflow creation | Skills, docs, and controller status output require the `resume/orchestrate -> start or dispatch -> work -> handoff -> complete/reject/block` loop. | Rules and orchestration artifact exist; real execution still depends on the active Codex turn. |
 | Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, and `mission.orchestration`, with topology, agent, model, runtime, safety, and scorecard layers. | Covers ordinary change, bugfix, strict UI, and broad mission orchestration; future templates should be added only when topology materially differs. |
 | Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
-| Subagent parallelism | `orchestrate` emits the automatic execution mode, ready actions, worker profile, model recommendation, and context pack policy. | Controller decides the plan; Codex runtime performs any actual worker spawn. |
-| Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, handoff coverage scorecard, and write-scope scorecard exist. | Recording and audit exist; the controller still does not create threads/worktrees by itself. |
+| Subagent parallelism | `orchestrate` emits `collaboration_topology`, ready actions, `dispatch_batch_id`, worker profile, model recommendation, and context pack policy. | 1:1 and 1:N dispatch decisions are explicit; Codex runtime performs the actual worker spawn. |
+| Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, handoff coverage scorecard, write-scope scorecard, and N:1 join tracking exist. | Recording, audit, and join visibility exist; the controller still does not create threads/worktrees by itself. |
 | Low-context continuation | `active-workflow`, `context-pack`, `downstream_context`, and `commands/commands.jsonl`. | Solid base; missing thread-aware resume packets. |
 | Board | Shows tasks, evidence, skills, models, token/context, timing, commands, handoff packets, and improvement actions. | Upgraded into a task tracker, but not a realtime scheduler. |
 | Task-fit model choice | Model profiles recommend `fast`, `standard`, `frontier`, and concrete models. | Recommendations and records exist; actual switching depends on Codex runtime support. |
 | Token/context/time records | Handoffs and board support source-aware records. | Supported, but not every internal Codex metric can be auto-collected. |
 | Self-evolution | Delivery `evolution_candidates`, scorecards, and `codex-workflow-evolution`. | Closed loop exists; more real task data should drive template upgrades. |
 
-Conclusion: omyKit has moved from a set of skill instructions to a workflow kit made of skills, a lightweight controller, YAML templates, scorecards, and a board. It satisfies most core requirements. The largest missing piece is that execution is still centered on the current main thread plus subagents; Codex app independent threads and worktrees are not yet first-class controller execution surfaces.
+Conclusion: omyKit has moved from a set of skill instructions to a workflow kit made of skills, a lightweight controller, YAML templates, scorecards, and a board. It satisfies most core requirements. The controller now makes 1:1, 1:N, and N:1 collaboration visible in `orchestration-plan.json`; the largest remaining gap is a runtime helper that consumes that contract and creates Codex app threads/worktrees automatically when the current tool surface allows it.
 
 ## Feasibility Of Codex Multi-Thread Coordination
 
@@ -127,15 +127,17 @@ Runtime `assignments.jsonl` record shape:
 ## Implemented First Slice
 
 1. `orchestrate` emits the recommended execution mode and writes `orchestration-plan.json`; `dispatch-plan --surface auto|subagent|thread|worktree|main` remains an internal primitive.
-2. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, and handoff path after a real worker exists.
-3. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
-4. Scorecards check assignment handoff coverage and active write-scope conflicts.
-5. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
-6. Task Inbox and Merge Gate record repeated user briefs, merge same-family tasks into the current workflow or link them to historical workflows, and show workstreams plus conflict-arbiter items on the board.
+2. `orchestrate` writes `collaboration_topology` with `one_to_one`, `one_to_many`, and `many_to_one` triggers, fan-out groups, join targets, and `waiting_on` lists.
+3. `dispatch_worker` actions carry `collaboration_pattern`, `dispatch_batch_id`, `depends_on`, `join_policy`, and `handoff_target` so Codex can spawn bounded workers and hold join nodes correctly.
+4. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, and handoff path after a real worker exists.
+5. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
+6. Scorecards check assignment handoff coverage and active write-scope conflicts.
+7. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
+8. Task Inbox and Merge Gate record repeated user briefs, merge same-family tasks into the current workflow or link them to historical workflows, and show workstreams plus conflict-arbiter items on the board.
 
 ## Remaining Optimization Roadmap
 
-1. Integrate Codex app thread tools so explicit background/thread requests can create bounded threads or worktrees.
+1. Add a runtime dispatch helper that consumes `dispatch_worker` actions and creates bounded subagents, background threads, or worktrees when the active Codex tool surface permits it.
 2. Add helpers that pull thread summaries and write them back into structured handoffs without loading full worker history into the main thread.
 3. Extend the board into a richer Thread Map with thread status, last message, handoff return, and human-intervention nodes.
 4. Keep write-heavy parallelism conservative: by default, do not let two background threads edit the same file set unless write scopes are disjoint or worktrees isolate them.

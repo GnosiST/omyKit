@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added explicit collaboration topology to orchestration plans: `orchestrate` now reports 1:1 worker dispatch, 1:N fan-out batches, N:1 join targets, trigger reasons, handoff targets, and per-action collaboration metadata for Codex runtime worker creation.
 - Added deterministic task/context sizing for controller workflows: context packs now embed serialized-size measurements and compaction-loss guards, boards auto-project task contract size, controller-derived context estimates, context source breakdowns, and large-context split recommendations without fabricating provider token counts.
 - Added a project-level Task Inbox and Merge Gate so repeated `$omykit` task briefs can be recorded, merged into active workflows, linked as follow-ups to completed workflows, or split into new workflows; boards, doctor, and orchestration plans now project task intake, workstreams, and write-scope conflicts.
 - Treat completed historical workflows with obsolete evidence schemas as archive-only cleanup candidates, preserving them under `.omykit/archive/` instead of fabricating missing handoff evidence.

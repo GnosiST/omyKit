@@ -128,7 +128,13 @@ node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id>
 node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id> --json
 ```
 
-编排计划会列出执行模式、Codex 是否应自动继续、是否需要人工介入、下一批动作、建议 worker profile、推荐模型档位、推荐具体模型、已知 Codex model override 名称、执行面、上下文包和 handoff 合同。它会在 workflow 目录下写入 `orchestration-plan.json`，方便中断后续接。
+编排计划会列出执行模式、Codex 是否应自动继续、是否需要人工介入、当前协作拓扑、下一批动作、建议 worker profile、推荐模型档位、推荐具体模型、已知 Codex model override 名称、执行面、上下文包和 handoff 合同。它会在 workflow 目录下写入 `orchestration-plan.json`，方便中断后续接。
+
+`collaboration_topology` 会明确多 agent 协作形态：
+
+- `one_to_one`：只有 1 个独立、可派发、无需接管确认的 worker 节点就绪。
+- `one_to_many`：2 个或以上独立 worker 节点同时就绪，并且没有超过并行安全上限。
+- `many_to_one`：下游节点依赖多个上游节点，或多个上游节点共享同一个 `handoff_target`；下游按 `join_policy` 等待所需 handoff。
 
 低层原子命令仍保留给 Codex 内部、CI 和排障：
 
@@ -138,7 +144,7 @@ node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-controller 仍然不会自己启动 agent 或调用模型。但 `action=dispatch_worker` 对 Codex 主控是执行契约，不是给用户看的建议：如果当前运行时暴露匹配的子智能体、线程或 worktree 工具，Codex 应使用节点 context pack 创建真实 worker，并且只有 worker 存在后才运行 `assign`。如果运行时无法创建指定 worker，要记录 unavailable 原因；只有范围安全时才降级为主线程执行，否则 block 节点并明确缺少的能力。
+controller 仍然不会自己启动 agent 或调用模型。但 `action=dispatch_worker` 对 Codex 主控是执行契约，不是给用户看的建议：如果当前运行时暴露匹配的子智能体、线程或 worktree 工具，Codex 应使用节点 context pack 创建真实 worker，并且只有 worker 存在后才运行 `assign`。在 `one_to_many` 中，带同一 `dispatch_batch_id` 的 action 属于同一扇出批次；在 `many_to_one` 中，下游节点应等到 `collaboration_topology.join_targets[].waiting_on` 清空，或 `join_policy` 允许后再启动。如果运行时无法创建指定 worker，要记录 unavailable 原因；只有范围安全时才降级为主线程执行，否则 block 节点并明确缺少的能力。
 
 Codex Desktop 的新线程和子智能体工具可能暴露模型 override，但当前工具策略决定本次调用是否能设置模型。节点有任务级推荐模型时，Codex 只有在当前运行时工具和策略允许，或用户明确授权具体模型时，才应在创建 worker 时传入该模型，同时让主线程保持当前模型作为 orchestrator-observer。若非 Codex 客户端、权限边界或工具策略不允许 override，worker 继承默认模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason` 和节点级 `usage_observation.model_status=unavailable`，不要编造模型名。
 

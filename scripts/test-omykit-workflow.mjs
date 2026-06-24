@@ -568,6 +568,7 @@ assert.equal(state.nodes["02-design"].status, "ready");
 assert.equal(state.nodes["02-research"].status, "ready");
 const workerOrchestrationText = run(["orchestrate", "--lang", "zh-CN"]);
 assert.match(workerOrchestrationText, /dispatch_worker 02-design/);
+assert.match(workerOrchestrationText, /协作拓扑: one_to_one/);
 assert.match(workerOrchestrationText, /运行时派发: 必须真实创建 worker/);
 const workerOrchestrationJson = JSON.parse(run(["orchestrate", "--json", "--lang", "zh-CN"]));
 assert.equal(workerOrchestrationJson.execution_mode, "single_worker");
@@ -579,6 +580,100 @@ assert.equal(designWorkerAction.worker_creation_policy.required_surface, designW
 assert.match(designWorkerAction.model_override_policy, /推荐模型是 worker 创建参数/);
 assert.ok(designWorkerAction.worker_creation_steps.some((step) => /context-pack 02-design/.test(step)));
 assert.ok(designWorkerAction.worker_creation_steps.some((step) => /assign 02-design/.test(step)));
+
+const tmpParallelTopology = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-parallel-topology-"));
+run(["init", "并行协作拓扑测试", "--id", "parallel-flow", "--template", "change.standard"], tmpParallelTopology);
+const parallelDir = workflowDirFor(tmpParallelTopology);
+const parallelGraphPath = path.join(parallelDir, "graph.json");
+let parallelGraph = readJson(parallelGraphPath);
+parallelGraph.nodes.push({
+  id: "02-research",
+  type: "research",
+  title: "Research branch",
+  depends_on: ["01-intake"],
+  required: false,
+  retry_limit: 1,
+  context_level: "scan",
+  owner: "codex",
+  worker_profile: "researcher",
+  claimed_by: null,
+  parallel_group: "strategy",
+  join_policy: "all_required",
+  handoff_target: "03-plan",
+  acceptance: ["Research branch produces a compact handoff for the plan node."],
+});
+const parallelDesign = parallelGraph.nodes.find((node) => node.id === "02-design");
+parallelDesign.parallel_group = "strategy";
+parallelDesign.join_policy = "all_required";
+parallelDesign.handoff_target = "03-plan";
+const parallelPlan = parallelGraph.nodes.find((node) => node.id === "03-plan");
+parallelPlan.depends_on = ["02-design", "02-research"];
+writeJson(parallelGraphPath, parallelGraph);
+writeJson(path.join(parallelDir, "nodes", "02-research.json"), {
+  schema_version: "1",
+  workflow_id: "parallel-flow",
+  node_id: "02-research",
+  type: "research",
+  title: "调研分支",
+  objective: "与设计节点并行产出计划节点需要的证据。",
+  depends_on: ["01-intake"],
+  context_level: "scan",
+  acceptance: ["调研分支会向 03-plan 交接精简证据。"],
+  allowed_outputs: ["handoffs/02-research.json", "evidence/02-research-summary.txt"],
+  handoff_required: true,
+  worker_profile: "researcher",
+  parallel_group: "strategy",
+  join_policy: "all_required",
+  handoff_target: "03-plan",
+});
+const parallelStatePath = path.join(parallelDir, "state.json");
+let parallelState = readJson(parallelStatePath);
+parallelState.nodes["01-intake"].status = "passed";
+parallelState.nodes["01-intake"].reason = "Fixture intake passed";
+parallelState.nodes["02-design"].status = "ready";
+parallelState.nodes["02-design"].reason = "Fixture design ready";
+parallelState.nodes["02-research"] = {
+  status: "ready",
+  updated_at: new Date().toISOString(),
+  last_handoff: null,
+  reason: "Fixture research ready",
+};
+parallelState.nodes["03-plan"].status = "pending";
+parallelState.active_nodes = [];
+writeJson(parallelStatePath, parallelState);
+const parallelTopologyPlan = JSON.parse(run(["orchestrate", "--json", "--lang", "zh-CN"], tmpParallelTopology));
+assert.equal(parallelTopologyPlan.execution_mode, "parallel_workers");
+assert.equal(parallelTopologyPlan.collaboration_topology.active_pattern, "one_to_many");
+assert.equal(parallelTopologyPlan.collaboration_topology.triggered_patterns.one_to_many, true);
+assert.equal(parallelTopologyPlan.collaboration_topology.triggered_patterns.many_to_one, true);
+assert.ok(parallelTopologyPlan.collaboration_topology.trigger_reasons.some((reason) => /2 个可派发 worker/.test(reason)));
+const strategyFanout = parallelTopologyPlan.collaboration_topology.fan_out_groups.find((group) => group.group_id === "strategy");
+assert.ok(strategyFanout);
+assert.deepEqual(strategyFanout.node_ids.sort(), ["02-design", "02-research"]);
+assert.equal(strategyFanout.handoff_target, "03-plan");
+assert.equal(strategyFanout.join_policy, "all_required");
+const planJoin = parallelTopologyPlan.collaboration_topology.join_targets.find((target) => target.target_node_id === "03-plan");
+assert.ok(planJoin);
+assert.deepEqual(planJoin.upstream_node_ids.sort(), ["02-design", "02-research"]);
+assert.deepEqual(planJoin.waiting_on.sort(), ["02-design", "02-research"]);
+assert.equal(planJoin.ready_to_join, false);
+const parallelWorkerActions = parallelTopologyPlan.actions.filter((action) => action.action === "dispatch_worker");
+assert.equal(parallelWorkerActions.length, 2);
+assert.ok(parallelWorkerActions.every((action) => action.collaboration_pattern === "one_to_many"));
+assert.ok(parallelWorkerActions.every((action) => action.dispatch_batch_id === "fanout:strategy"));
+assert.ok(parallelWorkerActions.every((action) => action.handoff_target === "03-plan"));
+const parallelTopologyText = run(["orchestrate", "--lang", "zh-CN"], tmpParallelTopology);
+assert.match(parallelTopologyText, /协作拓扑: one_to_many/);
+assert.match(parallelTopologyText, /一对多: strategy/);
+assert.match(parallelTopologyText, /多对一: 03-plan/);
+run(["board", "--lang", "zh-CN"], tmpParallelTopology);
+const parallelBoardJson = readJson(path.join(parallelDir, "board.json"));
+assert.equal(parallelBoardJson.orchestration.collaboration_topology.active_pattern, "one_to_many");
+const parallelBoardHtml = fs.readFileSync(path.join(parallelDir, "board.html"), "utf8");
+assert.match(parallelBoardHtml, /当前编排计划/);
+assert.match(parallelBoardHtml, /one_to_many/);
+assert.match(parallelBoardHtml, /03-plan/);
+fs.rmSync(tmpParallelTopology, { recursive: true, force: true });
 
 const contextPackOutput = run(["context-pack", "02-design", "--lang", "zh-CN"]);
 assert.match(contextPackOutput, /Context pack generated: 02-design/);

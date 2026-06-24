@@ -94,6 +94,17 @@ const BOARD_LABELS = {
     rejectEdges: "Reject Edges",
     noEdges: "No edges",
     noRejectEdges: "No reject edges",
+    orchestrationPlan: "Current Orchestration Plan",
+    activePattern: "Active pattern",
+    executionMode: "Execution mode",
+    continue: "Continue",
+    humanRequired: "Human intervention",
+    triggerReasons: "Trigger reasons",
+    actions: "Actions",
+    fanOutGroups: "Fan-out groups",
+    joinTargets: "Join targets",
+    waitingOn: "Waiting on",
+    dispatchBatch: "Dispatch batch",
     collaborationLanes: "Collaboration Lanes",
     agentRoster: "Agent Roster",
     assignments: "Assignments",
@@ -355,6 +366,17 @@ const BOARD_LABELS = {
     rejectEdges: "打回边",
     noEdges: "无边",
     noRejectEdges: "无打回边",
+    orchestrationPlan: "当前编排计划",
+    activePattern: "当前协作形态",
+    executionMode: "执行模式",
+    continue: "自动继续",
+    humanRequired: "人工介入",
+    triggerReasons: "触发原因",
+    actions: "动作",
+    fanOutGroups: "扇出组",
+    joinTargets: "汇聚目标",
+    waitingOn: "等待项",
+    dispatchBatch: "派发批次",
     collaborationLanes: "协作泳道",
     agentRoster: "Agent 通讯录",
     assignments: "任务分配",
@@ -5530,7 +5552,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       check.node_ids,
     ));
   }
-  return {
+  const board = {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
     title: graph.title,
@@ -5616,6 +5638,9 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     improvement_plan: recommendations,
     recent_events: recentEvents,
   };
+  const dispatchPlan = buildDispatchPlan(board, { surface: "auto" });
+  board.orchestration = buildOrchestrationPlan(board, dispatchPlan);
+  return board;
 }
 
 const SUBAGENT_READY_NODE_TYPES = new Set(["research", "design", "plan", "implement", "verify", "review"]);
@@ -5723,6 +5748,9 @@ function buildDispatchPlan(board, options = {}) {
       agent: node.agent || null,
       claimed_by: node.claimed_by || null,
       parallel_group: node.parallel_group || null,
+      depends_on: node.depends_on || [],
+      join_policy: node.join_policy || null,
+      handoff_target: node.handoff_target || null,
       assignment: assignment ? {
         agent_id: assignment.agent_id,
         role: assignment.role,
@@ -5874,6 +5902,203 @@ function buildWorkerRuntimeContract(item, board, isZh) {
   };
 }
 
+function allBoardNodes(board) {
+  return Object.values(board.columns || {}).flat();
+}
+
+function normalizedParallelGroup(value) {
+  if (!value || value === "none") return null;
+  return String(value);
+}
+
+function fanOutGroupKey(item) {
+  return normalizedParallelGroup(item.parallel_group) || (item.handoff_target ? `target:${item.handoff_target}` : "ready-workers");
+}
+
+function dispatchBatchId(item, workerReady) {
+  if (workerReady.length <= 1) return null;
+  return `fanout:${fanOutGroupKey(item)}`;
+}
+
+function collaborationPatternForItem(item, useWorker, workerReady) {
+  if (!useWorker) return (item.depends_on || []).length > 1 ? "many_to_one" : "main_thread";
+  if (workerReady.length > 1) return "one_to_many";
+  if ((item.depends_on || []).length > 1) return "many_to_one";
+  return "one_to_one";
+}
+
+function buildFanOutGroups(workerReady) {
+  const groups = new Map();
+  for (const item of workerReady) {
+    const key = fanOutGroupKey(item);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        group_id: key,
+        node_ids: [],
+        node_types: new Set(),
+        execution_surfaces: new Set(),
+        worker_profiles: new Set(),
+        model_tiers: new Set(),
+        recommended_models: new Set(),
+        join_policies: new Set(),
+        handoff_targets: new Set(),
+      });
+    }
+    const group = groups.get(key);
+    group.node_ids.push(item.node_id);
+    if (item.type) group.node_types.add(item.type);
+    if (item.execution_surface) group.execution_surfaces.add(item.execution_surface);
+    if (item.worker_profile) group.worker_profiles.add(item.worker_profile);
+    if (item.model_tier) group.model_tiers.add(item.model_tier);
+    if (item.recommended_model) group.recommended_models.add(item.recommended_model);
+    if (item.join_policy) group.join_policies.add(item.join_policy);
+    if (item.handoff_target) group.handoff_targets.add(item.handoff_target);
+  }
+  return [...groups.values()]
+    .filter((group) => group.node_ids.length > 1)
+    .map((group) => ({
+      group_id: group.group_id,
+      pattern: "one_to_many",
+      node_ids: group.node_ids,
+      node_types: [...group.node_types],
+      execution_surfaces: [...group.execution_surfaces],
+      worker_profiles: [...group.worker_profiles],
+      model_tiers: [...group.model_tiers],
+      recommended_models: [...group.recommended_models],
+      join_policy: group.join_policies.size === 1 ? [...group.join_policies][0] : (group.join_policies.size > 1 ? "mixed" : null),
+      handoff_target: group.handoff_targets.size === 1 ? [...group.handoff_targets][0] : (group.handoff_targets.size > 1 ? "mixed" : null),
+    }));
+}
+
+function addJoinTarget(map, targetNodeId, upstreamNodeIds, source, joinPolicy = null) {
+  if (!targetNodeId || upstreamNodeIds.length === 0) return;
+  if (!map.has(targetNodeId)) {
+    map.set(targetNodeId, {
+      target_node_id: targetNodeId,
+      upstream_node_ids: new Set(),
+      sources: new Set(),
+      join_policies: new Set(),
+    });
+  }
+  const target = map.get(targetNodeId);
+  for (const nodeId of upstreamNodeIds) target.upstream_node_ids.add(nodeId);
+  target.sources.add(source);
+  if (joinPolicy) target.join_policies.add(joinPolicy);
+}
+
+function buildJoinTargets(board) {
+  const nodes = allBoardNodes(board);
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const targets = new Map();
+  for (const node of nodes) {
+    const dependencies = Array.isArray(node.depends_on) ? node.depends_on : [];
+    if (dependencies.length > 1) addJoinTarget(targets, node.id, dependencies, "depends_on", node.join_policy);
+  }
+  const byHandoffTarget = new Map();
+  for (const node of nodes) {
+    if (!node.handoff_target) continue;
+    if (!byHandoffTarget.has(node.handoff_target)) byHandoffTarget.set(node.handoff_target, []);
+    byHandoffTarget.get(node.handoff_target).push(node);
+  }
+  for (const [targetNodeId, upstreamNodes] of byHandoffTarget.entries()) {
+    if (upstreamNodes.length < 2) continue;
+    addJoinTarget(
+      targets,
+      targetNodeId,
+      upstreamNodes.map((node) => node.id),
+      "handoff_target",
+      upstreamNodes[0]?.join_policy || null,
+    );
+  }
+  return [...targets.values()].map((target) => {
+    const upstreamNodeIds = [...target.upstream_node_ids];
+    const targetNode = nodeById.get(target.target_node_id) || null;
+    const waitingOn = upstreamNodeIds.filter((nodeId) => !TERMINAL_STATUSES.has(nodeById.get(nodeId)?.status));
+    const policies = new Set(target.join_policies);
+    if (targetNode?.join_policy) policies.add(targetNode.join_policy);
+    return {
+      target_node_id: target.target_node_id,
+      pattern: "many_to_one",
+      target_status: targetNode?.status || "missing",
+      upstream_node_ids: upstreamNodeIds,
+      upstream_statuses: upstreamNodeIds.map((nodeId) => ({
+        node_id: nodeId,
+        status: nodeById.get(nodeId)?.status || "missing",
+        handoff: nodeById.get(nodeId)?.last_handoff || null,
+      })),
+      waiting_on: waitingOn,
+      ready_to_join: waitingOn.length === 0 && Boolean(targetNode),
+      join_policy: policies.size === 1 ? [...policies][0] : (policies.size > 1 ? "mixed" : null),
+      sources: [...target.sources],
+    };
+  });
+}
+
+function buildCollaborationTopology(board, executionMode, workerReady, readyNow, reviewReady, language) {
+  const isZh = language === "zh-CN";
+  const fanOutGroups = buildFanOutGroups(workerReady);
+  const joinTargets = buildJoinTargets(board);
+  const activePattern = workerReady.length > 1
+    ? "one_to_many"
+    : workerReady.length === 1
+      ? "one_to_one"
+      : joinTargets.length > 0
+        ? "many_to_one"
+        : "main_thread_or_idle";
+  const triggerReasons = [];
+  if (workerReady.length === 1) {
+    triggerReasons.push(isZh
+      ? "1 个可派发 worker 节点就绪，主控创建单个有边界的 worker。"
+      : "1 dispatchable worker node is ready; the orchestrator creates one bounded worker.");
+  }
+  if (workerReady.length > 1) {
+    triggerReasons.push(isZh
+      ? `${workerReady.length} 个可派发 worker 节点同时就绪，且未超过并行安全上限，触发一对多派发。`
+      : `${workerReady.length} dispatchable worker nodes are ready within the parallel safety limit, triggering one-to-many dispatch.`);
+  }
+  if (joinTargets.length > 0) {
+    triggerReasons.push(isZh
+      ? `${joinTargets.length} 个下游节点需要汇聚多个上游 handoff，触发多对一交接跟踪。`
+      : `${joinTargets.length} downstream node(s) converge multiple upstream handoffs, triggering many-to-one handoff tracking.`);
+  }
+  if (reviewReady.length > 0) {
+    triggerReasons.push(isZh
+      ? `${reviewReady.length} 个节点需要接管确认或等待外部 worker。`
+      : `${reviewReady.length} node(s) need takeover confirmation or must wait for an external worker.`);
+  }
+  if (triggerReasons.length === 0) {
+    triggerReasons.push(isZh
+      ? "当前没有可自动派发的 worker；按主线程、运行中收敛、阻塞恢复或交付空闲路径处理。"
+      : "No worker is automatically dispatchable right now; proceed by main-thread, convergence, blocker recovery, or idle delivery path.");
+  }
+  return {
+    active_pattern: activePattern,
+    execution_mode: executionMode,
+    triggered_patterns: {
+      one_to_one: workerReady.length === 1,
+      one_to_many: workerReady.length > 1,
+      many_to_one: joinTargets.length > 0,
+    },
+    trigger_reasons: triggerReasons,
+    trigger_policy: {
+      one_to_one: isZh
+        ? "当且仅当 1 个独立、可派发、无需接管确认的 worker 节点就绪时触发。"
+        : "Triggered only when exactly 1 independent, dispatchable worker node is ready without takeover review.",
+      one_to_many: isZh
+        ? "当 2 个或以上独立 worker 节点同时就绪，且并行槽位允许时触发；用户不手动选择并行 primitive。"
+        : "Triggered when 2 or more independent worker nodes are ready and parallel slots allow it; the user does not manually pick the parallel primitive.",
+      many_to_one: isZh
+        ? "当下游节点声明多个 depends_on，或多个上游共享 handoff_target 时触发；下游等待 join_policy 所需 handoff。"
+        : "Triggered when a downstream node declares multiple depends_on entries, or multiple upstream nodes share a handoff_target; downstream waits for the handoffs required by join_policy.",
+    },
+    worker_ready_count: workerReady.length,
+    ready_now_count: readyNow.length,
+    review_required_count: reviewReady.length,
+    fan_out_groups: fanOutGroups,
+    join_targets: joinTargets,
+  };
+}
+
 function buildOrchestrationPlan(board, dispatchPlan = null) {
   const language = board.language || "en";
   const isZh = language === "zh-CN";
@@ -5895,6 +6120,7 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
   else if (blocked.length > 0) executionMode = "blocked_requires_human_or_external_resolution";
 
   const actions = [];
+  const collaborationTopology = buildCollaborationTopology(board, executionMode, workerReady, readyNow, reviewReady, language);
   for (const item of failed) {
     actions.push({
       action: "recover_or_reject",
@@ -5955,11 +6181,18 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
       worker_creation_policy: null,
       worker_creation_steps: [],
     };
+    const collaborationPattern = collaborationPatternForItem(item, useWorker, workerReady);
     actions.push({
       action: useWorker ? "dispatch_worker" : "start_in_main_thread",
       node_id: item.node_id,
       title: item.title,
       type: item.type,
+      depends_on: item.depends_on || [],
+      parallel_group: item.parallel_group || null,
+      join_policy: item.join_policy || null,
+      handoff_target: item.handoff_target || null,
+      collaboration_pattern: collaborationPattern,
+      dispatch_batch_id: useWorker ? dispatchBatchId(item, workerReady) : null,
       execution_surface: item.execution_surface,
       agent_type: item.agent_type,
       worker_profile: item.worker_profile,
@@ -6033,6 +6266,7 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
     safety: plan.safety,
     orchestrator: plan.orchestrator,
     runtime_capability: plan.runtime_capability,
+    collaboration_topology: collaborationTopology,
     actions,
     ready_dispatches: plan.ready_dispatches,
     running_nodes: plan.running_nodes,
@@ -6058,6 +6292,19 @@ function printOrchestrationPlan(plan, file = null) {
   console.log(`${isZh ? "自动继续" : "Continue automatically"}: ${plan.continue_automatically ? "yes" : "no"}`);
   console.log(`${isZh ? "需要人工介入" : "Human intervention required"}: ${plan.human_intervention_required ? "yes" : "no"}`);
   console.log(`${isZh ? "用户界面策略" : "User surface policy"}: ${plan.user_surface_policy}`);
+  if (plan.collaboration_topology) {
+    const topology = plan.collaboration_topology;
+    console.log(`${isZh ? "协作拓扑" : "Collaboration topology"}: ${topology.active_pattern}`);
+    for (const reason of topology.trigger_reasons || []) {
+      console.log(`  ${isZh ? "触发原因" : "Trigger"}: ${reason}`);
+    }
+    for (const group of topology.fan_out_groups || []) {
+      console.log(`  ${isZh ? "一对多" : "One-to-many"}: ${group.group_id} -> ${group.node_ids.join(", ")}${group.handoff_target ? ` -> ${group.handoff_target}` : ""}`);
+    }
+    for (const target of topology.join_targets || []) {
+      console.log(`  ${isZh ? "多对一" : "Many-to-one"}: ${target.target_node_id} <- ${target.upstream_node_ids.join(", ")} | waiting=${target.waiting_on.join(", ") || "none"}`);
+    }
+  }
   if (file) console.log(`${isZh ? "计划文件" : "Plan file"}: ${path.relative(process.cwd(), file)}`);
   console.log(isZh ? "下一批动作:" : "Next actions:");
   if (plan.actions.length === 0) {
@@ -6112,6 +6359,41 @@ function formatListValue(item) {
 function renderList(items, empty = "none") {
   if (!items || items.length === 0) return `<span class="muted">${escapeHtml(empty)}</span>`;
   return `<ul>${items.map((item) => `<li>${escapeHtml(formatListValue(item))}</li>`).join("")}</ul>`;
+}
+
+function renderOrchestration(plan, text) {
+  if (!plan) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
+  const topology = plan.collaboration_topology || {};
+  const fanOut = renderObjectList(topology.fan_out_groups || [], text.none, (group) => {
+    const target = group.handoff_target ? ` -> ${group.handoff_target}` : "";
+    return `<strong>${escapeHtml(group.group_id)}</strong><p>${escapeHtml(text.nodes)}: ${renderInlineItems(group.node_ids || [], text.none)}${escapeHtml(target)}</p><p class="muted">${escapeHtml(text.dispatchBatch)}: fanout:${escapeHtml(group.group_id)}</p>`;
+  });
+  const joins = renderObjectList(topology.join_targets || [], text.none, (target) => {
+    const waiting = target.waiting_on?.length ? target.waiting_on.join(", ") : text.none;
+    return `<strong>${escapeHtml(target.target_node_id)}</strong><p>${escapeHtml(text.nodes)}: ${renderInlineItems(target.upstream_node_ids || [], text.none)}</p><p class="muted">${escapeHtml(text.waitingOn)}: ${escapeHtml(waiting)} · join_policy=${escapeHtml(target.join_policy || text.none)}</p>`;
+  });
+  const workerActions = (plan.actions || []).filter((action) => action.action === "dispatch_worker");
+  const actions = renderObjectList(workerActions, text.none, (action) => {
+    const parts = [
+      action.collaboration_pattern,
+      action.dispatch_batch_id,
+      action.execution_surface,
+      action.worker_profile,
+      action.recommended_model,
+      action.handoff_target ? `target=${action.handoff_target}` : null,
+    ].filter(Boolean).join(" · ");
+    return `<strong>${escapeHtml(action.node_id)}</strong><p>${escapeHtml(parts || text.none)}</p>`;
+  });
+  return `<dl>
+      <dt>${escapeHtml(text.executionMode)}</dt><dd>${escapeHtml(plan.execution_mode || text.none)}</dd>
+      <dt>${escapeHtml(text.activePattern)}</dt><dd>${escapeHtml(topology.active_pattern || text.none)}</dd>
+      <dt>${escapeHtml(text.continue)}</dt><dd>${escapeHtml(String(plan.continue_automatically))}</dd>
+      <dt>${escapeHtml(text.humanRequired)}</dt><dd>${escapeHtml(String(plan.human_intervention_required))}</dd>
+    </dl>
+    <h4>${escapeHtml(text.triggerReasons)}</h4>${renderList(topology.trigger_reasons || [], text.none)}
+    <h4>${escapeHtml(text.fanOutGroups)}</h4>${fanOut}
+    <h4>${escapeHtml(text.joinTargets)}</h4>${joins}
+    <h4>${escapeHtml(text.actions)}</h4>${actions}`;
 }
 
 function renderObjectList(items, empty, renderItem) {
@@ -6915,6 +7197,11 @@ function renderBoardHtml(board) {
         <p class="muted">${escapeHtml(text.scorecardHelp)}</p>
         ${renderScorecard(board.scorecard, text)}
       </div>
+    </section>
+
+    <section class="panel" id="orchestration-plan">
+      <h2>${escapeHtml(text.orchestrationPlan)}</h2>
+      ${renderOrchestration(board.orchestration, text)}
     </section>
 
     <section class="panel" id="recommendations">
