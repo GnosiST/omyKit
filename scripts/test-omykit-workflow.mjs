@@ -154,6 +154,77 @@ assert.equal(namespaceUninstall.cleanup.status, "blocked_namespace_conflict");
 assert.equal(fs.readFileSync(path.join(tmpNamespaceConflict, ".omykit"), "utf8"), "user-owned file\n");
 fs.rmSync(tmpNamespaceConflict, { recursive: true, force: true });
 
+function initGitFixture(prefix) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  execFileSync("git", ["init"], { cwd: root, stdio: ["ignore", "ignore", "pipe"] });
+  execFileSync("git", ["config", "user.email", "omykit-test@example.invalid"], { cwd: root });
+  execFileSync("git", ["config", "user.name", "omyKit Test"], { cwd: root });
+  fs.writeFileSync(path.join(root, "README.md"), "# Git cleanup fixture\n");
+  return root;
+}
+
+function gitOutput(root, args) {
+  return execFileSync("git", args, { cwd: root, encoding: "utf8" });
+}
+
+const tmpTrackedRuntime = initGitFixture("omykit-workflow-tracked-runtime-");
+run(["init", "Tracked runtime state", "--id", "tracked-runtime"], tmpTrackedRuntime);
+gitOutput(tmpTrackedRuntime, ["add", "README.md"]);
+gitOutput(tmpTrackedRuntime, ["add", "-f", ".omykit"]);
+gitOutput(tmpTrackedRuntime, ["commit", "-m", "Vendor workflow runtime"]);
+const trackedRuntimeDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpTrackedRuntime));
+assert.ok(trackedRuntimeDoctor.project.remote_hygiene.tracked_runtime_files.includes(".omykit/active-workflow"));
+assert.ok(trackedRuntimeDoctor.issues.some((issue) => issue.id === "tracked_runtime_state"));
+const gitRemovalPlan = JSON.parse(run(["cleanup", "--git-removal-plan", "--json", "--lang", "zh-CN"], tmpTrackedRuntime));
+assert.equal(gitRemovalPlan.cleanup.mode, "git-removal-plan");
+assert.equal(gitRemovalPlan.cleanup.applied, false);
+assert.ok(gitRemovalPlan.cleanup.tracked_runtime_files.includes(".omykit/active-workflow"));
+assert.ok(gitRemovalPlan.cleanup.history.commits_touching_runtime >= 1);
+const untrackDryRun = JSON.parse(run(["cleanup", "--untrack-runtime", "--json", "--lang", "zh-CN"], tmpTrackedRuntime));
+assert.equal(untrackDryRun.cleanup.mode, "untrack-runtime-dry-run");
+assert.equal(untrackDryRun.cleanup.applied, false);
+const untrackApplied = JSON.parse(run(["cleanup", "--untrack-runtime", "--apply", "--json", "--lang", "zh-CN"], tmpTrackedRuntime));
+assert.equal(untrackApplied.cleanup.mode, "untrack-runtime");
+assert.equal(untrackApplied.cleanup.applied, true);
+assert.ok(fs.existsSync(path.join(tmpTrackedRuntime, ".omykit", "active-workflow")));
+assert.equal(gitOutput(tmpTrackedRuntime, ["ls-files", "--", ".omykit"]), "");
+assert.match(gitOutput(tmpTrackedRuntime, ["status", "--short", "--", ".omykit"]), /^D  \.omykit\/active-workflow/m);
+const postUntrackPlan = JSON.parse(run(["cleanup", "--git-removal-plan", "--json", "--lang", "zh-CN"], tmpTrackedRuntime));
+assert.equal(postUntrackPlan.cleanup.tracked_runtime_files.length, 0);
+assert.ok(postUntrackPlan.cleanup.history.commits_touching_runtime >= 1);
+assert.equal(postUntrackPlan.cleanup.history.sensitive_history_requires_manual_purge, true);
+fs.rmSync(tmpTrackedRuntime, { recursive: true, force: true });
+
+const tmpResetRuntime = initGitFixture("omykit-workflow-reset-runtime-");
+run(["init", "Reset tracked runtime state", "--id", "reset-runtime"], tmpResetRuntime);
+gitOutput(tmpResetRuntime, ["add", "README.md"]);
+gitOutput(tmpResetRuntime, ["add", "-f", ".omykit"]);
+gitOutput(tmpResetRuntime, ["commit", "-m", "Vendor workflow runtime"]);
+const resetApplied = JSON.parse(run(["cleanup", "--reset-runtime", "--apply", "--json", "--lang", "zh-CN"], tmpResetRuntime));
+assert.equal(resetApplied.cleanup.mode, "reset-runtime");
+assert.equal(resetApplied.cleanup.applied, true);
+assert.ok(!fs.existsSync(path.join(tmpResetRuntime, ".omykit")));
+assert.ok(fs.existsSync(resetApplied.cleanup.archive_dir));
+assert.equal(gitOutput(tmpResetRuntime, ["ls-files", "--", ".omykit"]), "");
+assert.match(gitOutput(tmpResetRuntime, ["status", "--short", "--", ".omykit"]), /^D  \.omykit\/active-workflow/m);
+fs.rmSync(tmpResetRuntime, { recursive: true, force: true });
+
+const tmpTrackedRootArtifacts = initGitFixture("omykit-workflow-tracked-root-artifacts-");
+fs.writeFileSync(path.join(tmpTrackedRootArtifacts, "graph.json"), "{}\n");
+fs.writeFileSync(path.join(tmpTrackedRootArtifacts, "board.html"), "<!doctype html>\n");
+fs.mkdirSync(path.join(tmpTrackedRootArtifacts, "nodes"));
+fs.writeFileSync(path.join(tmpTrackedRootArtifacts, "nodes", "01.json"), "{}\n");
+gitOutput(tmpTrackedRootArtifacts, ["add", "README.md", "graph.json", "board.html", "nodes/01.json"]);
+gitOutput(tmpTrackedRootArtifacts, ["commit", "-m", "Commit legacy workflow artifacts"]);
+const trackedRootDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpTrackedRootArtifacts));
+assert.ok(trackedRootDoctor.project.remote_hygiene.tracked_legacy_artifact_files.includes("graph.json"));
+assert.ok(trackedRootDoctor.project.remote_hygiene.tracked_legacy_artifact_files.includes("board.html"));
+assert.ok(trackedRootDoctor.issues.some((issue) => issue.id === "tracked_root_workflow_artifact"));
+const rootArtifactPlan = JSON.parse(run(["cleanup", "--git-removal-plan", "--json", "--lang", "zh-CN"], tmpTrackedRootArtifacts));
+assert.ok(rootArtifactPlan.cleanup.tracked_legacy_artifact_files.includes("graph.json"));
+assert.ok(rootArtifactPlan.cleanup.tracked_legacy_artifact_files.includes("board.html"));
+fs.rmSync(tmpTrackedRootArtifacts, { recursive: true, force: true });
+
 const dispatchOutput = run(["dispatch-plan", "--lang", "zh-CN"]);
 assert.match(dispatchOutput, /派发计划: feature-x/);
 assert.match(dispatchOutput, /主控角色/);

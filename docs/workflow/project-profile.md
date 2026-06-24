@@ -60,6 +60,9 @@ Use the controller health commands for this repository and for target projects:
 node scripts/omykit-workflow.mjs doctor --lang zh-CN
 node scripts/omykit-workflow.mjs doctor --fix --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --git-removal-plan --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --untrack-runtime --apply --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --reset-runtime --apply --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 ```
 
@@ -68,6 +71,8 @@ node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 `doctor --fix` may add compatibility metadata and missing runtime directories to local workflow artifacts, but it must not fabricate handoffs, token usage, skill usage, actual model records, or verification evidence.
 
 `cleanup --apply` archives safe candidates into `.omykit/archive/<timestamp>/`; it must not delete workflow evidence directly.
+
+`cleanup --git-removal-plan` reports whether `.omykit/` or legacy root artifact names are already tracked by Git. Use `cleanup --untrack-runtime --apply` to keep local runtime state but stage Git index removal, or `cleanup --reset-runtime --apply` to stage runtime untracking and archive local state. Neither command commits, pushes, or rewrites history.
 
 `cleanup --uninstall-local --apply` removes omyKit from the target project workspace by moving `.omykit/` into a local non-project archive, usually `.git/omykit-uninstalled/` for Git projects.
 

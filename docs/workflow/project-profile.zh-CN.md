@@ -60,6 +60,9 @@ node ./scripts/check-upstream-refs.mjs --json
 node scripts/omykit-workflow.mjs doctor --lang zh-CN
 node scripts/omykit-workflow.mjs doctor --fix --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --git-removal-plan --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --untrack-runtime --apply --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --reset-runtime --apply --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 ```
 
@@ -68,6 +71,8 @@ node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 `doctor --fix` 可以给本地 workflow artifacts 补兼容元数据和缺失运行目录，但不能伪造 handoff、token 用量、skill 使用、实际模型记录或验证证据。
 
 `cleanup --apply` 只把安全候选归档到 `.omykit/archive/<timestamp>/`；不能直接删除 workflow evidence。
+
+`cleanup --git-removal-plan` 会报告 `.omykit/` 或根目录旧产物名称是否已经被 Git 跟踪。需要保留本地 runtime 但撤出 Git 时，用 `cleanup --untrack-runtime --apply`；需要归档本地 runtime 并后续重新初始化时，用 `cleanup --reset-runtime --apply`。这些命令都不会自动 commit、push 或重写历史。
 
 `cleanup --uninstall-local --apply` 会把 `.omykit/` 移动到本地非项目归档位置，从目标项目工作区移除 omyKit；Git 项目通常归档到 `.git/omykit-uninstalled/`。
 

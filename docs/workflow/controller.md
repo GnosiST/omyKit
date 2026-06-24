@@ -83,7 +83,9 @@ Use `doctor` when an existing project or historical workflow feels partially upg
 
 - `.omykit/` namespace presence and whether it conflicts with a user-owned file.
 - local Git ignore status for `.omykit/` in `.git/info/exclude`.
+- Git-tracked `.omykit/` runtime files that require explicit index removal.
 - legacy-looking root-level workflow artifact names that might collide with project files.
+- Git-tracked root-level legacy workflow artifact names that may need manual review.
 - workflow directory presence.
 - active workflow pointer validity.
 - task inbox parseability, same-family task groups, and write-scope conflict signals.
@@ -101,7 +103,15 @@ Use `cleanup` after reviewing the doctor report. It defaults to dry-run. `cleanu
 
 Completed historical workflows that fail the current evidence schema are cleanup candidates when every node is already terminal and no command run is active. Archive those directories instead of inventing missing `intake_decision`, `knowledge_sync`, `evolution_candidates`, agent scope, token, skill, model, or verification records.
 
+Use `cleanup --git-removal-plan` when `.omykit/` or old root-level workflow-looking files were already added to Git. It reports tracked paths, history counts, upstream visibility when detectable, and recommended next commands. It never changes files.
+
+Use `cleanup --untrack-runtime --apply` when the project should keep the local `.omykit/` workflow state but stop tracking it in Git. It runs Git index removal only, so local files stay on disk and remain ignored by local `.git/info/exclude`. Review and commit the staged removals separately.
+
+Use `cleanup --reset-runtime --apply` when the project should archive the current `.omykit/` runtime and start fresh later. It stages Git index removal for tracked `.omykit/` files, moves local runtime state into the local non-project archive, and does not recreate `.omykit/` in the working tree.
+
 Use `cleanup --uninstall-local --apply` only when the project should stop using omyKit locally. It moves the whole `.omykit/` runtime directory into a local non-project archive, usually under `.git/omykit-uninstalled/` for Git projects. This removes working-tree runtime state without touching project source files or reducing future workflow quality if omyKit is initialized again.
+
+Cleanup commands do not commit, push, or rewrite Git history. If workflow artifacts containing sensitive data were already pushed, treat that as a manual Git history-rewrite incident, not a normal omyKit cleanup.
 
 ## Long Task Execution
 

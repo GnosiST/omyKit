@@ -1295,7 +1295,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs orchestrate [--workflow workflow-id] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs upgrade [--workflow workflow-id|--all] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs doctor [--workflow workflow-id|--all] [--fix] [--json] [--lang en|zh-CN]
-  node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--uninstall-local] [--json] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--git-removal-plan|--untrack-runtime|--reset-runtime|--uninstall-local] [--json] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
@@ -1324,6 +1324,7 @@ Codex chat intents:
   $omykit 升级旧工作流           upgrade old workflow artifacts to the current controller surface
   $omykit 诊断工作流健康         inspect project workflow health, legacy artifacts, residual files, and next actions
   $omykit 清理旧工作流残留       dry-run safe cleanup candidates, archive them, or uninstall local workflow runtime when explicitly applied
+  $omykit 撤回已提交的工作流运行态  plan or stage removal of tracked .omykit runtime without rewriting history
   $omykit 卸载本项目 omyKit 运行状态  move .omykit/ runtime state to a local non-project archive
   $omykit scorecard 验票         audit recorded workflow evidence
   $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
@@ -1435,6 +1436,104 @@ function ensureLocalGitIgnore(cwd = process.cwd()) {
   const separator = content.length === 0 || content.endsWith("\n") ? "" : "\n";
   fs.appendFileSync(file, `${separator}${OMYKIT_LOCAL_IGNORE_BLOCK}`);
   return { status: "added", path: projectRelativePath(file, cwd) };
+}
+
+function runGitText(cwd, args) {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) return null;
+  return result.stdout;
+}
+
+function gitTrackedPaths(cwd, pathspecs) {
+  if (!gitDir(cwd)) return [];
+  const output = runGitText(cwd, ["ls-files", "--", ...pathspecs]);
+  if (!output) return [];
+  return output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function trackedRuntimeFiles(cwd = process.cwd()) {
+  return gitTrackedPaths(cwd, [OMYKIT_RUNTIME_DIR]);
+}
+
+function trackedRootWorkflowArtifactFiles(cwd = process.cwd()) {
+  return gitTrackedPaths(cwd, ROOT_WORKFLOW_ARTIFACT_NAMES);
+}
+
+function gitHistoryCountForPaths(cwd, pathspecs) {
+  if (!gitDir(cwd)) return 0;
+  const output = runGitText(cwd, ["log", "--format=%H", "--", ...pathspecs]);
+  if (!output) return 0;
+  return output.split(/\r?\n/).filter(Boolean).length;
+}
+
+function buildGitRemovalPlan(cwd = process.cwd()) {
+  const runtimeFiles = trackedRuntimeFiles(cwd);
+  const legacyFiles = trackedRootWorkflowArtifactFiles(cwd);
+  const runtimeHistoryCount = gitHistoryCountForPaths(cwd, [OMYKIT_RUNTIME_DIR]);
+  const legacyHistoryCount = gitHistoryCountForPaths(cwd, ROOT_WORKFLOW_ARTIFACT_NAMES);
+  const hasUpstream = Boolean(runGitText(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]));
+  return {
+    git_repo: Boolean(gitDir(cwd)),
+    tracked_runtime_files: runtimeFiles,
+    tracked_legacy_artifact_files: legacyFiles,
+    history: {
+      commits_touching_runtime: runtimeHistoryCount,
+      commits_touching_legacy_artifacts: legacyHistoryCount,
+      upstream_configured: hasUpstream,
+      history_rewrite: "manual_only",
+      sensitive_history_requires_manual_purge: runtimeHistoryCount > 0 || legacyHistoryCount > 0,
+    },
+    recommended_commands: {
+      keep_local_runtime: "cleanup --untrack-runtime --apply",
+      reset_local_runtime: "cleanup --reset-runtime --apply",
+      uninstall_local_runtime: "cleanup --uninstall-local --apply",
+      commit_latest_state: "git commit -m \"Stop tracking omyKit runtime state\"",
+    },
+  };
+}
+
+function untrackGitPaths(cwd, pathspecs) {
+  const tracked = gitTrackedPaths(cwd, pathspecs);
+  if (!gitDir(cwd)) {
+    return {
+      applied: false,
+      status: "not_git_repo",
+      paths: [],
+      actions: [{ path: ".", status: "skipped", reason: "not a Git repository" }],
+    };
+  }
+  if (tracked.length === 0) {
+    return {
+      applied: true,
+      status: "nothing_tracked",
+      paths: [],
+      actions: [{ path: pathspecs.join(", "), status: "skipped", reason: "no tracked paths" }],
+    };
+  }
+  const result = spawnSync("git", ["rm", "-r", "--cached", "--quiet", "--", ...pathspecs], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    return {
+      applied: false,
+      status: "git_rm_cached_failed",
+      paths: tracked,
+      error: (result.stderr || result.stdout || "").trim(),
+      actions: tracked.map((item) => ({ path: item, status: "failed" })),
+    };
+  }
+  return {
+    applied: true,
+    status: "untracked_from_index",
+    paths: tracked,
+    actions: tracked.map((item) => ({ path: item, status: "untracked_from_index" })),
+  };
 }
 
 function rootWorkflowArtifactConflicts(cwd = process.cwd()) {
@@ -8139,6 +8238,7 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
   const namespace = omyKitNamespaceStatus(cwd);
   const localGitIgnore = inspectLocalGitIgnore(cwd);
   const rootArtifactConflicts = rootWorkflowArtifactConflicts(cwd);
+  const gitRemovalPlan = buildGitRemovalPlan(cwd);
   const allDirs = options.workflow
     ? [path.join(root, String(options.workflow))]
     : listAllWorkflowDirs(root);
@@ -8167,6 +8267,9 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       runtime_dir: `${OMYKIT_RUNTIME_DIR}/`,
       tracked_project_files_required: false,
       actual_ignore_active: localGitIgnore.active,
+      tracked_runtime_files: gitRemovalPlan.tracked_runtime_files,
+      tracked_legacy_artifact_files: gitRemovalPlan.tracked_legacy_artifact_files,
+      history: gitRemovalPlan.history,
     },
     root_artifact_name_conflicts: rootArtifactConflicts,
     has_agents_md: fs.existsSync(path.join(cwd, "AGENTS.md")),
@@ -8201,6 +8304,18 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       next_action: "Run doctor --fix to add .omykit/ to .git/info/exclude.",
     }));
   }
+  if (gitRemovalPlan.tracked_runtime_files.length > 0) {
+    issues.push(doctorIssue({
+      id: "tracked_runtime_state",
+      severity: "warning",
+      scope: "project",
+      path: OMYKIT_RUNTIME_DIR,
+      summary: ".omykit runtime state is tracked by Git.",
+      detail: "Local ignore prevents future accidental adds, but already tracked files require an explicit Git index removal and commit.",
+      fixable: false,
+      next_action: "Run cleanup --git-removal-plan, then choose cleanup --untrack-runtime --apply or cleanup --reset-runtime --apply.",
+    }));
+  }
   if (rootArtifactConflicts.length > 0) {
     issues.push(doctorIssue({
       id: "root_workflow_artifact_name_conflict",
@@ -8210,6 +8325,18 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       summary: "Project root contains names that look like legacy workflow artifacts.",
       detail: "omyKit keeps runtime files under .omykit/ to avoid these names; doctor will not move or delete possible user files automatically.",
       next_action: "Review these files manually. Keep real project files in place; move only confirmed legacy workflow artifacts into .omykit or archive them.",
+    }));
+  }
+  if (gitRemovalPlan.tracked_legacy_artifact_files.length > 0) {
+    issues.push(doctorIssue({
+      id: "tracked_root_workflow_artifact",
+      severity: "warning",
+      scope: "project",
+      path: gitRemovalPlan.tracked_legacy_artifact_files.join(", "),
+      summary: "Root-level legacy-looking workflow artifacts are tracked by Git.",
+      detail: "These names may be real project files. omyKit reports them but does not remove them automatically.",
+      fixable: false,
+      next_action: "Review cleanup --git-removal-plan. Remove only confirmed legacy workflow artifacts with normal Git review.",
     }));
   }
   if (!project.has_omykit_root) {
@@ -8348,6 +8475,12 @@ function buildDoctorRecommendations({ issues, workflows, cleanupCandidates, vali
   }
   if (has("local_runtime_ignore_missing")) {
     recommendations.push(isZh ? "运行 doctor --fix 把 .omykit/ 写入本地 .git/info/exclude，避免 workflow 运行态进入远程提交。" : "Run doctor --fix to add .omykit/ to local .git/info/exclude so workflow runtime state stays out of remote commits.");
+  }
+  if (has("tracked_runtime_state")) {
+    recommendations.push(isZh ? "运行 cleanup --git-removal-plan 查看已跟踪 runtime，再按需用 cleanup --untrack-runtime --apply 保留本地状态并撤出 Git，或 cleanup --reset-runtime --apply 归档并重置本地状态。" : "Run cleanup --git-removal-plan, then use cleanup --untrack-runtime --apply to keep local state out of Git or cleanup --reset-runtime --apply to archive and reset local state.");
+  }
+  if (has("tracked_root_workflow_artifact")) {
+    recommendations.push(isZh ? "根目录已跟踪的旧 workflow 名称必须人工确认后再从 Git 移除；omyKit 不会自动删除可能属于项目本体的文件。" : "Review tracked root-level legacy workflow names manually before removing them from Git; omyKit will not auto-delete possible project files.");
   }
   if (has("omykit_namespace_conflict")) {
     recommendations.push(isZh ? "先移动或重命名已有 .omykit 文件；omyKit 不会覆盖用户文件。" : "Move or rename the existing .omykit file first; omyKit will not overwrite user-owned files.");
@@ -8817,9 +8950,91 @@ function cmdCleanup(options) {
   const language = normalizeBoardLanguage(options.lang);
   const report = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
   let result = null;
-  if (options["uninstall-local"] || options.uninstall) {
+  if (options["git-removal-plan"]) {
+    report.cleanup = {
+      applied: false,
+      mode: "git-removal-plan",
+      ...buildGitRemovalPlan(process.cwd()),
+    };
+  } else if (options["untrack-runtime"]) {
+    const plan = buildGitRemovalPlan(process.cwd());
+    if (options.apply) {
+      result = untrackGitPaths(process.cwd(), [OMYKIT_RUNTIME_DIR]);
+      report.cleanup = {
+        applied: result.applied,
+        mode: "untrack-runtime",
+        status: result.status,
+        tracked_runtime_files: plan.tracked_runtime_files,
+        actions: result.actions,
+        error: result.error || null,
+        next_action: result.status === "untracked_from_index"
+          ? "Commit the staged removals after review. Local .omykit files remain on disk and are locally ignored."
+          : "No Git index removal was needed.",
+      };
+    } else {
+      report.cleanup = {
+        applied: false,
+        mode: "untrack-runtime-dry-run",
+        tracked_runtime_files: plan.tracked_runtime_files,
+        next_action: "Run cleanup --untrack-runtime --apply to stage Git index removals while keeping local .omykit files.",
+      };
+    }
+  } else if (options["reset-runtime"]) {
+    const plan = buildGitRemovalPlan(process.cwd());
+    if (options.apply) {
+      const untrackResult = untrackGitPaths(process.cwd(), [OMYKIT_RUNTIME_DIR]);
+      if (!untrackResult.applied && untrackResult.status !== "not_git_repo") {
+        report.cleanup = {
+          applied: false,
+          mode: "reset-runtime",
+          status: untrackResult.status,
+          tracked_runtime_files: plan.tracked_runtime_files,
+          actions: untrackResult.actions,
+          error: untrackResult.error || null,
+        };
+      } else {
+        result = uninstallLocalRuntime(process.cwd());
+        report.cleanup = {
+          applied: result.applied,
+          mode: "reset-runtime",
+          status: result.status,
+          archive_dir: result.archive_dir,
+          reason: result.reason || null,
+          tracked_runtime_files: plan.tracked_runtime_files,
+          git_index: {
+            status: untrackResult.status,
+            actions: untrackResult.actions,
+          },
+          actions: [...untrackResult.actions, ...result.actions],
+          next_action: result.applied
+            ? "Commit staged Git removals after review, or reinitialize omyKit when a fresh local runtime is needed."
+            : "Resolve the reported blocker before resetting runtime state.",
+        };
+      }
+      if (options.json) {
+        console.log(JSON.stringify({
+          ...report,
+          report_file: null,
+        }, null, 2));
+        return;
+      }
+      printCleanupPlan(report, result);
+      console.log(language === "zh-CN" ? "本地运行态已重置；未重新写入 .omykit/ 报告。" : "Local runtime reset; no .omykit/ report was rewritten.");
+      return;
+    } else {
+      report.cleanup = {
+        applied: false,
+        mode: "reset-runtime-dry-run",
+        source: projectRelativePath(omykitRoot(process.cwd()), process.cwd()),
+        archive_root: localRuntimeUninstallArchiveRoot(process.cwd()),
+        tracked_runtime_files: plan.tracked_runtime_files,
+        next_action: "Run cleanup --reset-runtime --apply to stage Git untracking and archive local .omykit state.",
+      };
+    }
+  } else if (options["uninstall-local"] || options.uninstall) {
     if (options.apply) {
       const reportFileBeforeMove = writeHealthReport(report);
+      const untrackResult = untrackGitPaths(process.cwd(), [OMYKIT_RUNTIME_DIR]);
       result = uninstallLocalRuntime(process.cwd());
       report.cleanup = {
         applied: result.applied,
@@ -8827,6 +9042,11 @@ function cmdCleanup(options) {
         status: result.status,
         archive_dir: result.archive_dir,
         reason: result.reason || null,
+        git_index: {
+          status: untrackResult.status,
+          actions: untrackResult.actions,
+        },
+        actions: [...untrackResult.actions, ...result.actions],
         report_file: reportFileBeforeMove && result.archive_dir
           ? path.join(result.archive_dir, "health", "health-report.json")
           : null,

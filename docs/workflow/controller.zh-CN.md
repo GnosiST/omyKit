@@ -83,6 +83,7 @@ node scripts/omykit-workflow.mjs tasks list --json
 
 - `.omykit/` 命名空间是否存在，以及是否和用户自己的同名文件冲突。
 - `.git/info/exclude` 是否已经本地忽略 `.omykit/`。
+- `.omykit/` runtime 文件是否已经被 Git 跟踪，是否需要显式从 index 撤出。
 - `.omykit/` 和 workflow 目录是否存在。
 - active workflow 指针是否有效。
 - 任务收件箱是否可解析，以及当前是否存在同源任务或写入范围冲突。
@@ -91,6 +92,7 @@ node scripts/omykit-workflow.mjs tasks list --json
 - board projection 是否缺失或过期。
 - 后台命令是否有可续接记录。
 - 根目录是否存在看起来像旧 workflow 产物的通用文件名，例如 `graph.json`、`state.json`、`board.html`、`nodes/` 或 `handoffs/`。
+- 根目录旧 workflow 名称是否已经被 Git 跟踪，需要人工判断是否真的是旧产物。
 - repo-local skill 副本是否可能陈旧。
 - `docs/workflow/project-profile.md` 旧项目 profile 是否存在。
 - 清理候选和下一步建议。
@@ -101,7 +103,15 @@ node scripts/omykit-workflow.mjs tasks list --json
 
 如果历史 workflow 的所有节点都已经是终态、没有 active command run，但旧 handoff 不符合当前证据 schema，`cleanup` 会把整个 workflow 目录作为候选。处理方式是归档，不补造 `intake_decision`、`knowledge_sync`、`evolution_candidates`、agent scope、token、skill、model 或验证记录。
 
+当 `.omykit/` 或根目录旧 workflow 名称已经被 Git 跟踪时，先用 `cleanup --git-removal-plan`。它只报告 tracked paths、历史提交数量、能否看到 upstream 和建议命令，不改文件。
+
+当项目还要继续保留本地 `.omykit/` 工作流状态，但不希望仓库继续跟踪它时，用 `cleanup --untrack-runtime --apply`。它只做 Git index removal，本地文件仍在磁盘上，并继续受 `.git/info/exclude` 本地忽略保护；后续是否提交 staged removal 由用户审查决定。
+
+当项目需要归档当前 `.omykit/` 并后续重新初始化时，用 `cleanup --reset-runtime --apply`。它会先把已跟踪的 `.omykit/` 从 Git index 撤出，再把本地 runtime 移到本地非项目归档位置，并且不会在工作区重新创建 `.omykit/`。
+
 只有当项目本地不再需要 omyKit 时，才使用 `cleanup --uninstall-local --apply`。它会把整个 `.omykit/` runtime 目录移动到本地非项目归档位置；Git 项目通常放在 `.git/omykit-uninstalled/`。这样可以移除工作区里的运行状态，不触碰项目源码，也不影响以后重新初始化 omyKit 时的工作质量。
+
+所有 cleanup 命令都不会自动 commit、push 或重写 Git 历史。如果 workflow 产物里含有敏感信息且已经推送到远程，这属于需要人工确认的 Git history rewrite 事件，不是普通 omyKit cleanup。
 
 ## 长任务执行方式
 

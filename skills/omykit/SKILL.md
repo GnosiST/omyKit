@@ -49,6 +49,9 @@ Map user intent to commands:
 - upgrade historical workflow artifacts -> `upgrade --all --lang <user-language>` when old `.omykit/workflows/*` should use the latest controller metadata, command surface, node cards, and board projection rules
 - diagnose project workflow health -> `doctor --lang <user-language>` to inspect retrofit completeness, local-only isolation, `.omykit` namespace conflicts, active workflow pointer, legacy workflows, stale boards, command recovery, cleanup candidates, and next recommendations; add `--fix` only for safe compatibility repairs
 - cleanup legacy workflow residue -> `cleanup --dry-run --lang <user-language>` first; run `cleanup --apply` only after review because it archives safe candidates into `.omykit/archive/` instead of deleting them
+- plan removal of already tracked workflow artifacts -> `cleanup --git-removal-plan --lang <user-language>` when `.omykit/` or root-level workflow-looking files may already be in Git
+- keep local runtime but remove it from Git tracking -> `cleanup --untrack-runtime --apply --lang <user-language>` only after reviewing the plan; this stages Git index removal without deleting local `.omykit/`
+- reset local runtime -> `cleanup --reset-runtime --apply --lang <user-language>` when current `.omykit/` should be archived and later recreated from scratch
 - uninstall project-local omyKit runtime -> `cleanup --uninstall-local --apply --lang <user-language>` only when the user wants the target project to stop using omyKit locally; this moves `.omykit/` to a local non-project archive instead of deleting source files
 - list or switch tracked workflows -> `workflows` or `workflows use <workflow-id>`
 - record long-running command metadata -> `record-run <node-id> --id <run-id> --command <cmd> --status <status> --log <path> --resume <cmd>`
@@ -89,6 +92,7 @@ Include these concise groups:
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
 - health and cleanup: `$omykit 诊断工作流健康`, `$omykit 修复工作流健康`, `$omykit 清理旧工作流残留`
+- git cleanup: `$omykit 撤回已提交的工作流运行态`, `$omykit 工作流运行态撤出 Git`, `$omykit 重置本地工作流运行态`
 - local uninstall: `$omykit 卸载本项目 omyKit 运行状态`, `$omykit 移除本地工作流状态`
 - maintenance: `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
@@ -98,7 +102,7 @@ Explain that task-specific shortcuts go through the controller task inbox first.
 
 Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `orchestrate`, `upgrade --all`, `templates list`, `status`, or `board --open`. Do not present `tasks`, `dispatch-plan`, `context-pack`, or `assign` as normal user choices; they are internal primitives unless the user is debugging the controller.
 
-Treat workflow runtime state as local-only by default. Do not ask users to commit or push `.omykit/` unless they explicitly want to vendor workflow state into a repository. In Git projects, `init` should keep `.omykit/` ignored through local `.git/info/exclude`; use `doctor --fix` for safe local ignore repair and `cleanup --uninstall-local --apply` when the user wants to remove project-local omyKit runtime state.
+Treat workflow runtime state as local-only by default. Do not ask users to commit or push `.omykit/` unless they explicitly want to vendor workflow state into a repository. In Git projects, `init` should keep `.omykit/` ignored through local `.git/info/exclude`; use `doctor --fix` for safe local ignore repair, `cleanup --git-removal-plan` when workflow files may already be tracked, `cleanup --untrack-runtime --apply` to stage index removal while preserving local state, `cleanup --reset-runtime --apply` to archive and reset local state, and `cleanup --uninstall-local --apply` when the user wants to remove project-local omyKit runtime state. These commands do not commit, push, or rewrite history; sensitive already-pushed artifacts require explicit manual Git history cleanup.
 
 ## Start
 
