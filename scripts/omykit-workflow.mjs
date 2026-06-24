@@ -5401,9 +5401,7 @@ function buildDispatchPlan(board, options = {}) {
       model_tier: node.model_tier,
       recommended_model: node.recommended_model || null,
       model_override: modelOverride,
-      model_override_policy: isZh
-        ? "Codex 子智能体/新线程支持 model 参数；创建 worker 时传入推荐模型。若运行面受限无法覆盖模型，在 handoff 记录实际模型缺口。"
-        : "Codex subagents/threads support a model parameter; pass the recommended model when creating the worker. If a constrained surface cannot override the model, record the actual-model gap in handoff.",
+      model_override_policy: modelOverridePolicyText(isZh),
       dispatch_reason: canStartNow
         ? hasActiveAssignment
           ? (isZh ? "已有显式 assignment 记录，按通讯录执行面继续跟踪。" : "Explicit assignment exists; track by the recorded execution surface.")
@@ -5496,6 +5494,53 @@ function workerDispatch(item) {
   return dispatchReadyNow(item) && !requiresDispatchReview(item) && item.execution_surface !== "main-thread" && item.execution_surface !== "main";
 }
 
+function modelOverridePolicyText(isZh) {
+  return isZh
+    ? "推荐模型是 worker 创建参数，不是主对话切换指令；只有当前 Codex 运行时工具和策略允许，或用户明确授权具体模型时才传入 override。否则继承运行时默认模型，并在 handoff/assignment 记录推荐与实际模型缺口。"
+    : "The recommended model is a worker-creation parameter, not a main-thread switch; pass the override only when the active Codex runtime tool and policy allow it, or when the user explicitly authorized the concrete model. Otherwise inherit the runtime default and record the recommended-vs-actual model gap in the handoff/assignment.";
+}
+
+function buildWorkerRuntimeContract(item, board, isZh) {
+  const contextPackCommand = `node scripts/omykit-workflow.mjs context-pack ${item.node_id} --workflow ${board.workflow_id}`;
+  const assignCommand = `node scripts/omykit-workflow.mjs assign ${item.node_id} --agent <agent-id> --surface ${item.execution_surface} --status running --context-pack context-packs/${item.node_id}.json --handoff handoffs/${item.node_id}.json`;
+  return {
+    runtime_dispatch_required: true,
+    worker_creation_policy: {
+      controller_role: isZh
+        ? "controller 只给出计划、context pack、模型建议和审计字段。"
+        : "The controller only emits the plan, context pack, model recommendation, and audit fields.",
+      codex_runtime_role: isZh
+        ? "Codex 主控在可用工具面上真实创建 worker；不能只展示计划。"
+        : "The Codex orchestrator creates the real worker on an available runtime surface; it must not only display the plan.",
+      required_surface: item.execution_surface,
+      model_override_policy: modelOverridePolicyText(isZh),
+      assignment_policy: isZh
+        ? "真实 worker/thread/worktree 创建成功后才运行 assign，并记录 agent id、thread/worktree、模型可用性、写入范围、context pack 和 handoff 路径。"
+        : "Run assign only after the real worker/thread/worktree exists, recording agent id, thread/worktree, model availability, write scope, context pack, and handoff path.",
+      fallback_if_unavailable: isZh
+        ? "如果当前 Codex 运行时没有匹配的线程/子智能体/worktree 工具，记录 unavailable 原因；能安全收敛时由主线程执行该节点，不能安全收敛时 block 节点并说明缺少的工具。"
+        : "If the active Codex runtime lacks the matching thread/subagent/worktree tool, record the unavailable reason; execute the node in the main thread only when safe, otherwise block the node with the missing tool called out.",
+    },
+    worker_creation_steps: [
+      contextPackCommand,
+      isZh
+        ? `用 ${item.execution_surface} 创建有边界的 worker，并只传 context-packs/${item.node_id}.json 和节点允许写入范围。`
+        : `Create a bounded ${item.execution_surface} worker with only context-packs/${item.node_id}.json and the node's allowed write scope.`,
+      item.model_override
+        ? (isZh
+          ? `运行时允许时传入模型 override ${item.model_override}；不允许时继承默认模型并记录原因。`
+          : `Pass model override ${item.model_override} when the runtime allows it; otherwise inherit the default model and record why.`)
+        : (isZh
+          ? "没有具体模型 override 时继承 worker 默认模型，并在 handoff 记录实际模型或不可用原因。"
+          : "When there is no concrete model override, inherit the worker default and record the actual model or unavailable reason in the handoff."),
+      assignCommand,
+      isZh
+        ? `worker 完成后写入 handoffs/${item.node_id}.json，主控再 complete/reject/block。`
+        : `Worker writes handoffs/${item.node_id}.json; the orchestrator then completes, rejects, or blocks the node.`,
+    ],
+  };
+}
+
 function buildOrchestrationPlan(board, dispatchPlan = null) {
   const language = board.language || "en";
   const isZh = language === "zh-CN";
@@ -5572,6 +5617,11 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
       continue;
     }
     const useWorker = workerDispatch(item);
+    const workerContract = useWorker ? buildWorkerRuntimeContract(item, board, isZh) : {
+      runtime_dispatch_required: false,
+      worker_creation_policy: null,
+      worker_creation_steps: [],
+    };
     actions.push({
       action: useWorker ? "dispatch_worker" : "start_in_main_thread",
       node_id: item.node_id,
@@ -5583,9 +5633,13 @@ function buildOrchestrationPlan(board, dispatchPlan = null) {
       model_tier: item.model_tier,
       recommended_model: item.recommended_model,
       model_override: item.model_override,
+      model_override_policy: item.model_override_policy,
+      runtime_dispatch_required: workerContract.runtime_dispatch_required,
+      worker_creation_policy: workerContract.worker_creation_policy,
+      worker_creation_steps: workerContract.worker_creation_steps,
       reason: item.dispatch_reason,
       codex_behavior: useWorker
-        ? (isZh ? "由 Codex 主控按 bounded context pack 派发 worker，并记录 assignment；不要让用户手动选择并行方式。" : "Codex orchestrator dispatches a worker with a bounded context pack and records the assignment; do not ask the user to choose the parallelism primitive.")
+        ? (isZh ? "由 Codex 主控按 bounded context pack 真实创建 worker，并在 worker 存在后记录 assignment；不要让用户手动选择并行方式，也不要只展示计划。" : "Codex orchestrator creates a real worker with a bounded context pack and records the assignment after the worker exists; do not ask the user to choose the parallelism primitive, and do not only display the plan.")
         : (isZh ? "由主对话直接执行该节点，完成后写 handoff 并推进 workflow。" : "Main thread executes the node directly, writes a handoff, and advances the workflow."),
       internal_commands: useWorker
         ? [
@@ -5681,6 +5735,12 @@ function printOrchestrationPlan(plan, file = null) {
     console.log(`- ${item.action} ${item.node_id || "workflow"} ${item.title || ""}`.trim());
     if (item.execution_surface) {
       console.log(`  surface=${item.execution_surface} worker=${item.worker_profile || "none"} tier=${item.model_tier || "none"} recommended=${item.recommended_model || "none"} override=${item.model_override || "inherit"}`);
+    }
+    if (item.runtime_dispatch_required) {
+      console.log(`  ${isZh ? "运行时派发" : "Runtime dispatch"}: ${isZh ? "必须真实创建 worker；不可只展示计划" : "required; create a real worker, not just a displayed plan"}`);
+    }
+    if (item.worker_creation_policy?.fallback_if_unavailable) {
+      console.log(`  ${isZh ? "降级策略" : "Fallback"}: ${item.worker_creation_policy.fallback_if_unavailable}`);
     }
     if (item.reason) console.log(`  ${isZh ? "原因" : "Reason"}: ${item.reason}`);
     if (item.codex_behavior) console.log(`  ${isZh ? "Codex 行为" : "Codex behavior"}: ${item.codex_behavior}`);

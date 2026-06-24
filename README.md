@@ -26,7 +26,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Scorecard audit:** check real handoffs, intake decisions, delivery evolution reviews, verification evidence, language consistency, skill usage, usage records, model recommendations, and actual model records before trusting completion claims.
 - **Skill traceability:** show which skills shaped each node or worker when they were actually used.
 - **Model traceability:** recommend a right-sized model per node, pass worker model overrides in Codex Desktop, and show actual recorded models when execution exposes them.
-- **Automatic orchestration:** keep the main Codex thread as an orchestrator-observer while the controller recommends whether ready work should run in the main thread, a subagent, a background thread, or a worktree.
+- **Automatic orchestration:** keep the main Codex thread as an orchestrator-observer while the controller decides whether ready work should run in the main thread, a subagent, a background thread, or a worktree, then emits a worker-dispatch contract when runtime tools should create real workers.
 - **Delivery evidence:** finish with targeted checks instead of unverified completion claims.
 - **Runtime readiness:** prepare middleware only when tests or app checks need it.
 - **Version awareness:** surface branch, changelog, rollback, history, and customization gaps.
@@ -188,7 +188,7 @@ Operational rules:
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
 - Creating a tracked workflow is not task completion; for long work, continue `resume/orchestrate -> internal start or dispatch -> work -> handoff -> complete/reject/block/unblock` until delivery passes or a real blocker is recorded.
-- For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, and pass the node's recommended model override to Codex workers.
+- For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, create real workers when `dispatch_worker` is returned, and pass the node's recommended model override only when the active runtime tool and policy allow it.
 - Use `upgrade --all` when historical `.omykit/workflows/*` artifacts need current controller metadata, command-surface policy, node cards, and regenerated board projections; never fabricate missing handoff, token, skill, model, or verification evidence during upgrade.
 - For tracked work, pick the nearest workflow template first; customize by adding or editing template/profile YAML instead of hard-coding one-off controller behavior.
 - Use `mission.orchestration` for broad demands that need requirement insight, task decomposition, multiple workflow/workstream routing, monitored execution, integration gates, and delivery learning.

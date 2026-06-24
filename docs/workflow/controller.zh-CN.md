@@ -138,13 +138,15 @@ node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
 ```
 
-controller 仍然不会自己启动 agent 或调用模型。Codex Desktop 的新线程和子智能体工具支持模型 override；节点有任务级推荐模型时，Codex 应在创建 worker 时传入该模型，同时让主线程保持当前模型作为 orchestrator-observer。若非 Codex 客户端、权限边界或工具策略不允许 override，worker 才继承默认模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason` 和节点级 `usage_observation.model_status=unavailable`，不要编造模型名。
+controller 仍然不会自己启动 agent 或调用模型。但 `action=dispatch_worker` 对 Codex 主控是执行契约，不是给用户看的建议：如果当前运行时暴露匹配的子智能体、线程或 worktree 工具，Codex 应使用节点 context pack 创建真实 worker，并且只有 worker 存在后才运行 `assign`。如果运行时无法创建指定 worker，要记录 unavailable 原因；只有范围安全时才降级为主线程执行，否则 block 节点并明确缺少的能力。
+
+Codex Desktop 的新线程和子智能体工具可能暴露模型 override，但当前工具策略决定本次调用是否能设置模型。节点有任务级推荐模型时，Codex 只有在当前运行时工具和策略允许，或用户明确授权具体模型时，才应在创建 worker 时传入该模型，同时让主线程保持当前模型作为 orchestrator-observer。若非 Codex 客户端、权限边界或工具策略不允许 override，worker 继承默认模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason` 和节点级 `usage_observation.model_status=unavailable`，不要编造模型名。
 
 `assign` 会把实际分工追加到 `assignments.jsonl`：节点、agent id、角色、执行面、thread id、worktree、模型档位、写入范围、context pack、handoff 路径和状态。它是运行时通讯录，不写入模板。看板会投影 Agent 通讯录，Scorecard 会提醒 assignment 缺少可读取 handoff 或多个活跃 agent 写入范围重叠。
 
 ## Thread-native 多 Agent 协作
 
-Codex app 还可以在独立 thread 或 worktree 中运行后台任务。omyKit controller 现在能记录 thread/worktree assignment、生成对应 context pack、在看板显示 Agent 通讯录，并用 scorecard 审计 handoff 回流和写入范围冲突；但它仍不会自动创建 Codex thread、自动创建 worktree 或跨线程发送消息。线程创建和交接仍由 Codex 主控按当前运行时工具能力执行。
+Codex app 还可以在独立 thread 或 worktree 中运行后台任务。omyKit controller 现在能在编排计划中要求 worker 派发、记录 thread/worktree assignment、生成对应 context pack、在看板显示 Agent 通讯录，并用 scorecard 审计 handoff 回流和写入范围冲突；但它仍不会自动创建 Codex thread、自动创建 worktree 或跨线程发送消息。线程创建和交接仍由 Codex 主控按当前运行时工具能力执行。
 
 | 执行面 | 适合 | 约束 |
 | --- | --- | --- |
