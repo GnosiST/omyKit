@@ -49,7 +49,7 @@ A lesson can enter omyKit only when all are true:
 - Broken Markdown links recur -> add a docs validator and CI, not a prose reminder only.
 - A target app needs port 3007 -> keep it in that app's docs, not omyKit.
 - UI skills are being stacked by default -> add same-lane selection rules and keep external projects as reference signals.
-- PPT optimization needs a specialist beyond bundled tooling -> route through `deck.proposal`, record `skill_decisions`, then trial only the matching gap (`ppt-master` for native editable PPTX, `guizang-ppt-skill` for HTML deck, external templates for template direction, or a user-approved local style candidate); promote only through an evolution candidate if evidence repeats.
+- PPT optimization needs a specialist beyond bundled tooling -> route through `deck.proposal`, record `deck_variant` and `skill_decisions`, then trial only the matching gap (`ppt-master` for native editable PPTX, `guizang-ppt-skill` for HTML deck, external templates for template direction, or a user-approved local style candidate); promote only through an evolution candidate if evidence repeats.
 - A community PM skill adds a new launch checklist -> review whether omyKit needs a routing cue; do not copy the checklist or add the source to default routing by popularity alone.
 
 ## Anti-Patterns

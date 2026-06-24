@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Upgraded `deck.proposal` into a variant-aware PPT production workflow: controller records `deck_variant=create|remake|modify`, task inbox write scopes distinguish source-deck work, the template now includes source/template analysis plus user-feedback rework, and scorecards require deck variant evidence.
 - Added `deck.proposal` for PPT/proposal deck work: new deck agents, model/runtime profiles, scorecard, auto template routing, task-inbox detection, help/docs coverage, and tests. The workflow separates story, direction selection, production, polish, QA, and delivery so bundled presentations, Canva, PPT Master, Guizang, HTML template references, and local style candidates cooperate without same-lane skill stacking.
 - Added source-integrity tracking and conservative routing boundaries for `op7418/guizang-ppt-skill`, `zarazhangrui/beautiful-html-templates`, and `irenerachel/visual-style-ppt-skill`; refreshed `hugohe3/ppt-master` after reviewing speaker-notes-master and letter-spacing export changes. No third-party templates, skill bodies, assets, badges, or branding were copied.
 - Added capability-gap intake for missing tools/skills: handoffs can record `capability_gaps`, boards and scorecards surface local/project/candidate-branch triage, docs define when to trial versus promote, and `hugohe3/ppt-master` is tracked as a high-signal native-PPTX candidate rather than a default dependency.

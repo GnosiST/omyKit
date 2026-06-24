@@ -270,7 +270,7 @@ node scripts/omykit-workflow.mjs resume
 | `change.standard` | 默认的有边界功能、重构、文档或维护工作。 |
 | `bugfix.standard` | 缺陷修复的复现、诊断、修复、验证、评审和交付。 |
 | `frontend-ui.strict` | 设计敏感前端工作，包含 UI 方向、实现、浏览器/视觉验收、评审和交付。 |
-| `deck.proposal` | 提案或演示文稿工作，包含方向选项、来源安全的 specialist 选择、产物生产、导出验证和交付证据。 |
+| `deck.proposal` | PPT/deck 工作，支持从零生成、重制已有 PPT、按原模板局部修改，并包含方向选项、来源安全的 specialist 选择、反馈返工、导出验证和交付证据。 |
 | `mission.orchestration` | 需要需求洞察、任务拆解、工作流路由、执行监听、集成验票和 workflow 学习的复杂需求。 |
 
 模板是分层的：

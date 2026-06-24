@@ -974,11 +974,11 @@ function loadWorkflowTemplate(templateId = DEFAULT_TEMPLATE_ID) {
 
 function inferWorkflowTemplateId(title) {
   const text = String(title || "").toLowerCase();
-  if (/(bug|fix|regression|error|exception|fail|failure|crash|修复|报错|故障|缺陷|失败|崩溃|回归)/i.test(text)) {
-    return "bugfix.standard";
-  }
   if (/(ppt|pptx|powerpoint|presentation|slide deck|slides?|deck|keynote|pitch deck|proposal deck|演示文稿|幻灯片|路演|汇报|提案PPT|PPT提案|商业计划书PPT|融资PPT)/i.test(text)) {
     return "deck.proposal";
+  }
+  if (/(bug|fix|regression|error|exception|fail|failure|crash|修复|报错|故障|缺陷|失败|崩溃|回归)/i.test(text)) {
+    return "bugfix.standard";
   }
   if (/(ui|ux|frontend|front-end|page|screen|layout|visual|design|figma|shadcn|tailwind|react component|界面|页面|前端|视觉|设计|组件|交互|样式)/i.test(text)) {
     return "frontend-ui.strict";
@@ -987,6 +987,23 @@ function inferWorkflowTemplateId(title) {
     return "mission.orchestration";
   }
   return DEFAULT_TEMPLATE_ID;
+}
+
+function inferDeckVariant(value) {
+  const text = String(value || "");
+  if (/(重制|重做|重建|重新设计|整体改版|整体升级|翻新|重构.*ppt|remake|rebuild|redesign|revamp|refresh|recreate)/i.test(text)) {
+    return "remake";
+  }
+  if (/(修改|改一页|改几页|调整|新增.*页|增补.*页|补.*页|指定.*页|局部|沿用原模板|原模板风格|edit|modify|revise|update|add slide|specific slide|single slide|partial)/i.test(text)) {
+    return "modify";
+  }
+  return "create";
+}
+
+function deckWorkstreamForVariant(variant) {
+  if (variant === "remake") return "deck-remake";
+  if (variant === "modify") return "deck-modify";
+  return "deck-create";
 }
 
 function resolveInitTemplateId(title, requestedTemplate) {
@@ -1208,6 +1225,7 @@ function compileTemplateToGraph(template, input) {
       template_file: template.__file || null,
       layers,
       scorecards: asStringArray(layers.scorecards),
+      ...(input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
     },
     nodes,
   };
@@ -1334,6 +1352,7 @@ function commandHelp() {
 Codex chat intents:
   $omykit 开始执行：<任务>       create or resume a tracked workflow and keep advancing nodes
   $omykit 修 bug / 做需求：<任务> first record the request in the task inbox, then merge, follow up, or create a workflow as the controller decides
+  $omykit 做/生成/重制/修改 PPT：<任务> auto-route to deck.proposal and classify deck_variant=create|remake|modify
   $omykit 创建工作流：<任务>     create a workflow, then continue unless you say "只创建"
   $omykit 只创建工作流：<任务>   create the workflow skeleton only
   $omykit 继续工作流             resume, auto-orchestrate, start ready work, and write handoffs as work completes
@@ -3217,7 +3236,7 @@ function taskTagsFromBrief(brief) {
 }
 
 function suggestedTaskTemplate(tags, brief) {
-  if (tags.includes("deck") && !tags.includes("bug")) return "deck.proposal";
+  if (tags.includes("deck")) return "deck.proposal";
   if (tags.includes("multi")) return "mission.orchestration";
   if (tags.includes("ui")) return "frontend-ui.strict";
   if (tags.includes("bug")) return "bugfix.standard";
@@ -3231,6 +3250,8 @@ function suggestedTaskWriteScope(tags, brief) {
     scope.add("decks/**");
     scope.add("slides/**");
     scope.add("presentations/**");
+    const variant = inferDeckVariant(brief);
+    if (variant === "remake" || variant === "modify") scope.add("source-decks/**");
     scope.add("*.pptx");
     scope.add("*.key");
     scope.add("*.pdf");
@@ -3296,6 +3317,7 @@ function createTaskRecord(brief, options = {}, cwd = process.cwd()) {
   const existing = readTaskInbox(cwd).tasks;
   const activeWorkflow = activeWorkflowSummaryForTask(cwd);
   const tags = taskTagsFromBrief(brief);
+  const deckVariant = tags.includes("deck") ? inferDeckVariant(brief) : null;
   const requestedTemplateId = suggestedTaskTemplate(tags, brief);
   const relation = taskRelationForBrief(tags, activeWorkflow, requestedTemplateId);
   const suggestedWriteScope = suggestedTaskWriteScope(tags, brief);
@@ -3315,9 +3337,10 @@ function createTaskRecord(brief, options = {}, cwd = process.cwd()) {
     linked_workflow_id: linkedWorkflowId,
     template_id: templateId,
     tags,
+    ...(deckVariant ? { deck_variant: deckVariant } : {}),
     suggested_write_scope: suggestedWriteScope,
     conflict_risk: conflictRisk,
-    workstream: tags.includes("deck") ? "deck-proposal" : tags.includes("ui") ? "ui-quality" : tags.includes("bug") ? "bugfix" : "general",
+    workstream: tags.includes("deck") ? deckWorkstreamForVariant(deckVariant) : tags.includes("ui") ? "ui-quality" : tags.includes("bug") ? "bugfix" : "general",
     runtime_boundary: "controller_records_and_recommends; codex_runtime_dispatches_workers",
   };
   return record;
@@ -5903,6 +5926,12 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
         )))
         .map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "能力缺口必须记录能力线、需求、当前缺口、接入路径、状态和证据。" : "Capability gaps must record capability, need, current gap, integration path, status, and evidence.");
+    }
+    case "deck_variant_recorded": {
+      if (graph.metadata?.template_id !== "deck.proposal") return pending();
+      return ["create", "remake", "modify"].includes(graph.metadata?.deck_variant)
+        ? pass()
+        : fail([], isZh ? "deck.proposal workflow 必须记录 deck_variant：create、remake 或 modify。" : "deck.proposal workflows must record deck_variant: create, remake, or modify.");
     }
     case "model_tier_policy": {
       const failing = projectedNodes
@@ -8907,12 +8936,14 @@ function cmdInit(positional, options) {
 
   const templateErrors = validateWorkflowTemplate(template);
   if (templateErrors.length > 0) throw new Error(templateErrors.join("\n"));
+  const templateMetadata = templateId === "deck.proposal" ? { deck_variant: inferDeckVariant(title) } : {};
   const graph = compileTemplateToGraph(template, {
     templateId,
     workflowId,
     title,
     mode,
     language,
+    metadata: templateMetadata,
   });
   const graphErrors = validateGraph(graph);
   if (graphErrors.length > 0) throw new Error(graphErrors.join("\n"));
@@ -8927,7 +8958,7 @@ function cmdInit(positional, options) {
   for (const node of graph.nodes) writeJson(path.join(workflowDir, "nodes", `${node.id}.json`), nodeCard(graph, node));
   fs.writeFileSync(path.join(workflowDir, "decisions.md"), `# Decisions\n\nWorkflow: ${workflowId}\n\n`);
   fs.writeFileSync(path.join(workflowDir, "blockers.md"), `# Blockers\n\nWorkflow: ${workflowId}\n\n`);
-  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, requested_template_id: requestedTemplateId, language });
+  appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, requested_template_id: requestedTemplateId, language, ...templateMetadata });
   writeActiveWorkflowId(workflowId);
 
   const { graph: savedGraph, state } = loadWorkflow(workflowDir);

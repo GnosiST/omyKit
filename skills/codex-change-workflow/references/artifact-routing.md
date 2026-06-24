@@ -13,7 +13,9 @@ Load only the section for the current deliverable.
 ## Deck
 
 - Start with audience, objective, narrative, slide count, brand constraints.
-- For tracked work, prefer the `deck.proposal` template so intake records direction options, selected production surface, specialist choices, fallback policy, and source/license boundaries.
+- For tracked work, prefer the `deck.proposal` template so intake records `deck_variant`, direction options, selected production surface, specialist choices, fallback policy, and source/license boundaries.
+- Treat `deck_variant=create` as a new-deck workflow, `deck_variant=remake` as source-deck analysis plus rebuild, and `deck_variant=modify` as targeted slide changes that preserve the original template unless the user confirms a broader redesign.
+- PPT/deck artifact signals outrank generic bug/UI labels such as "fix layout" or "font overflow"; route to bugfix only when the target is clearly PPT-generation code rather than the deck artifact.
 - Use imagegen for raster visuals; use bundled `presentations`, Canva, project templates, or existing deck tooling for construction first.
 - Add specialists by non-overlapping direction, not by stacking: `hugohe3/ppt-master` for native editable PPTX gaps, `op7418/guizang-ppt-skill` for HTML deck gaps, `zarazhangrui/beautiful-html-templates` as an external template-reference source, and `irenerachel/visual-style-ppt-skill` only as a user-approved local style-review candidate because no license was detected.
 - Record `skill_decisions` when several deck skills could apply. Record `capability_gaps` before local/project trials or omyKit routing changes, including source, license, install/run, real-output, and rollback evidence.

@@ -74,7 +74,7 @@
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
 - 平台特定项目：先发现并优先使用该平台官方 CLI 或自动化 API，再考虑 Computer Use。小程序项目如果可用微信开发者工具 CLI，就用它处理支持的 preview、upload、build checks；只有 CLI 覆盖不了的纯 GUI 步骤才降级到 Computer Use。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
-- PPT/提案工作：任务是 PPT、presentation、slides、pitch deck 或提案 deck 时使用 `deck.proposal`。入口先给 2-3 个方向，例如原生可编辑 PPTX、Canva/品牌模板、HTML 视觉 deck，推荐一个并允许自定义答案。优先用 bundled `presentations`、Canva、项目模板或现有 deck 工具；只有原生可编辑 PPTX 缺口才用 `ppt-master`，只有 HTML deck 缺口才用 `guizang-ppt-skill`，`beautiful-html-templates` 只作为外部模板参考，`visual-style-ppt-skill` 只有接受 license 风险后作为 local-only 风格评审候选。
+- PPT/提案工作：任务是 PPT、presentation、slides、pitch deck 或提案 deck 时使用 `deck.proposal`，并先识别 `deck_variant`：从零生成 `create`、重制已有 PPT `remake`、按原模板局部修改 `modify`。入口先给 2-3 个方向，例如原生可编辑 PPTX、Canva/品牌模板、HTML 视觉 deck，推荐一个并允许自定义答案。优先用 bundled `presentations`、Canva、项目模板或现有 deck 工具；只有原生可编辑 PPTX 缺口才用 `ppt-master`，只有 HTML deck 缺口才用 `guizang-ppt-skill`，`beautiful-html-templates` 只作为外部模板参考，`visual-style-ppt-skill` 只有接受 license 风险后作为 local-only 风格评审候选。
 
 只有 specialist skill 已安装、职责狭窄，并且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
 
@@ -122,7 +122,7 @@
 | 动效 | `motion-ai-kit`。 | 已选择或明确要求 GSAP 时才补匹配的 `gsap-*`。 |
 | GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；确认性能风险时使用 browser profiling 和定向代码修复。 |
 | shadcn/ui 资源 | 先看项目依赖和官方文档。 | 只有需要当前生态发现时才补 `awesome-shadcn-ui`；不要把社区目录内容持久化进 omyKit。 |
-| Deck 交付物 | `deck.proposal` 加 bundled `presentations`、Canva、项目模板和现有 PPT 工具。 | 原生可编辑 PPTX 缺口补 `ppt-master`，HTML 视觉 deck 补 `guizang-ppt-skill`，外部模板方向参考 `beautiful-html-templates`，`visual-style-ppt-skill` 只作为用户批准的本地风格评审候选。必须记录 `skill_decisions` 和 `capability_gaps`；默认不要叠加同类 PPT skill。 |
+| Deck 交付物 | `deck.proposal` 加 bundled `presentations`、Canva、项目模板和现有 PPT 工具；用 `deck_variant` 区分从零生成、重制和局部修改。 | 原生可编辑 PPTX 缺口补 `ppt-master`，HTML 视觉 deck 补 `guizang-ppt-skill`，外部模板方向参考 `beautiful-html-templates`，`visual-style-ppt-skill` 只作为用户批准的本地风格评审候选。必须记录 `skill_decisions` 和 `capability_gaps`；默认不要叠加同类 PPT skill。 |
 | 上下文压缩 | 先用 `codex-context-budget`：避免读取、索引、聚焦、紧凑输出，再摘要。 | 只有大型重复内容仍有价值、可取回原文，且路径是本地可信时，才使用可选本地压缩。 |
 | 持久 workflow 状态 | 当前 `codex-change-workflow` 加 Workflow Controller。 | 只用于多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作；不要把它当单独 route。 |
 | Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |

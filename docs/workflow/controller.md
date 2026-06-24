@@ -270,7 +270,7 @@ Built-in templates:
 | `change.standard` | Default scoped feature, refactor, docs, or maintenance work. |
 | `bugfix.standard` | Reproduce, diagnose, fix, verify, review, and deliver bug fixes. |
 | `frontend-ui.strict` | Design-sensitive frontend work with UI direction, implementation, browser/visual QA, review, and delivery. |
-| `deck.proposal` | Proposal or presentation deck work with direction options, source-safe specialist selection, artifact production, export verification, and delivery evidence. |
+| `deck.proposal` | PPT/deck work for create-from-scratch, existing-deck remake, or targeted original-template modification, with direction options, source-safe specialist selection, feedback rework, export verification, and delivery evidence. |
 | `mission.orchestration` | Broad demands that need requirement insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning. |
 
 Templates are layered:

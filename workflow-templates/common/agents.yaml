@@ -120,8 +120,8 @@ agent_sets:
       en: Deck Agents
       zh-CN: PPT 智能体
     description:
-      en: Roles for proposal or presentation work that needs story, visual direction, slide production, export verification, and source-safe specialist selection.
-      zh-CN: 面向提案或演示文稿工作的角色组合，覆盖叙事、视觉方向、幻灯片生产、导出验证和来源安全的 specialist 选择。
+      en: Roles for PPT/deck work that needs source/template analysis, story, visual direction, slide production, feedback rework, export verification, and source-safe specialist selection.
+      zh-CN: 面向 PPT/deck 工作的角色组合，覆盖源材料/模板分析、叙事、视觉方向、幻灯片生产、反馈返工、导出验证和来源安全的 specialist 选择。
     agents:
       - id: deck-strategist
         role:

@@ -61,7 +61,7 @@ flowchart TD
 | Feature or bug fix | `codex-change-workflow` | `codex-context-budget`, `codex-runtime-readiness` for middleware, `codex-version-readiness` for rollback, `codex-delivery-gate` before handoff. |
 | Long tracked task | `codex-change-workflow` | Workflow controller for task graph, handoffs, rejects, blockers, and compact recovery. |
 | Documentation or research artifact | `codex-change-workflow` | `codex-context-budget`, `codex-delivery-gate`; version readiness only when the work is durable or release-bound. |
-| Proposal or presentation deck | `codex-change-workflow` with `deck.proposal` | `codex-context-budget`, bundled `presentations`/Canva/project templates first, optional deck specialist recorded through `skill_decisions` and `capability_gaps`, then `codex-delivery-gate`. |
+| PPT/deck creation, remake, or modification | `codex-change-workflow` with `deck.proposal` | `codex-context-budget`, recorded `deck_variant`, bundled `presentations`/Canva/project templates first, optional deck specialist recorded through `skill_decisions` and `capability_gaps`, then `codex-delivery-gate`. |
 | Release preparation | `codex-delivery-gate` | `codex-version-readiness`, runtime checks, artifact-specific gates. |
 | Milestone knowledge cleanup | `codex-delivery-gate` | `neat-freak` only when docs, AGENTS/CLAUDE rules, or memory may be stale; otherwise record `knowledge_sync.status=not_needed`. |
 | User dissatisfaction with a specialist output | Active primary workflow | Inspect node `skill_decisions[].fallback_policy`; route only the dissatisfied quality dimension to the better same-lane or narrower skill for rework. |

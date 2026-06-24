@@ -196,7 +196,7 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 - 多智能体工作由自动编排计划根据任务适配度选择主线程、子智能体、后台线程或 worktree；主对话保持当前模型作为 orchestrator-observer；当计划返回 `dispatch_worker` 时创建真实 worker，并且只在当前运行时工具和策略允许时传入节点推荐模型 override。
 - 历史 `.omykit/workflows/*` 产物需要适配最新版 controller 时，使用 `upgrade --all` 补齐 controller 元数据、命令边界、节点卡和新版看板投影；升级时不得伪造缺失的 handoff、token、skill、模型或验证证据。
 - 追踪型工作先选择最接近的 workflow 模板；需要定制时优先增改模板/profile YAML，不把一次性逻辑硬编码进 controller。
-- PPT、presentation、slide、pitch deck 或提案 deck 工作使用 `deck.proposal`；入口应提供方向选项、记录已选生产面，并让同类 PPT skill fallback 可审计，而不是把所有 PPT skill 叠加。
+- PPT、presentation、slide、pitch deck 或提案 deck 工作使用 `deck.proposal`；controller 会把任务分为 `create`（从零生成 PPT）、`remake`（重制已有 PPT）或 `modify`（按原模板局部修改 PPT）三类 variant。入口应提供方向选项、记录已选生产面和模板策略，并让同类 PPT skill fallback 可审计，而不是把所有 PPT skill 叠加。
 - 复杂需求需要需求洞察、任务拆解、多个工作流/工作分支路由、执行监听、集成验票和交付学习时，使用 `mission.orchestration`。
 - 每个节点选择最低足够模型档位；由模型配置给出推荐模型，实际 provider/model 只有在执行环境暴露时才记录。
 - Codex 新线程和子智能体运行面可能支持模型 override；只有当前运行时工具和策略允许时，才在创建 worker 时按节点推荐模型传入。若某个客户端或工具策略无法覆盖模型，记录 `usage_observation` 中的推荐/实际差异和不可观测原因。

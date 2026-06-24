@@ -2,11 +2,11 @@ schema_version: "1"
 template_id: deck.proposal
 template_version: "1.0"
 name:
-  en: Proposal Deck
-  zh-CN: PPT 提案
+  en: Deck Production
+  zh-CN: PPT 生产
 description:
-  en: Workflow for proposal or presentation decks that need direction options, source-safe specialist selection, artifact production, export verification, and delivery evidence.
-  zh-CN: 面向提案或演示文稿的工作流，覆盖方向选项、来源安全的 specialist 选择、产物生产、导出验证和交付证据。
+  en: Workflow for presentation work that supports create-from-scratch, deck remake, and targeted deck modification variants with direction options, source-safe specialist selection, artifact production, feedback rework, export verification, and delivery evidence.
+  zh-CN: 面向 PPT 工作的通用流程，支持从零生成 PPT、重制 PPT、局部修改 PPT 三种 variant，覆盖方向选项、来源安全的 specialist 选择、产物生产、反馈打回、导出验证和交付证据。
 default_mode: Strict
 layers:
   agents: deck-agents
@@ -22,8 +22,8 @@ nodes:
       en: Deck Intake
       zh-CN: PPT 需求接收
     objective:
-      en: Capture audience, decision objective, source materials, output format, editable/export expectations, language, deadline, and 2-3 deck direction options with custom answers allowed.
-      zh-CN: 固化受众、决策目标、资料来源、输出格式、可编辑/导出预期、语言、期限，并给出 2-3 个 PPT 方向选项且允许自定义答案。
+      en: Capture audience, decision objective, source materials, output format, editable/export expectations, language, deadline, deck_variant (create, remake, or modify), and 2-3 deck direction options with custom answers allowed.
+      zh-CN: 固化受众、决策目标、资料来源、输出格式、可编辑/导出预期、语言、期限、deck_variant（从零生成 PPT、重制 PPT 或局部修改 PPT），并给出 2-3 个 PPT 方向选项且允许自定义答案。
     depends_on: []
     required: true
     retry_limit: 1
@@ -43,17 +43,17 @@ nodes:
     estimated_minutes: 15
     acceptance:
       en:
-        - Audience, goal, source materials, output format, editability/export needs, language, execution options, recommendation, confirmation, and custom-answer policy are explicit.
+        - Audience, goal, source materials, output format, editability/export needs, language, deck_variant, execution options, recommendation, confirmation, and custom-answer policy are explicit.
       zh-CN:
-        - 受众、目标、资料来源、输出格式、可编辑/导出需求、语言、执行方案、推荐方案、确认状态和自定义答案策略已经明确。
+        - 受众、目标、资料来源、输出格式、可编辑/导出需求、语言、deck_variant、执行方案、推荐方案、确认状态和自定义答案策略已经明确。
   - id: 02-storyline
     type: research
     title:
-      en: Storyline
-      zh-CN: 故事线
+      en: Source And Storyline Analysis
+      zh-CN: 源材料与故事线分析
     objective:
-      en: Build the narrative arc, section logic, slide inventory, source-to-slide map, and open content gaps before visual production.
-      zh-CN: 在视觉生产前建立叙事主线、章节逻辑、页面清单、资料到页面的映射和未闭合内容缺口。
+      en: Build the narrative arc, section logic, slide inventory, source-to-slide map, and open content gaps; for remake or modify variants, inspect the provided deck's content, structure, template system, reusable styles, and slide-level change scope before visual production.
+      zh-CN: 建立叙事主线、章节逻辑、页面清单、资料到页面的映射和未闭合内容缺口；若是重制或局部修改，还要洞察分析已提供 PPT 的内容、结构、模板系统、可复用样式和页面级修改范围。
     depends_on:
       - 01-intake
     required: true
@@ -74,17 +74,17 @@ nodes:
     estimated_minutes: 35
     acceptance:
       en:
-        - Narrative arc, slide list, source mapping, citation needs, and content gaps are recorded with evidence paths.
+        - Narrative arc, slide list, source mapping, citation needs, content gaps, and variant-specific source deck/template analysis are recorded with evidence paths.
       zh-CN:
-        - 已记录叙事主线、页面列表、资料映射、引用需求和内容缺口，并附证据路径。
+        - 已记录叙事主线、页面列表、资料映射、引用需求、内容缺口，以及当前 variant 需要的源 PPT/模板分析，并附证据路径。
   - id: 03-direction
     type: design
     title:
       en: Direction And Specialist Choice
       zh-CN: 方向与 specialist 选择
     objective:
-      en: Select the deck production direction and same-lane specialist mix: bundled presentations/Canva/project template first, PPT Master only for native editable PPTX gaps, Guizang only for polished HTML decks, Beautiful HTML Templates only as an external template reference, and visual-style-ppt-skill only as a local style-review candidate after license risk is accepted.
-      zh-CN: 选择 PPT 生产方向和同类 specialist 组合：优先 bundled presentations、Canva 或项目模板；只有原生可编辑 PPTX 缺口才试验 PPT Master；只有精美 HTML deck 方向才用 Guizang；Beautiful HTML Templates 只作为外部模板参考；visual-style-ppt-skill 只有在接受 license 风险后才作为本地风格评审候选。
+      en: Select the deck production direction, template strategy, and same-lane specialist mix by variant: create chooses the best starting template, remake may rebuild around a new visual system while preserving source meaning, and modify follows the original template unless the user confirms a broader redesign. Prefer bundled presentations, Canva, or project templates first; use PPT Master only for native editable PPTX gaps, Guizang only for polished HTML decks, Beautiful HTML Templates only as an external template reference, and visual-style-ppt-skill only as a local style-review candidate after license risk is accepted.
+      zh-CN: 按 variant 选择 PPT 生产方向、模板策略和同类 specialist 组合：从零生成要选合适起始模板；重制可以在保留原内容含义的基础上重建视觉系统；局部修改默认沿用原 PPT 模板，除非用户确认整体改版。优先 bundled presentations、Canva 或项目模板；只有原生可编辑 PPTX 缺口才试验 PPT Master；只有精美 HTML deck 方向才用 Guizang；Beautiful HTML Templates 只作为外部模板参考；visual-style-ppt-skill 只有在接受 license 风险后才作为本地风格评审候选。
     depends_on:
       - 02-storyline
     required: true
@@ -105,17 +105,17 @@ nodes:
     estimated_minutes: 30
     acceptance:
       en:
-        - Direction, visual style, production surface, specialist selection basis, skipped alternatives, fallback policy, and source/license boundaries are recorded in skill_decisions or capability_gaps.
+        - Direction, visual style, template strategy, production surface, specialist selection basis, skipped alternatives, fallback policy, and source/license boundaries are recorded in skill_decisions or capability_gaps.
       zh-CN:
-        - 方向、视觉风格、生产面、specialist 选择依据、未选候选、fallback 策略和来源/license 边界已记录到 skill_decisions 或 capability_gaps。
+        - 方向、视觉风格、模板策略、生产面、specialist 选择依据、未选候选、fallback 策略和来源/license 边界已记录到 skill_decisions 或 capability_gaps。
   - id: 04-plan
     type: plan
     title:
       en: Deck Production Plan
       zh-CN: PPT 生产计划
     objective:
-      en: Convert the selected direction into bounded build, asset, note, export, and verification tasks with explicit write scope and artifact paths.
-      zh-CN: 把选定方向拆成有边界的生成、资产、备注、导出和验证任务，并明确写入范围和产物路径。
+      en: Convert the selected direction into bounded build, asset, note, export, verification, feedback, and rework tasks with explicit write scope, slide scope, artifact paths, and reject conditions.
+      zh-CN: 把选定方向拆成有边界的生成、资产、备注、导出、验证、反馈和返工任务，并明确写入范围、页面范围、产物路径和打回条件。
     depends_on:
       - 03-direction
     required: true
@@ -136,17 +136,17 @@ nodes:
     estimated_minutes: 25
     acceptance:
       en:
-        - Build steps, asset needs, slide ownership, output paths, verification checks, and reject conditions are clear.
+        - Build steps, asset needs, slide ownership, output paths, feedback/rework loop, verification checks, and reject conditions are clear.
       zh-CN:
-        - 生成步骤、资产需求、页面归属、输出路径、验证检查和打回条件已经清楚。
+        - 生成步骤、资产需求、页面归属、输出路径、反馈/返工循环、验证检查和打回条件已经清楚。
   - id: 05-build
     type: implement
     title:
-      en: Build Deck
-      zh-CN: 生成 PPT
+      en: Build Or Modify Deck
+      zh-CN: 生成或修改 PPT
     objective:
-      en: Produce or revise the deck artifacts with the selected primary surface and only the supporting specialists justified by the direction decision.
-      zh-CN: 使用已选主生产面生成或修改 PPT 产物，只加入方向决策中有依据的支持 specialist。
+      en: Produce or revise deck artifacts according to deck_variant: create a new deck, remake a provided deck into a stronger structure/visual system, or modify specified slides while preserving the original template style. Use the selected primary surface and only the supporting specialists justified by the direction decision.
+      zh-CN: 按 deck_variant 生成或修改 PPT 产物：从零生成新 PPT；把已提供 PPT 重制成更强的结构和视觉系统；或在保留原模板风格的前提下修改/新增指定页面。使用已选主生产面，只加入方向决策中有依据的支持 specialist。
     depends_on:
       - 04-plan
     required: true
@@ -167,9 +167,9 @@ nodes:
     estimated_minutes: 60
     acceptance:
       en:
-        - Deck artifact changes are created or revised, scoped to the selected direction, and recorded with changed files and evidence.
+        - Deck artifact changes match deck_variant and selected direction, preserve required source content or template style, and are recorded with changed files and evidence.
       zh-CN:
-        - PPT 产物已按选定方向生成或修改，范围受控，并记录变更文件和证据。
+        - PPT 产物已符合 deck_variant 和选定方向，按需保留源内容或原模板风格，范围受控，并记录变更文件和证据。
   - id: 06-polish
     type: implement
     title:
@@ -207,8 +207,8 @@ nodes:
       en: Deck QA
       zh-CN: PPT 验收
     objective:
-      en: Verify the deck by opening/rendering or inspecting exports, checking editability or HTML behavior when relevant, reviewing slide order, text fit, evidence/citations, and rejecting incomplete work.
-      zh-CN: 通过打开/渲染或检查导出验证 PPT，按需检查可编辑性或 HTML 行为、页面顺序、文字适配、证据/引用，并打回不完整工作。
+      en: Verify the deck by opening/rendering or inspecting exports, checking editability or HTML behavior when relevant, reviewing slide order, text fit, contrast, readability, visual consistency, evidence/citations, and rejecting incomplete work to the correct upstream node.
+      zh-CN: 通过打开/渲染或检查导出验证 PPT，按需检查可编辑性或 HTML 行为、页面顺序、文字适配、对比度、可读性、视觉一致性、证据/引用，并把不完整工作打回正确上游节点。
     depends_on:
       - 06-polish
     required: true
@@ -219,7 +219,7 @@ nodes:
     agent: deck-qa
     parallel_group: verification
     join_policy: all_required
-    handoff_target: 08-delivery
+    handoff_target: 08-feedback
     task_complexity: expert
     model_tier: frontier
     model_profile: deck-quality
@@ -232,7 +232,38 @@ nodes:
         - Verification evidence confirms render/export behavior and deck quality, or failures are rejected to the correct upstream node.
       zh-CN:
         - 验证证据确认渲染/导出行为和 PPT 质量；若失败，打回正确上游节点。
-  - id: 08-delivery
+  - id: 08-feedback
+    type: review
+    title:
+      en: User Feedback And Rework Loop
+      zh-CN: 用户反馈与返工循环
+    objective:
+      en: Present verification findings and deck artifact paths, capture user feedback or explicit acceptance, and route single-slide or multi-slide rework back to the smallest correct upstream node until accepted or blocked.
+      zh-CN: 展示验证结果和 PPT 产物路径，收集用户修改意见或明确接受结果，并把单页或多页返工打回最小正确上游节点，直到通过或记录真实阻塞。
+    depends_on:
+      - 07-verify
+    required: true
+    retry_limit: 3
+    context_level: focus
+    owner: codex
+    worker_profile: deck-qa
+    agent: deck-qa
+    parallel_group: feedback
+    join_policy: manual_review
+    handoff_target: 09-delivery
+    task_complexity: standard
+    model_tier: standard
+    model_profile: deck-quality
+    runtime_profile: deck-production
+    safety_profile: strict-delivery
+    scorecard: deck-delivery
+    estimated_minutes: 20
+    acceptance:
+      en:
+        - User feedback, acceptance, or blocker is recorded; any requested rework is routed to the smallest responsible upstream node with slide scope and evidence.
+      zh-CN:
+        - 已记录用户反馈、接受结果或阻塞；如需返工，已按页面范围和证据打回最小责任上游节点。
+  - id: 09-delivery
     type: delivery
     title:
       en: Deck Delivery
@@ -241,7 +272,7 @@ nodes:
       en: Package final deck artifacts, verification evidence, residual risks, source-safety notes, knowledge sync, and workflow evolution candidates.
       zh-CN: 汇总最终 PPT 产物、验证证据、剩余风险、来源安全说明、知识同步和 workflow 进化候选。
     depends_on:
-      - 07-verify
+      - 08-feedback
     required: true
     retry_limit: 1
     context_level: focus

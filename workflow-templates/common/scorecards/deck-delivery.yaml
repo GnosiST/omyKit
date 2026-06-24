@@ -4,8 +4,8 @@ name:
   en: Deck Delivery
   zh-CN: PPT 交付
 description:
-  en: Evidence checks for proposal or presentation workflows that combine story, visual direction, deck production, specialist selection, and export verification.
-  zh-CN: 面向提案或演示文稿工作流的证据检查，覆盖叙事、视觉方向、PPT 生产、specialist 选择和导出验证。
+  en: Evidence checks for deck workflows that combine variant-aware intake, story, visual direction, deck production, feedback rework, specialist selection, and export verification.
+  zh-CN: 面向 PPT/deck 工作流的证据检查，覆盖 variant-aware 入口、叙事、视觉方向、PPT 生产、反馈返工、specialist 选择和导出验证。
 checks:
   - id: intake-decision-recorded
     title:
@@ -21,6 +21,13 @@ checks:
     severity: required
     evidence:
       type: intake_execution_options_confirmed
+  - id: deck-variant-recorded
+    title:
+      en: Deck variant is recorded
+      zh-CN: PPT variant 已记录
+    severity: required
+    evidence:
+      type: deck_variant_recorded
   - id: terminal-handoff-summary
     title:
       en: Terminal nodes have handoff summaries
