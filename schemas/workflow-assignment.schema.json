@@ -114,6 +114,12 @@
         "null"
       ]
     },
+    "policy_blocker": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "notes": {
       "type": [
         "string",

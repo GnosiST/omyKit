@@ -140,6 +140,8 @@ const BOARD_LABELS = {
     threadId: "Thread ID",
     worktreePath: "Worktree",
     writeScope: "Write scope",
+    policyBlockers: "Policy blockers",
+    policyBlocker: "Policy blocker",
     nodes: "Nodes",
     counts: "Counts",
     unclaimedReady: "Unclaimed ready",
@@ -420,6 +422,8 @@ const BOARD_LABELS = {
     threadId: "Thread ID",
     worktreePath: "Worktree",
     writeScope: "写入范围",
+    policyBlockers: "策略阻塞",
+    policyBlocker: "策略阻塞",
     nodes: "节点",
     counts: "计数",
     unclaimedReady: "未认领就绪节点",
@@ -1337,7 +1341,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--git-removal-plan|--untrack-runtime|--reset-runtime|--uninstall-local] [--json] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
-  node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
+  node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--policy-blocker <reason>] [--workflow workflow-id]
   node scripts/omykit-workflow.mjs validate [--workflow workflow-id]
   node scripts/omykit-workflow.mjs scorecard [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs record-run <node-id> --id <run-id> --command <cmd> --status running|passed|failed|stopped [--log <path>] [--pid <pid>] [--resume <cmd>] [--workflow workflow-id]
@@ -3531,7 +3535,7 @@ function validateAssignmentRecord(graph, record, index) {
   if (record.write_scope !== undefined && (!Array.isArray(record.write_scope) || record.write_scope.some((item) => typeof item !== "string" || !item))) {
     errors.push(`${label}: write_scope must be an array of non-empty strings`);
   }
-  for (const field of ["thread_id", "worktree_path", "context_pack", "handoff_path", "model", "notes"]) {
+  for (const field of ["thread_id", "worktree_path", "context_pack", "handoff_path", "model", "policy_blocker", "notes"]) {
     if (record[field] !== undefined && record[field] !== null && typeof record[field] !== "string") {
       errors.push(`${label}: ${field} must be a string or null`);
     }
@@ -4712,6 +4716,7 @@ function buildAssignmentProjection(workflowDir, assignmentData, projectedNodes) 
     context_pack: record.context_pack || null,
     handoff_path: record.handoff_path || null,
     handoff_exists: assignmentHandoffExists(workflowDir, record),
+    policy_blocker: record.policy_blocker || null,
     notes: record.notes || null,
     at: record.at || null,
     line: record.line || null,
@@ -4783,6 +4788,16 @@ function buildAssignmentProjection(workflowDir, assignmentData, projectedNodes) 
     file: path.basename(assignmentData.file),
     records,
     active: activeRecords,
+    runtime_policy_blockers: records
+      .filter((record) => record.policy_blocker)
+      .map((record) => ({
+        node_id: record.node_id,
+        agent_id: record.agent_id,
+        execution_surface: record.execution_surface,
+        status: record.status,
+        policy_blocker: record.policy_blocker,
+        notes: record.notes || null,
+      })),
     by_node: byNode,
     by_agent: [...byAgentMap.values()].map((agent) => ({
       agent_id: agent.agent_id,
@@ -5871,7 +5886,7 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
 
   switch (evidence.type) {
     case "intake_decision_recorded": {
-      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && TERMINAL_STATUSES.has(node.status));
+      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && (TERMINAL_STATUSES.has(node.status) || node.handoff_status === "passed"));
       if (intakeNodes.length === 0) return pending();
       const failing = intakeNodes
         .filter((node) => {
@@ -5887,7 +5902,7 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
       return failing.length === 0 ? pass() : fail(failing, isZh ? "入口节点缺少完整 intake_decision、路由、执行形态或自定义答案记录。" : "Intake nodes are missing complete intake_decision, route, execution shape, or custom-answer records.");
     }
     case "intake_execution_options_confirmed": {
-      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && TERMINAL_STATUSES.has(node.status));
+      const intakeNodes = projectedNodes.filter((node) => node.type === "intake" && (TERMINAL_STATUSES.has(node.status) || node.handoff_status === "passed"));
       if (intakeNodes.length === 0) return pending();
       const confirmedStatuses = new Set(["confirmed", "auto_authorized", "changed"]);
       const failing = intakeNodes
@@ -6406,6 +6421,7 @@ function buildDispatchPlan(board, options = {}) {
       requested_surface: requestedSurface || "legacy-subagent",
       codex_subagent_model_override: "available_when_runtime_tool_supports_model_parameter",
       fallback: "inherit_parent_model_and_record_recommended_vs_actual_gap",
+      policy_blockers: board.assignments?.runtime_policy_blockers || [],
     },
     ready_dispatches: ready,
     running_nodes: board.columns.running.map((node) => ({ node_id: node.id, title: node.display_title || node.title, claimed_by: node.claimed_by || null })),
@@ -7345,6 +7361,15 @@ function renderAgentRoster(items, text) {
   });
 }
 
+function renderPolicyBlockers(items, text) {
+  return renderObjectList(items, text.none, (item) => {
+    return `<strong>${escapeHtml(item.agent_id || text.none)}</strong> <span class="muted">${escapeHtml(item.execution_surface || text.none)} · ${escapeHtml(item.status || text.none)}</span>
+      <p>${escapeHtml(text.nodes)}: ${renderNodeLinks([item.node_id].filter(Boolean), text)}</p>
+      <p>${escapeHtml(text.policyBlocker)}: ${escapeHtml(item.policy_blocker || text.none)}</p>
+      ${item.notes ? `<p class="muted">${escapeHtml(item.notes)}</p>` : ""}`;
+  });
+}
+
 function renderTimeline(items, text) {
   return renderObjectList(items, text.none, (item) => {
     const details = [item.handoff ? `handoff=${item.handoff}` : null, item.reject_to ? `reject_to=${item.reject_to}` : null, item.reason ? `reason=${item.reason}` : null]
@@ -8029,8 +8054,11 @@ function renderBoardHtml(board) {
         ${renderMetric(text.running, board.assignments.active.length)}
         ${renderMetric(text.handoff, board.assignments.missing_handoffs.length)}
         ${renderMetric(text.writeScope, board.assignments.write_scope_conflicts.length)}
+        ${renderMetric(text.policyBlockers, board.assignments.runtime_policy_blockers.length)}
       </div>
       ${renderAgentRoster(board.collaboration.agent_roster, text)}
+      <h3>${escapeHtml(text.policyBlockers)}</h3>
+      ${renderPolicyBlockers(board.assignments.runtime_policy_blockers, text)}
     </section>
 
     <section class="panel">
@@ -9367,6 +9395,10 @@ function cmdDoctor(options) {
     const initialReport = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
     fixActions = applyDoctorFixes(initialReport, process.cwd());
   }
+  const namespace = omyKitNamespaceStatus(process.cwd());
+  if (!namespace.conflict) {
+    ensureLocalGitIgnore(process.cwd());
+  }
   const report = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
   if (fixActions.length > 0) {
     report.fix = {
@@ -9575,6 +9607,7 @@ function cmdAssign(positional, options) {
     write_scope: splitCsv(options.scope),
     context_pack: options["context-pack"] ? String(options["context-pack"]) : null,
     handoff_path: options.handoff ? String(options.handoff) : null,
+    policy_blocker: options["policy-blocker"] ? String(options["policy-blocker"]) : null,
     notes: options.notes ? String(options.notes) : null,
   };
   const errors = validateAssignmentRecord(graph, record, 0);
@@ -9590,6 +9623,7 @@ function cmdAssign(positional, options) {
     worktree_path: record.worktree_path,
     context_pack: record.context_pack,
     handoff_path: record.handoff_path,
+    policy_blocker: record.policy_blocker,
   });
   console.log(`Assignment recorded: ${agentId}`);
   console.log(`Node: ${nodeId}`);

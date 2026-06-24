@@ -1029,6 +1029,12 @@ assert.equal(state.nodes["01-intake"].status, "ready");
 assert.equal(state.nodes["02-design"].status, "failed");
 assert.equal(state.nodes["02-research"].status, "ready");
 assert.ok(!state.active_nodes.includes("02-design"));
+run(["board", "--lang", "zh-CN"]);
+const rejectedBoard = readJson(path.join(dir, "board.json"));
+const rejectedIntake = Object.values(rejectedBoard.columns).flat().find((node) => node.id === "01-intake");
+assert.equal(rejectedIntake.handoff_status, "passed");
+assert.ok(rejectedBoard.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(rejectedBoard.scorecard.checks.some((check) => check.id === "intake-options-confirmed" && check.status === "passed"));
 
 const blockOutput = run(["block", "02-design", "--reason", "Waiting for user confirmation"]);
 assert.match(blockOutput, /Blocked nodes: 02-design design - Design/);
@@ -1081,6 +1087,30 @@ const unblockOutput = run(["unblock", "01-intake", "--reason", "用户已确认"
 assert.match(unblockOutput, /就绪节点: 01-intake intake - 需求接收/);
 const unblockedState = readJson(path.join(workflowDirFor(tmpBlocked), "state.json"));
 assert.equal(unblockedState.nodes["01-intake"].status, "ready");
+run([
+  "assign",
+  "01-intake",
+  "--agent",
+  "policy-blocked-thread",
+  "--role",
+  "runtime-policy-check",
+  "--surface",
+  "background_thread",
+  "--status",
+  "blocked",
+  "--policy-blocker",
+  "runtime_requires_explicit_user_authorization",
+  "--notes",
+  "Codex runtime exposed worker tools but policy did not allow spawning in this validation step.",
+], tmpBlocked);
+run(["board", "--lang", "zh-CN"], tmpBlocked);
+const policyBlockedBoard = readJson(path.join(workflowDirFor(tmpBlocked), "board.json"));
+assert.equal(policyBlockedBoard.assignments.runtime_policy_blockers.length, 1);
+assert.equal(policyBlockedBoard.assignments.runtime_policy_blockers[0].policy_blocker, "runtime_requires_explicit_user_authorization");
+assert.equal(policyBlockedBoard.orchestration.runtime_capability.policy_blockers[0].agent_id, "policy-blocked-thread");
+const policyBlockedHtml = fs.readFileSync(path.join(workflowDirFor(tmpBlocked), "board.html"), "utf8");
+assert.match(policyBlockedHtml, /策略阻塞/);
+assert.match(policyBlockedHtml, /runtime_requires_explicit_user_authorization/);
 
 const badDeliveryHandoff = path.join(dir, "handoffs", "06-delivery-missing-evolution.json");
 fs.writeFileSync(path.join(dir, "evidence", "06-delivery-summary.txt"), "delivery review evidence\n");
@@ -1545,6 +1575,18 @@ const doctorFixedGraph = readJson(doctorGraphPath);
 assert.equal(doctorFixedGraph.metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
 assert.ok(fs.existsSync(path.join(doctorDir, "assignments.jsonl")));
 assert.ok(fs.existsSync(path.join(doctorDir, "nodes", "01-intake.json")));
+
+const tmpFreshDoctor = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-fresh-doctor-"));
+execFileSync("git", ["init"], { cwd: tmpFreshDoctor, stdio: ["ignore", "ignore", "ignore"] });
+const freshDoctorReport = JSON.parse(run(["doctor", "--fix", "--json", "--lang", "zh-CN"], tmpFreshDoctor));
+assert.equal(freshDoctorReport.project.local_git_ignore.active, true);
+assert.ok(fs.existsSync(path.join(tmpFreshDoctor, ".omykit", "health", "health-report.json")));
+assert.ok(!fs.existsSync(path.join(tmpFreshDoctor, ".gitignore")));
+const freshExclude = fs.readFileSync(path.join(tmpFreshDoctor, ".git", "info", "exclude"), "utf8");
+assert.match(freshExclude, /^\.omykit\/$/m);
+const freshStatus = execFileSync("git", ["status", "--short"], { cwd: tmpFreshDoctor, encoding: "utf8" });
+assert.equal(freshStatus.trim(), "");
+
 run(["init", "Completed legacy task", "--id", "completed-legacy"], tmpDoctor);
 const completedLegacyDir = path.join(tmpDoctor, ".omykit", "workflows", "completed-legacy");
 const completedLegacyGraphPath = path.join(completedLegacyDir, "graph.json");

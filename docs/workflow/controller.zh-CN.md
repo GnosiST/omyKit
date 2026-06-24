@@ -157,13 +157,14 @@ node scripts/omykit-workflow.mjs orchestrate --workflow <workflow-id> --json
 node scripts/omykit-workflow.mjs dispatch-plan --workflow <workflow-id> --surface auto --json
 node scripts/omykit-workflow.mjs context-pack <node-id> --workflow <workflow-id>
 node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status running --context-pack context-packs/<node-id>.json --handoff handoffs/<node-id>.json
+node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface background_thread --status blocked --policy-blocker runtime_requires_explicit_user_authorization
 ```
 
-controller 仍然不会自己启动 agent 或调用模型。但 `action=dispatch_worker` 对 Codex 主控是执行契约，不是给用户看的建议：如果当前运行时暴露匹配的子智能体、线程或 worktree 工具，Codex 应使用节点 context pack 创建真实 worker，并且只有 worker 存在后才运行 `assign`。在 `one_to_many` 中，带同一 `dispatch_batch_id` 的 action 属于同一扇出批次；在 `many_to_one` 中，下游节点应等到 `collaboration_topology.join_targets[].waiting_on` 清空，或 `join_policy` 允许后再启动。如果运行时无法创建指定 worker，要记录 unavailable 原因；只有范围安全时才降级为主线程执行，否则 block 节点并明确缺少的能力。
+controller 仍然不会自己启动 agent 或调用模型。但 `action=dispatch_worker` 对 Codex 主控是执行契约，不是给用户看的建议：如果当前运行时暴露匹配的子智能体、线程或 worktree 工具，Codex 应使用节点 context pack 创建真实 worker，并且只有 worker 存在后才运行 `assign`。在 `one_to_many` 中，带同一 `dispatch_batch_id` 的 action 属于同一扇出批次；在 `many_to_one` 中，下游节点应等到 `collaboration_topology.join_targets[].waiting_on` 清空，或 `join_policy` 允许后再启动。如果运行时无法创建指定 worker，要用 `assign --status blocked --policy-blocker <reason>` 或 blocked handoff 记录 unavailable 原因；只有范围安全时才降级为主线程执行，否则 block 节点并明确缺少的能力。
 
 Codex Desktop 的新线程和子智能体工具可能暴露模型 override，但当前工具策略决定本次调用是否能设置模型。节点有任务级推荐模型时，Codex 只有在当前运行时工具和策略允许，或用户明确授权具体模型时，才应在创建 worker 时传入该模型，同时让主线程保持当前模型作为 orchestrator-observer。若非 Codex 客户端、权限边界或工具策略不允许 override，worker 继承默认模型，并在 handoff 里记录推荐模型与实际模型的差距。若运行时隐藏实际模型元数据，写 `agent_activity[].model_unavailable_reason` 和节点级 `usage_observation.model_status=unavailable`，不要编造模型名。
 
-`assign` 会把实际分工追加到 `assignments.jsonl`：节点、agent id、角色、执行面、thread id、worktree、模型档位、写入范围、context pack、handoff 路径和状态。它是运行时通讯录，不写入模板。看板会投影 Agent 通讯录，Scorecard 会提醒 assignment 缺少可读取 handoff 或多个活跃 agent 写入范围重叠。
+`assign` 会把实际分工追加到 `assignments.jsonl`：节点、agent id、角色、执行面、thread id、worktree、模型档位、写入范围、context pack、handoff 路径、运行时策略阻塞原因和状态。它是运行时通讯录，不写入模板。看板会投影 Agent 通讯录和运行时策略阻塞，Scorecard 会提醒 assignment 缺少可读取 handoff 或多个活跃 agent 写入范围重叠。
 
 ## Thread-native 多 Agent 协作
 
@@ -308,7 +309,7 @@ token、上下文、skill 和实际模型总量是来源感知的。Provider tok
 
 看板语言按这个顺序确定：显式 `--lang`、workflow metadata 语言、最新 handoff 语言、标题语言推断。只有需要覆盖 workflow 语言时才手动传 `--lang zh-CN`。在 Codex Desktop 中，Codex 应返回生成的 `board.html` 本地链接，并在可用时用内置浏览器打开。CLI 的 `--open` fallback 会让操作系统尝试用系统默认浏览器打开 HTML；如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
-看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设、执行方案、已选方案、确认状态和自定义答案策略。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择或运行环境没有暴露模型的节点伪造记录。
+看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设、执行方案、已选方案、确认状态和自定义答案策略。如果下游打回让 intake 重新回到 `ready`，Scorecard 仍会把上一次可读取的 passed intake handoff 当作历史证据，不强迫用户重建原入口决策记录。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择或运行环境没有暴露模型的节点伪造记录。
 
 这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不替用户选择具体供应商模型，不自动推断 skill 使用，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组、skill 使用记录、模型档位建议、推荐模型、实际模型记录、耗时、用量和 handoff 证据。
 
