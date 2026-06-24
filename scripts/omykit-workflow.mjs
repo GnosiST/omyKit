@@ -3412,18 +3412,23 @@ function addEvidencePath(paths, value) {
   if (itemPath) paths.add(itemPath);
 }
 
+function evidenceValues(value) {
+  if (value === undefined || value === null || value === "") return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 function collectEvidencePaths(handoff) {
   if (!handoff || handoff.status === "missing" || handoff.status === "invalid") return [];
   const paths = new Set();
-  for (const value of handoff.outputs || []) addEvidencePath(paths, value);
-  for (const value of handoff.evidence || []) addEvidencePath(paths, value);
+  for (const value of evidenceValues(handoff.outputs)) addEvidencePath(paths, value);
+  for (const value of evidenceValues(handoff.evidence)) addEvidencePath(paths, value);
   for (const item of handoff.work_items || []) {
-    for (const value of item.evidence || []) addEvidencePath(paths, value);
+    for (const value of evidenceValues(item.evidence)) addEvidencePath(paths, value);
   }
   for (const item of handoff.verification || []) {
     if (item.evidence) addEvidencePath(paths, item.evidence);
   }
-  for (const value of handoff.downstream_context?.evidence || []) addEvidencePath(paths, value);
+  for (const value of evidenceValues(handoff.downstream_context?.evidence)) addEvidencePath(paths, value);
   return [...paths];
 }
 

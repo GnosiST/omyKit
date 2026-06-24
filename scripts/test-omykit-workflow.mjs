@@ -705,12 +705,7 @@ externalIntakeHandoff.evidence = [
     path: "evidence/01-intake-summary.txt",
   },
 ];
-externalIntakeHandoff.work_items[0].evidence = [
-  {
-    type: "text",
-    path: "evidence/01-intake-summary.txt",
-  },
-];
+externalIntakeHandoff.work_items[0].evidence = "evidence/01-intake-summary.txt";
 externalIntakeHandoff.verification[0].evidence = {
   type: "text",
   path: path.join(externalDir, "evidence", "01-intake-summary.txt"),
@@ -725,6 +720,7 @@ run(["board", "--lang", "zh-CN"], tmpExternalHandoff);
 const externalBoard = readJson(path.join(externalDir, "board.json"));
 assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && /需求已固化/.test(node.handoff_summary)));
 assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && node.evidence_items.some((item) => path.isAbsolute(item.path) && item.exists)));
+assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && !node.evidence_items.some((item) => item.path === "e")));
 assert.ok(externalBoard.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
 const externalScorecardJson = JSON.parse(run(["scorecard", "--json", "--lang", "zh-CN"], tmpExternalHandoff));
 assert.equal(externalScorecardJson.workflow_id, "external-handoff");
