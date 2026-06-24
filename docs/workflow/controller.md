@@ -81,7 +81,10 @@ Users normally state intent in chat. Use `tasks list` only when debugging why a 
 
 Use `doctor` when an existing project or historical workflow feels partially upgraded, confusing, or stale. It writes `.omykit/health/health-report.json` and checks the project-level workflow layer:
 
-- `.omykit/` and workflow directory presence.
+- `.omykit/` namespace presence and whether it conflicts with a user-owned file.
+- local Git ignore status for `.omykit/` in `.git/info/exclude`.
+- legacy-looking root-level workflow artifact names that might collide with project files.
+- workflow directory presence.
 - active workflow pointer validity.
 - task inbox parseability, same-family task groups, and write-scope conflict signals.
 - workflow validation errors and compatibility upgrade gaps.
@@ -92,11 +95,13 @@ Use `doctor` when an existing project or historical workflow feels partially upg
 - retrofit profile presence at `docs/workflow/project-profile.md`.
 - cleanup candidates and next recommendations.
 
-`doctor --fix` only applies safe compatibility repairs: correcting a broken active pointer when there is exactly one valid workflow, and running the same non-fabricating artifact repair as `upgrade`. It never invents handoffs, token usage, skill usage, model records, or verification evidence.
+`doctor --fix` only applies safe compatibility repairs: adding `.omykit/` to local `.git/info/exclude`, correcting a broken active pointer when there is exactly one valid workflow, and running the same non-fabricating artifact repair as `upgrade`. It never edits project `.gitignore` by default and never invents handoffs, token usage, skill usage, model records, or verification evidence.
 
 Use `cleanup` after reviewing the doctor report. It defaults to dry-run. `cleanup --apply` archives safe candidates into `.omykit/archive/<timestamp>/` instead of deleting them, so users can recover or inspect old artifacts.
 
 Completed historical workflows that fail the current evidence schema are cleanup candidates when every node is already terminal and no command run is active. Archive those directories instead of inventing missing `intake_decision`, `knowledge_sync`, `evolution_candidates`, agent scope, token, skill, model, or verification records.
+
+Use `cleanup --uninstall-local --apply` only when the project should stop using omyKit locally. It moves the whole `.omykit/` runtime directory into a local non-project archive, usually under `.git/omykit-uninstalled/` for Git projects. This removes working-tree runtime state without touching project source files or reducing future workflow quality if omyKit is initialized again.
 
 ## Long Task Execution
 
@@ -331,6 +336,8 @@ node scripts/omykit-workflow.mjs upgrade --workflow <workflow-id>
 ```
 
 `graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `assignments.jsonl` is the runtime Agent Roster and assignment ledger. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
+
+The `.omykit/` namespace is intentionally unique. In Git projects, `init` writes `.omykit/` to `.git/info/exclude`, not `.gitignore`, so workflow runtime files stay local and do not affect teammates or remote repositories unless the user explicitly asks to vendor them. If `.omykit` already exists as a non-directory file, omyKit stops and reports a namespace conflict instead of overwriting it. Root-level names such as `graph.json`, `state.json`, `board.html`, `nodes/`, or `handoffs/` are treated as possible legacy conflicts and are reported by `doctor`, but they are never moved automatically because they may be real project files.
 
 ## Compact Recovery
 

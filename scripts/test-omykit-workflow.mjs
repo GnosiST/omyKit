@@ -108,6 +108,52 @@ const workflowsOutput = run(["workflows"]);
 assert.match(workflowsOutput, /\* feature-x/);
 assert.match(workflowsOutput, /active/);
 
+const tmpIsolation = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-local-isolation-"));
+execFileSync("git", ["init"], { cwd: tmpIsolation, stdio: ["ignore", "ignore", "pipe"] });
+fs.writeFileSync(path.join(tmpIsolation, "README.md"), "# Local isolation fixture\n");
+run(["init", "Local-only workflow state", "--id", "local-only"], tmpIsolation);
+const localExclude = fs.readFileSync(path.join(tmpIsolation, ".git", "info", "exclude"), "utf8");
+assert.match(localExclude, /omyKit local runtime state/);
+assert.match(localExclude, /^\.omykit\/$/m);
+const ignoredRuntime = execFileSync("git", ["check-ignore", ".omykit/active-workflow"], {
+  cwd: tmpIsolation,
+  encoding: "utf8",
+});
+assert.match(ignoredRuntime, /\.omykit\/active-workflow/);
+assert.equal(execFileSync("git", ["status", "--short", "--", ".omykit"], {
+  cwd: tmpIsolation,
+  encoding: "utf8",
+}), "");
+const isolationDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpIsolation));
+assert.equal(isolationDoctor.project.local_git_ignore.active, true);
+assert.equal(isolationDoctor.project.remote_hygiene.runtime_state_policy, "local_only");
+assert.ok(!isolationDoctor.issues.some((issue) => issue.id === "local_runtime_ignore_missing"));
+const uninstallDryRun = JSON.parse(run(["cleanup", "--uninstall-local", "--json", "--lang", "zh-CN"], tmpIsolation));
+assert.equal(uninstallDryRun.cleanup.applied, false);
+assert.equal(uninstallDryRun.cleanup.mode, "uninstall-local-dry-run");
+const uninstallApplied = JSON.parse(run(["cleanup", "--uninstall-local", "--apply", "--json", "--lang", "zh-CN"], tmpIsolation));
+assert.equal(uninstallApplied.cleanup.applied, true);
+assert.equal(uninstallApplied.cleanup.mode, "uninstall-local");
+assert.ok(!fs.existsSync(path.join(tmpIsolation, ".omykit")));
+assert.ok(fs.existsSync(uninstallApplied.cleanup.archive_dir));
+assert.equal(execFileSync("git", ["status", "--short"], {
+  cwd: tmpIsolation,
+  encoding: "utf8",
+}), "?? README.md\n");
+fs.rmSync(tmpIsolation, { recursive: true, force: true });
+
+const tmpNamespaceConflict = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-namespace-conflict-"));
+fs.writeFileSync(path.join(tmpNamespaceConflict, ".omykit"), "user-owned file\n");
+const namespaceDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpNamespaceConflict));
+assert.equal(namespaceDoctor.health, "fail");
+assert.ok(namespaceDoctor.issues.some((issue) => issue.id === "omykit_namespace_conflict"));
+runFails(["init", "Should not overwrite user file", "--id", "conflict"], /omyKit namespace conflict/, tmpNamespaceConflict);
+const namespaceUninstall = JSON.parse(run(["cleanup", "--uninstall-local", "--apply", "--json", "--lang", "zh-CN"], tmpNamespaceConflict));
+assert.equal(namespaceUninstall.cleanup.applied, false);
+assert.equal(namespaceUninstall.cleanup.status, "blocked_namespace_conflict");
+assert.equal(fs.readFileSync(path.join(tmpNamespaceConflict, ".omykit"), "utf8"), "user-owned file\n");
+fs.rmSync(tmpNamespaceConflict, { recursive: true, force: true });
+
 const dispatchOutput = run(["dispatch-plan", "--lang", "zh-CN"]);
 assert.match(dispatchOutput, /派发计划: feature-x/);
 assert.match(dispatchOutput, /主控角色/);

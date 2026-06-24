@@ -81,6 +81,8 @@ node scripts/omykit-workflow.mjs tasks list --json
 
 当旧项目或历史 workflow 出现“改造不彻底、状态混乱、旧产物残留、看板过期、下一步不清楚”时，用 `doctor`。它会写入 `.omykit/health/health-report.json`，并检查项目级工作流层：
 
+- `.omykit/` 命名空间是否存在，以及是否和用户自己的同名文件冲突。
+- `.git/info/exclude` 是否已经本地忽略 `.omykit/`。
 - `.omykit/` 和 workflow 目录是否存在。
 - active workflow 指针是否有效。
 - 任务收件箱是否可解析，以及当前是否存在同源任务或写入范围冲突。
@@ -88,15 +90,18 @@ node scripts/omykit-workflow.mjs tasks list --json
 - 已终态节点是否缺少可读 handoff 证据。
 - board projection 是否缺失或过期。
 - 后台命令是否有可续接记录。
+- 根目录是否存在看起来像旧 workflow 产物的通用文件名，例如 `graph.json`、`state.json`、`board.html`、`nodes/` 或 `handoffs/`。
 - repo-local skill 副本是否可能陈旧。
 - `docs/workflow/project-profile.md` 旧项目 profile 是否存在。
 - 清理候选和下一步建议。
 
-`doctor --fix` 只做安全兼容修复：当只有一个有效 workflow 时修正坏 active 指针，并运行和 `upgrade` 一致的不伪造证据的 artifact 修复。它不会编造 handoff、token 用量、skill 使用、模型记录或验证证据。
+`doctor --fix` 只做安全兼容修复：把 `.omykit/` 写入本地 `.git/info/exclude`、当只有一个有效 workflow 时修正坏 active 指针，并运行和 `upgrade` 一致的不伪造证据的 artifact 修复。它默认不会修改项目 `.gitignore`，也不会编造 handoff、token 用量、skill 使用、模型记录或验证证据。
 
 查看 doctor 报告后再使用 `cleanup`。它默认 dry-run；`cleanup --apply` 也只是把安全候选归档到 `.omykit/archive/<timestamp>/`，不会直接删除，方便回滚或追溯。
 
 如果历史 workflow 的所有节点都已经是终态、没有 active command run，但旧 handoff 不符合当前证据 schema，`cleanup` 会把整个 workflow 目录作为候选。处理方式是归档，不补造 `intake_decision`、`knowledge_sync`、`evolution_candidates`、agent scope、token、skill、model 或验证记录。
+
+只有当项目本地不再需要 omyKit 时，才使用 `cleanup --uninstall-local --apply`。它会把整个 `.omykit/` runtime 目录移动到本地非项目归档位置；Git 项目通常放在 `.git/omykit-uninstalled/`。这样可以移除工作区里的运行状态，不触碰项目源码，也不影响以后重新初始化 omyKit 时的工作质量。
 
 ## 长任务执行方式
 
@@ -331,6 +336,8 @@ node scripts/omykit-workflow.mjs upgrade --workflow <workflow-id>
 ```
 
 `graph.json` 定义 DAG。`state.json` 记录当前节点状态，并可用 `active_nodes` 记录并行工作中的多个活动节点。`assignments.jsonl` 是运行时 Agent 通讯录和分工记录。`ledger.jsonl` 是追加式事件历史。`nodes/` 保存任务卡。`handoffs/` 保存结构化节点结果。`context-packs/` 保存给续接或子智能体的最小上下文包。`commands/` 保存后台命令运行记录和可选日志。`evidence/` 保存命令输出、截图、摘要或导出证据。`board.json` 和 `board.html` 是生成出来的只读视图，可随时重新生成。
+
+`.omykit/` 是 omyKit 的唯一运行时命名空间。Git 项目里，`init` 会把 `.omykit/` 写入 `.git/info/exclude`，不是 `.gitignore`，所以 workflow 运行状态默认只留在本地，不影响队友，也不会进入远程仓库；除非用户明确要求 vendor 到项目里。如果 `.omykit` 已经是一个非目录文件，omyKit 会停止并报告命名空间冲突，不会覆盖它。根目录里的 `graph.json`、`state.json`、`board.html`、`nodes/` 或 `handoffs/` 等通用名字会被 `doctor` 当作潜在旧产物冲突报告，但不会自动移动，因为它们可能是真正的项目文件。
 
 ## Compact 后续跑
 

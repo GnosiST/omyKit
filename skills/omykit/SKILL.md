@@ -47,8 +47,9 @@ Map user intent to commands:
 - next work -> `orchestrate --lang <user-language>` or `next`; both should show the automatic orchestration decision, not only raw ready nodes
 - task inbox/debugging the merge gate -> `tasks list --json` only when the user asks why a request was merged, linked, or split
 - upgrade historical workflow artifacts -> `upgrade --all --lang <user-language>` when old `.omykit/workflows/*` should use the latest controller metadata, command surface, node cards, and board projection rules
-- diagnose project workflow health -> `doctor --lang <user-language>` to inspect retrofit completeness, active workflow pointer, legacy workflows, stale boards, command recovery, cleanup candidates, and next recommendations; add `--fix` only for safe compatibility repairs
+- diagnose project workflow health -> `doctor --lang <user-language>` to inspect retrofit completeness, local-only isolation, `.omykit` namespace conflicts, active workflow pointer, legacy workflows, stale boards, command recovery, cleanup candidates, and next recommendations; add `--fix` only for safe compatibility repairs
 - cleanup legacy workflow residue -> `cleanup --dry-run --lang <user-language>` first; run `cleanup --apply` only after review because it archives safe candidates into `.omykit/archive/` instead of deleting them
+- uninstall project-local omyKit runtime -> `cleanup --uninstall-local --apply --lang <user-language>` only when the user wants the target project to stop using omyKit locally; this moves `.omykit/` to a local non-project archive instead of deleting source files
 - list or switch tracked workflows -> `workflows` or `workflows use <workflow-id>`
 - record long-running command metadata -> `record-run <node-id> --id <run-id> --command <cmd> --status <status> --log <path> --resume <cmd>`
 - continue after interruption -> `resume`
@@ -88,6 +89,7 @@ Include these concise groups:
 - recovery: `$omykit 解除阻塞`, `$omykit 阻塞已解决，继续执行`
 - board and audit: `$omykit 生成看板并打开`, `$omykit scorecard 验票`, `$omykit 校验工作流`
 - health and cleanup: `$omykit 诊断工作流健康`, `$omykit 修复工作流健康`, `$omykit 清理旧工作流残留`
+- local uninstall: `$omykit 卸载本项目 omyKit 运行状态`, `$omykit 移除本地工作流状态`
 - maintenance: `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
 - diagnostics, only when asked: `$omykit 查看编排计划`, `$omykit 导出交接包`, `$omykit 查看 Agent 通讯录`
@@ -95,6 +97,8 @@ Include these concise groups:
 Explain that task-specific shortcuts go through the controller task inbox first. The merge gate automatically decides whether to add the request to the current workflow, link it as a follow-up to a completed workflow, or create a new workflow. Users normally do not run `tasks add/list`; those are debugging primitives for Codex and maintainers.
 
 Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `orchestrate`, `upgrade --all`, `templates list`, `status`, or `board --open`. Do not present `tasks`, `dispatch-plan`, `context-pack`, or `assign` as normal user choices; they are internal primitives unless the user is debugging the controller.
+
+Treat workflow runtime state as local-only by default. Do not ask users to commit or push `.omykit/` unless they explicitly want to vendor workflow state into a repository. In Git projects, `init` should keep `.omykit/` ignored through local `.git/info/exclude`; use `doctor --fix` for safe local ignore repair and `cleanup --uninstall-local --apply` when the user wants to remove project-local omyKit runtime state.
 
 ## Start
 

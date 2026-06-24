@@ -60,13 +60,16 @@ Use the controller health commands for this repository and for target projects:
 node scripts/omykit-workflow.mjs doctor --lang zh-CN
 node scripts/omykit-workflow.mjs doctor --fix --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 ```
 
-`doctor` writes `.omykit/health/health-report.json`, but `.omykit/` is ignored runtime state. Do not commit generated health reports, boards, workflow ledgers, context packs, or archives.
+`doctor` writes `.omykit/health/health-report.json`, but `.omykit/` is local ignored runtime state. In Git projects, `init` and `doctor --fix` use `.git/info/exclude` instead of `.gitignore` so teammates and remotes are not affected by default. Do not commit generated health reports, boards, workflow ledgers, context packs, or archives unless the user explicitly chooses to vendor workflow state.
 
 `doctor --fix` may add compatibility metadata and missing runtime directories to local workflow artifacts, but it must not fabricate handoffs, token usage, skill usage, actual model records, or verification evidence.
 
 `cleanup --apply` archives safe candidates into `.omykit/archive/<timestamp>/`; it must not delete workflow evidence directly.
+
+`cleanup --uninstall-local --apply` removes omyKit from the target project workspace by moving `.omykit/` into a local non-project archive, usually `.git/omykit-uninstalled/` for Git projects.
 
 Historical dogfood workflows under `.omykit/workflows/` may predate current handoff requirements. Treat missing intake decisions, missing `knowledge_sync`, missing `evolution_candidates`, or missing agent scopes as audit findings. Either preserve them as historical evidence, repair them from real records, or archive them after review.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,6 +46,31 @@ const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const ESTIMATED_BYTES_PER_TOKEN = 4;
 const LARGE_TASK_CONTRACT_ESTIMATED_TOKENS = 1500;
 const LARGE_CONTEXT_PACK_ESTIMATED_TOKENS = 6000;
+const OMYKIT_RUNTIME_DIR = ".omykit";
+const OMYKIT_LOCAL_IGNORE_BLOCK = [
+  "# omyKit local runtime state (do not commit)",
+  `${OMYKIT_RUNTIME_DIR}/`,
+  "",
+].join("\n");
+const ROOT_WORKFLOW_ARTIFACT_NAMES = [
+  "active-workflow",
+  "assignments.jsonl",
+  "blockers.md",
+  "board.html",
+  "board.json",
+  "commands",
+  "context-packs",
+  "decisions.md",
+  "evidence",
+  "graph.json",
+  "handoffs",
+  "ledger.jsonl",
+  "nodes",
+  "orchestration-plan.json",
+  "state.json",
+  "workflow-upgrade.json",
+  "workflows",
+];
 const COLLABORATION_FIELDS = [
   "worker_profile",
   "claimed_by",
@@ -678,11 +704,11 @@ function fileSizeIfExists(file) {
 }
 
 function workflowsRoot(cwd = process.cwd()) {
-  return path.join(cwd, ".omykit", "workflows");
+  return path.join(cwd, OMYKIT_RUNTIME_DIR, "workflows");
 }
 
 function omykitRoot(cwd = process.cwd()) {
-  return path.join(cwd, ".omykit");
+  return path.join(cwd, OMYKIT_RUNTIME_DIR);
 }
 
 function activeWorkflowFile(cwd = process.cwd()) {
@@ -697,6 +723,7 @@ function readActiveWorkflowId(cwd = process.cwd()) {
 }
 
 function writeActiveWorkflowId(workflowId, cwd = process.cwd()) {
+  assertOmyKitNamespaceAvailable(cwd);
   ensureDir(omykitRoot(cwd));
   fs.writeFileSync(activeWorkflowFile(cwd), `${workflowId}\n`);
 }
@@ -1268,7 +1295,7 @@ function commandHelp() {
   node scripts/omykit-workflow.mjs orchestrate [--workflow workflow-id] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs upgrade [--workflow workflow-id|--all] [--lang en|zh-CN] [--json]
   node scripts/omykit-workflow.mjs doctor [--workflow workflow-id|--all] [--fix] [--json] [--lang en|zh-CN]
-  node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--json] [--lang en|zh-CN]
+  node scripts/omykit-workflow.mjs cleanup [--dry-run|--apply] [--uninstall-local] [--json] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs dispatch-plan [--workflow workflow-id] [--lang en|zh-CN] [--surface auto|subagent|thread|worktree|main] [--json]
   node scripts/omykit-workflow.mjs context-pack <node-id> [--workflow workflow-id] [--lang en|zh-CN]
   node scripts/omykit-workflow.mjs assign <node-id> --agent <agent-id> --surface subagent|thread|worktree|main --status planned|running|handoff_received|passed|failed|blocked|cancelled [--role <role>] [--thread <id>] [--worktree <path>] [--scope <glob,glob>] [--context-pack <path>] [--handoff <path>] [--workflow workflow-id]
@@ -1296,7 +1323,8 @@ Codex chat intents:
   $omykit 生成看板并打开         generate/open board.html
   $omykit 升级旧工作流           upgrade old workflow artifacts to the current controller surface
   $omykit 诊断工作流健康         inspect project workflow health, legacy artifacts, residual files, and next actions
-  $omykit 清理旧工作流残留       dry-run safe cleanup candidates or archive them when explicitly applied
+  $omykit 清理旧工作流残留       dry-run safe cleanup candidates, archive them, or uninstall local workflow runtime when explicitly applied
+  $omykit 卸载本项目 omyKit 运行状态  move .omykit/ runtime state to a local non-project archive
   $omykit scorecard 验票         audit recorded workflow evidence
   $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
   $omykit 查看模板               list reusable workflow templates
@@ -1340,6 +1368,131 @@ function healthReportFile(cwd = process.cwd()) {
 
 function archiveRoot(cwd = process.cwd()) {
   return path.join(omykitRoot(cwd), "archive");
+}
+
+function omyKitNamespaceStatus(cwd = process.cwd()) {
+  const root = omykitRoot(cwd);
+  const stat = safeStat(root);
+  return {
+    path: root,
+    exists: Boolean(stat),
+    is_directory: Boolean(stat?.isDirectory()),
+    conflict: Boolean(stat && !stat.isDirectory()),
+  };
+}
+
+function assertOmyKitNamespaceAvailable(cwd = process.cwd()) {
+  const status = omyKitNamespaceStatus(cwd);
+  if (status.conflict) {
+    throw new Error(`omyKit namespace conflict: ${OMYKIT_RUNTIME_DIR} exists but is not a directory. Move or rename it before creating workflow state.`);
+  }
+}
+
+function gitDir(cwd = process.cwd()) {
+  const dotGit = path.join(cwd, ".git");
+  const stat = safeStat(dotGit);
+  if (!stat) return null;
+  if (stat.isDirectory()) return dotGit;
+  if (!stat.isFile()) return null;
+  const content = fs.readFileSync(dotGit, "utf8").trim();
+  const match = /^gitdir:\s*(.+)$/i.exec(content);
+  if (!match) return null;
+  return path.resolve(cwd, match[1]);
+}
+
+function gitInfoExcludeFile(cwd = process.cwd()) {
+  const dir = gitDir(cwd);
+  return dir ? path.join(dir, "info", "exclude") : null;
+}
+
+function inspectLocalGitIgnore(cwd = process.cwd()) {
+  const file = gitInfoExcludeFile(cwd);
+  if (!file) {
+    return {
+      git_repo: false,
+      active: false,
+      path: null,
+      entry: `${OMYKIT_RUNTIME_DIR}/`,
+    };
+  }
+  const content = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  return {
+    git_repo: true,
+    active: content.split(/\r?\n/).some((line) => line.trim() === `${OMYKIT_RUNTIME_DIR}/`),
+    path: projectRelativePath(file, cwd),
+    entry: `${OMYKIT_RUNTIME_DIR}/`,
+  };
+}
+
+function ensureLocalGitIgnore(cwd = process.cwd()) {
+  const file = gitInfoExcludeFile(cwd);
+  if (!file) return { status: "not_git_repo", path: null };
+  ensureDir(path.dirname(file));
+  const content = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  if (content.split(/\r?\n/).some((line) => line.trim() === `${OMYKIT_RUNTIME_DIR}/`)) {
+    return { status: "already_present", path: projectRelativePath(file, cwd) };
+  }
+  const separator = content.length === 0 || content.endsWith("\n") ? "" : "\n";
+  fs.appendFileSync(file, `${separator}${OMYKIT_LOCAL_IGNORE_BLOCK}`);
+  return { status: "added", path: projectRelativePath(file, cwd) };
+}
+
+function rootWorkflowArtifactConflicts(cwd = process.cwd()) {
+  return ROOT_WORKFLOW_ARTIFACT_NAMES
+    .map((name) => path.join(cwd, name))
+    .filter((file) => fs.existsSync(file))
+    .map((file) => projectRelativePath(file, cwd));
+}
+
+function localRuntimeUninstallArchiveRoot(cwd = process.cwd()) {
+  const dir = gitDir(cwd);
+  if (dir) return path.join(dir, "omykit-uninstalled");
+  return path.join(os.tmpdir(), "omykit-uninstalled", slugify(cwd));
+}
+
+function movePathPreserving(source, destination) {
+  ensureDir(path.dirname(destination));
+  try {
+    fs.renameSync(source, destination);
+  } catch (error) {
+    if (error.code !== "EXDEV") throw error;
+    fs.cpSync(source, destination, { recursive: true, force: false, errorOnExist: true });
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+}
+
+function uninstallLocalRuntime(cwd = process.cwd()) {
+  const source = omykitRoot(cwd);
+  const stat = safeStat(source);
+  if (!stat) {
+    return {
+      applied: true,
+      mode: "uninstall-local",
+      status: "skipped",
+      reason: `${OMYKIT_RUNTIME_DIR} does not exist`,
+      archive_dir: null,
+      actions: [{ path: OMYKIT_RUNTIME_DIR, status: "skipped", reason: `${OMYKIT_RUNTIME_DIR} does not exist` }],
+    };
+  }
+  if (!stat.isDirectory()) {
+    return {
+      applied: false,
+      mode: "uninstall-local",
+      status: "blocked_namespace_conflict",
+      reason: `${OMYKIT_RUNTIME_DIR} exists but is not an omyKit runtime directory.`,
+      archive_dir: null,
+      actions: [{ path: OMYKIT_RUNTIME_DIR, status: "blocked", reason: `${OMYKIT_RUNTIME_DIR} exists but is not a directory` }],
+    };
+  }
+  const destination = uniqueArchivePath(path.join(localRuntimeUninstallArchiveRoot(cwd), `${timestampForArchive()}-${OMYKIT_RUNTIME_DIR}`));
+  movePathPreserving(source, destination);
+  return {
+    applied: true,
+    mode: "uninstall-local",
+    status: "archived",
+    archive_dir: destination,
+    actions: [{ path: OMYKIT_RUNTIME_DIR, status: "archived", archive_path: destination }],
+  };
 }
 
 function projectRelativePath(file, cwd = process.cwd()) {
@@ -7983,6 +8136,9 @@ function inspectWorkflowHealth(workflowDir, cwd = process.cwd()) {
 function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
   const language = normalizeBoardLanguage(options.lang);
   const root = workflowsRoot(cwd);
+  const namespace = omyKitNamespaceStatus(cwd);
+  const localGitIgnore = inspectLocalGitIgnore(cwd);
+  const rootArtifactConflicts = rootWorkflowArtifactConflicts(cwd);
   const allDirs = options.workflow
     ? [path.join(root, String(options.workflow))]
     : listAllWorkflowDirs(root);
@@ -7995,9 +8151,24 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
     root: cwd,
     omykit_root: projectRelativePath(omykitRoot(cwd), cwd),
     has_omykit_root: fs.existsSync(omykitRoot(cwd)),
+    omykit_namespace: {
+      exists: namespace.exists,
+      is_directory: namespace.is_directory,
+      conflict: namespace.conflict,
+      path: projectRelativePath(namespace.path, cwd),
+    },
     has_workflows_root: fs.existsSync(root),
     active_workflow: activeId,
     active_workflow_valid: activeId ? fs.existsSync(path.join(root, activeId, "graph.json")) : null,
+    local_git_ignore: localGitIgnore,
+    remote_hygiene: {
+      runtime_state_policy: "local_only",
+      default_ignore_surface: ".git/info/exclude",
+      runtime_dir: `${OMYKIT_RUNTIME_DIR}/`,
+      tracked_project_files_required: false,
+      actual_ignore_active: localGitIgnore.active,
+    },
+    root_artifact_name_conflicts: rootArtifactConflicts,
     has_agents_md: fs.existsSync(path.join(cwd, "AGENTS.md")),
     has_readme: fs.existsSync(path.join(cwd, "README.md")),
     has_project_profile: fs.existsSync(path.join(cwd, "docs", "workflow", "project-profile.md")),
@@ -8007,6 +8178,40 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       .filter((relative) => fs.existsSync(path.join(cwd, relative))),
   };
 
+  if (namespace.conflict) {
+    issues.push(doctorIssue({
+      id: "omykit_namespace_conflict",
+      severity: "error",
+      scope: "project",
+      path: OMYKIT_RUNTIME_DIR,
+      summary: ".omykit exists but is not a directory.",
+      detail: "omyKit will not overwrite user-owned files. Move or rename this path before creating workflow state.",
+      next_action: `Move or rename ${OMYKIT_RUNTIME_DIR}, then rerun init or doctor.`,
+    }));
+  }
+  if (namespace.is_directory && localGitIgnore.git_repo && !localGitIgnore.active) {
+    issues.push(doctorIssue({
+      id: "local_runtime_ignore_missing",
+      severity: "warning",
+      scope: "project",
+      path: localGitIgnore.path,
+      summary: ".omykit runtime state is not ignored by local Git exclude.",
+      detail: "Workflow state is local runtime data and should not be submitted unless the user explicitly asks to vendor it.",
+      fixable: true,
+      next_action: "Run doctor --fix to add .omykit/ to .git/info/exclude.",
+    }));
+  }
+  if (rootArtifactConflicts.length > 0) {
+    issues.push(doctorIssue({
+      id: "root_workflow_artifact_name_conflict",
+      severity: "warning",
+      scope: "project",
+      path: rootArtifactConflicts.join(", "),
+      summary: "Project root contains names that look like legacy workflow artifacts.",
+      detail: "omyKit keeps runtime files under .omykit/ to avoid these names; doctor will not move or delete possible user files automatically.",
+      next_action: "Review these files manually. Keep real project files in place; move only confirmed legacy workflow artifacts into .omykit or archive them.",
+    }));
+  }
   if (!project.has_omykit_root) {
     issues.push(doctorIssue({
       id: "missing_omykit_root",
@@ -8141,6 +8346,15 @@ function buildDoctorRecommendations({ issues, workflows, cleanupCandidates, vali
       ? (isZh ? "运行 doctor --fix 自动修正 active workflow 指针。" : "Run doctor --fix to repair the active workflow pointer.")
       : (isZh ? "先运行 workflows 选择正确 workflow，再执行 workflows use <id>。" : "Run workflows, choose the correct workflow, then run workflows use <id>."));
   }
+  if (has("local_runtime_ignore_missing")) {
+    recommendations.push(isZh ? "运行 doctor --fix 把 .omykit/ 写入本地 .git/info/exclude，避免 workflow 运行态进入远程提交。" : "Run doctor --fix to add .omykit/ to local .git/info/exclude so workflow runtime state stays out of remote commits.");
+  }
+  if (has("omykit_namespace_conflict")) {
+    recommendations.push(isZh ? "先移动或重命名已有 .omykit 文件；omyKit 不会覆盖用户文件。" : "Move or rename the existing .omykit file first; omyKit will not overwrite user-owned files.");
+  }
+  if (has("root_workflow_artifact_name_conflict")) {
+    recommendations.push(isZh ? "根目录疑似旧 workflow 文件只提示不自动处理，避免误删项目本体文件；确认后再手动迁移或归档。" : "Root-level legacy-looking workflow files are reported but not moved automatically, to avoid touching real project files.");
+  }
   if (has("terminal_node_missing_handoff")) {
     recommendations.push(isZh ? "不要让升级伪造证据；从历史恢复 handoff，或 reject/re-run 缺证据节点。" : "Do not fabricate evidence during upgrade; recover handoffs from history or reject/re-run nodes with missing evidence.");
   }
@@ -8163,6 +8377,8 @@ function buildDoctorRecommendations({ issues, workflows, cleanupCandidates, vali
 }
 
 function writeHealthReport(report, cwd = process.cwd()) {
+  const namespace = omyKitNamespaceStatus(cwd);
+  if (namespace.conflict) return null;
   const file = healthReportFile(cwd);
   writeJson(file, report);
   return file;
@@ -8176,6 +8392,10 @@ function applyDoctorFixes(initialReport, cwd = process.cwd()) {
     const workflowId = path.basename(validDirs[0]);
     writeActiveWorkflowId(workflowId, cwd);
     actions.push(`set active workflow to ${workflowId}`);
+  }
+  if (initialReport.issues.some((issue) => issue.id === "local_runtime_ignore_missing" && issue.fixable)) {
+    const result = ensureLocalGitIgnore(cwd);
+    actions.push(`local git ignore ${result.status}: ${result.path || "not-git"}`);
   }
   for (const workflow of initialReport.workflows) {
     if (!workflow.needs_upgrade) continue;
@@ -8272,8 +8492,10 @@ function printCleanupPlan(report, result = null) {
 }
 
 function cmdInit(positional, options) {
+  assertOmyKitNamespaceAvailable(process.cwd());
   const title = positional.join(" ").trim();
   if (!title) throw new Error("init requires a workflow title");
+  const ignoreResult = ensureLocalGitIgnore(process.cwd());
 
   const requestedTemplateId = options.template ? String(options.template) : AUTO_TEMPLATE_ID;
   const templateId = resolveInitTemplateId(title, requestedTemplateId);
@@ -8315,6 +8537,7 @@ function cmdInit(positional, options) {
   console.log(`Workflow created: ${workflowId}`);
   console.log(`Path: ${path.relative(process.cwd(), workflowDir)}`);
   console.log(`Template: ${templateId}${requestedTemplateId === AUTO_TEMPLATE_ID ? " (auto)" : ""}`);
+  if (ignoreResult.status === "added") console.log(`Local ignore: ${ignoreResult.path}`);
   printStatus(savedGraph, state);
   const board = buildBoardProjection(workflowDir, savedGraph, state, language);
   const plan = buildOrchestrationPlan(board, buildDispatchPlan(board, { surface: "auto" }));
@@ -8578,7 +8801,7 @@ function cmdDoctor(options) {
   if (options.json) {
     console.log(JSON.stringify({
       ...report,
-      report_file: path.relative(process.cwd(), reportFile),
+      report_file: reportFile ? path.relative(process.cwd(), reportFile) : null,
     }, null, 2));
     return;
   }
@@ -8594,7 +8817,41 @@ function cmdCleanup(options) {
   const language = normalizeBoardLanguage(options.lang);
   const report = projectWorkflowHealth(process.cwd(), { ...options, lang: language });
   let result = null;
-  if (options.apply) {
+  if (options["uninstall-local"] || options.uninstall) {
+    if (options.apply) {
+      const reportFileBeforeMove = writeHealthReport(report);
+      result = uninstallLocalRuntime(process.cwd());
+      report.cleanup = {
+        applied: result.applied,
+        mode: "uninstall-local",
+        status: result.status,
+        archive_dir: result.archive_dir,
+        reason: result.reason || null,
+        report_file: reportFileBeforeMove && result.archive_dir
+          ? path.join(result.archive_dir, "health", "health-report.json")
+          : null,
+      };
+      if (options.json) {
+        console.log(JSON.stringify({
+          ...report,
+          report_file: report.cleanup.report_file,
+        }, null, 2));
+        return;
+      }
+      printCleanupPlan(report, result);
+      const label = result.applied
+        ? (language === "zh-CN" ? "本地工作流已卸载" : "Local workflow runtime uninstalled")
+        : (language === "zh-CN" ? "本地工作流未卸载" : "Local workflow runtime not uninstalled");
+      console.log(`${label}: ${result.archive_dir || result.reason}`);
+      return;
+    }
+    report.cleanup = {
+      applied: false,
+      mode: "uninstall-local-dry-run",
+      source: projectRelativePath(omykitRoot(process.cwd()), process.cwd()),
+      archive_root: localRuntimeUninstallArchiveRoot(process.cwd()),
+    };
+  } else if (options.apply) {
     result = archiveCleanupCandidates(report.cleanup_candidates, process.cwd());
     report.cleanup = {
       applied: true,
@@ -8611,7 +8868,7 @@ function cmdCleanup(options) {
   if (options.json) {
     console.log(JSON.stringify({
       ...report,
-      report_file: path.relative(process.cwd(), reportFile),
+      report_file: reportFile ? path.relative(process.cwd(), reportFile) : null,
     }, null, 2));
     return;
   }

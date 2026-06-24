@@ -60,13 +60,16 @@ node ./scripts/check-upstream-refs.mjs --json
 node scripts/omykit-workflow.mjs doctor --lang zh-CN
 node scripts/omykit-workflow.mjs doctor --fix --lang zh-CN
 node scripts/omykit-workflow.mjs cleanup --dry-run --lang zh-CN
+node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 ```
 
-`doctor` 会写入 `.omykit/health/health-report.json`，但 `.omykit/` 是 ignored runtime state。不要提交生成的 health reports、boards、workflow ledgers、context packs 或 archives。
+`doctor` 会写入 `.omykit/health/health-report.json`，但 `.omykit/` 是本地 ignored runtime state。Git 项目里，`init` 和 `doctor --fix` 使用 `.git/info/exclude`，不是 `.gitignore`，所以默认不影响队友和远程仓库。除非用户明确选择把 workflow state vendor 进项目，否则不要提交生成的 health reports、boards、workflow ledgers、context packs 或 archives。
 
 `doctor --fix` 可以给本地 workflow artifacts 补兼容元数据和缺失运行目录，但不能伪造 handoff、token 用量、skill 使用、实际模型记录或验证证据。
 
 `cleanup --apply` 只把安全候选归档到 `.omykit/archive/<timestamp>/`；不能直接删除 workflow evidence。
+
+`cleanup --uninstall-local --apply` 会把 `.omykit/` 移动到本地非项目归档位置，从目标项目工作区移除 omyKit；Git 项目通常归档到 `.git/omykit-uninstalled/`。
 
 `.omykit/workflows/` 下的历史 dogfood workflow 可能早于当前 handoff 要求。缺少 intake decision、`knowledge_sync`、`evolution_candidates` 或 agent scope 时，应把它们视为审计发现；只能从真实记录修复、保留为历史证据，或审查后归档。
 
