@@ -3430,9 +3430,10 @@ function collectEvidencePaths(handoff) {
 function evidenceItems(workflowDir, handoff) {
   const root = projectRootFromWorkflow(workflowDir);
   return collectEvidencePaths(handoff).map((itemPath) => {
-    const workflowPath = path.join(workflowDir, itemPath);
-    const projectPath = path.join(root, itemPath);
-    const exists = fs.existsSync(workflowPath) || fs.existsSync(projectPath);
+    const candidates = path.isAbsolute(itemPath)
+      ? [itemPath]
+      : [path.join(workflowDir, itemPath), path.join(root, itemPath)];
+    const exists = candidates.some((candidate) => fs.existsSync(candidate));
     return { path: itemPath, exists };
   });
 }
