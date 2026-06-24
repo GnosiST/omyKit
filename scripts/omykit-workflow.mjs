@@ -1931,6 +1931,20 @@ function nodeCard(graph, node) {
   return card;
 }
 
+function workflowMetadataFromGraph(graph) {
+  return {
+    workflow_id: graph.workflow_id,
+    title: graph.title,
+    mode: graph.mode,
+    language: graph.language || null,
+    template_id: graph.metadata?.template_id || null,
+    template_version: graph.metadata?.template_version || null,
+    template_name: graph.metadata?.template_name || null,
+    deck_variant: graph.metadata?.deck_variant || null,
+    workflow_artifact_version: graph.metadata?.workflow_artifact_version || WORKFLOW_ARTIFACT_VERSION,
+  };
+}
+
 function initialState(graph) {
   const entries = {};
   for (const node of graph.nodes) {
@@ -1939,6 +1953,7 @@ function initialState(graph) {
   return {
     schema_version: SCHEMA_VERSION,
     workflow_id: graph.workflow_id,
+    workflow_metadata: workflowMetadataFromGraph(graph),
     updated_at: now(),
     active_node: null,
     active_nodes: [],
@@ -3349,6 +3364,47 @@ function createTaskRecord(brief, options = {}, cwd = process.cwd()) {
 function appendTaskRecord(record, cwd = process.cwd()) {
   appendText(tasksFile(cwd), `${JSON.stringify(record)}\n`);
   return tasksFile(cwd);
+}
+
+function normalizeTaskBrief(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function taskMatchesWorkflow(task, graph) {
+  if (!task || task.linked_workflow_id || task.status !== "open") return false;
+  if (normalizeTaskBrief(task.brief) !== normalizeTaskBrief(graph.title)) return false;
+  const templateId = graph.metadata?.template_id || null;
+  if (templateId && task.template_id && task.template_id !== templateId) return false;
+  const deckVariant = graph.metadata?.deck_variant || null;
+  if (deckVariant && task.deck_variant && task.deck_variant !== deckVariant) return false;
+  return true;
+}
+
+function linkPendingTaskToWorkflow(cwd, graph) {
+  const file = tasksFile(cwd);
+  if (!fs.existsSync(file)) return null;
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  const parsed = [];
+  lines.forEach((line, index) => {
+    if (!line.trim()) return;
+    try {
+      parsed.push({ index, record: JSON.parse(line) });
+    } catch {
+      // Preserve invalid lines exactly; doctor reports them separately.
+    }
+  });
+  const match = [...parsed].reverse().find(({ record }) => taskMatchesWorkflow(record, graph));
+  if (!match) return null;
+  const linked = {
+    ...match.record,
+    status: "linked",
+    linked_workflow_id: graph.workflow_id,
+    linked_at: now(),
+    link_reason: "init_matched_pending_task",
+  };
+  lines[match.index] = JSON.stringify(linked);
+  fs.writeFileSync(file, `${lines.join("\n").replace(/\n+$/g, "")}\n`);
+  return linked;
 }
 
 function taskInboxSummary(tasks) {
@@ -5334,7 +5390,7 @@ function buildContextPackPayload(board, nodeId) {
     workflow_id: board.workflow_id,
     generated_at: now(),
     language: board.language,
-    workflow_metadata: {
+    workflow_metadata: board.workflow_metadata || {
       workflow_id: board.workflow_id,
       title: board.title,
       mode: board.mode,
@@ -6074,6 +6130,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const handoffPackets = buildHandoffPackets(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
   const taskInbox = buildTaskInboxProjection(projectRootFromWorkflow(workflowDir), graph.workflow_id);
+  const workflowMetadata = workflowMetadataFromGraph(graph);
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
@@ -6095,12 +6152,13 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     mode: graph.mode,
     language,
     generated_at: now(),
+    workflow_metadata: workflowMetadata,
     template: {
-      template_id: graph.metadata?.template_id || null,
-      template_version: graph.metadata?.template_version || null,
-      name: graph.metadata?.template_name || null,
+      template_id: workflowMetadata.template_id,
+      template_version: workflowMetadata.template_version,
+      name: workflowMetadata.template_name,
       description: graph.metadata?.template_description || null,
-      deck_variant: graph.metadata?.deck_variant || null,
+      deck_variant: workflowMetadata.deck_variant,
       layers: graph.metadata?.layers || {},
     },
     controller: {
@@ -8162,6 +8220,7 @@ function upgradeWorkflowArtifacts(workflowDir, options = {}) {
   const actions = [];
   const warnings = [];
   let graphChanged = false;
+  let stateChanged = false;
 
   if (graph.schema_version !== SCHEMA_VERSION) {
     graph.schema_version = SCHEMA_VERSION;
@@ -8209,6 +8268,23 @@ function upgradeWorkflowArtifacts(workflowDir, options = {}) {
     actions.push("set graph.metadata.orchestration_policy");
   }
 
+  if (state.schema_version !== SCHEMA_VERSION) {
+    state.schema_version = SCHEMA_VERSION;
+    stateChanged = true;
+    actions.push(`set state.schema_version=${SCHEMA_VERSION}`);
+  }
+  if (state.workflow_id !== workflowId) {
+    state.workflow_id = workflowId;
+    stateChanged = true;
+    actions.push("set state.workflow_id");
+  }
+  const stateWorkflowMetadata = workflowMetadataFromGraph(graph);
+  if (JSON.stringify(state.workflow_metadata || null) !== JSON.stringify(stateWorkflowMetadata)) {
+    state.workflow_metadata = stateWorkflowMetadata;
+    stateChanged = true;
+    actions.push("set state.workflow_metadata");
+  }
+
   for (const relativeDir of WORKFLOW_RUNTIME_DIRS) ensureWorkflowRuntimeDir(workflowDir, relativeDir, actions);
   ensureWorkflowTextFile(workflowDir, "decisions.md", "Decisions", workflowId, actions);
   ensureWorkflowTextFile(workflowDir, "blockers.md", "Blockers", workflowId, actions);
@@ -8232,6 +8308,10 @@ function upgradeWorkflowArtifacts(workflowDir, options = {}) {
   }
 
   if (graphChanged) writeJson(graphPath, graph);
+  if (stateChanged) {
+    state.updated_at = now();
+    writeJson(statePath, state);
+  }
   const report = {
     schema_version: SCHEMA_VERSION,
     artifact_version: WORKFLOW_ARTIFACT_VERSION,
@@ -8239,6 +8319,7 @@ function upgradeWorkflowArtifacts(workflowDir, options = {}) {
     upgraded_at: now(),
     previous_artifact_version: previousArtifactVersion,
     graph_changed: graphChanged,
+    state_changed: stateChanged,
     actions,
     warnings,
     evidence_policy: "Upgrade adds compatibility metadata, runtime directories, missing node cards, and reports gaps. It never fabricates handoffs, token usage, skill usage, actual models, or verification evidence.",
@@ -9006,6 +9087,19 @@ function cmdInit(positional, options) {
   fs.writeFileSync(path.join(workflowDir, "decisions.md"), `# Decisions\n\nWorkflow: ${workflowId}\n\n`);
   fs.writeFileSync(path.join(workflowDir, "blockers.md"), `# Blockers\n\nWorkflow: ${workflowId}\n\n`);
   appendLedger(workflowDir, { event: "workflow.init", workflow_id: workflowId, title, mode, template_id: templateId, requested_template_id: requestedTemplateId, language, ...templateMetadata });
+  const linkedTask = linkPendingTaskToWorkflow(process.cwd(), graph);
+  if (linkedTask) {
+    appendLedger(workflowDir, {
+      event: "task.linked",
+      workflow_id: workflowId,
+      task_id: linkedTask.task_id,
+      decision: linkedTask.decision,
+      relation: linkedTask.relation,
+      template_id: linkedTask.template_id,
+      deck_variant: linkedTask.deck_variant || null,
+      link_reason: linkedTask.link_reason,
+    });
+  }
   writeActiveWorkflowId(workflowId);
 
   const { graph: savedGraph, state } = loadWorkflow(workflowDir);

@@ -31,6 +31,13 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
+function readJsonl(file) {
+  return fs.readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line));
+}
+
 function workflowDirFor(root) {
   const workflowsRoot = path.join(root, ".omykit", "workflows");
   const entries = fs.readdirSync(workflowsRoot)
@@ -94,10 +101,15 @@ assert.match(missionTemplateShow, /"template_id": "mission.orchestration"/);
 assert.match(missionTemplateShow, /"title": "工作流地图"/);
 
 const tmpDeck = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-deck-"));
+const deckTaskOutput = run(["tasks", "add", "生成融资路演 PPT 提案", "--lang", "zh-CN", "--json"], tmpDeck);
+const initialDeckTask = JSON.parse(deckTaskOutput);
+assert.equal(initialDeckTask.template_id, "deck.proposal");
+assert.equal(initialDeckTask.deck_variant, "create");
 const deckInit = run(["init", "生成融资路演 PPT 提案", "--id", "pitch-deck", "--lang", "zh-CN"], tmpDeck);
 assert.match(deckInit, /Workflow created: pitch-deck/);
 assert.match(deckInit, /Template: deck\.proposal \(auto\)/);
-const deckGraph = readJson(path.join(workflowDirFor(tmpDeck), "graph.json"));
+const deckDir = workflowDirFor(tmpDeck);
+const deckGraph = readJson(path.join(deckDir, "graph.json"));
 assert.equal(deckGraph.metadata.template_id, "deck.proposal");
 assert.equal(deckGraph.metadata.deck_variant, "create");
 assert.equal(deckGraph.metadata.layers.agents, "deck-agents");
@@ -105,13 +117,25 @@ assert.equal(deckGraph.metadata.layers.model_profile, "deck-quality");
 assert.equal(deckGraph.metadata.layers.runtime_profile, "deck-production");
 assert.ok(deckGraph.nodes.some((node) => node.id === "03-direction" && node.agent === "visual-director"));
 assert.ok(deckGraph.nodes.some((node) => node.scorecard === "deck-delivery"));
+const deckState = readJson(path.join(deckDir, "state.json"));
+assert.equal(deckState.workflow_metadata.template_id, "deck.proposal");
+assert.equal(deckState.workflow_metadata.template_version, deckGraph.metadata.template_version);
+assert.equal(deckState.workflow_metadata.deck_variant, "create");
+const linkedDeckTasks = readJsonl(path.join(tmpDeck, ".omykit", "tasks", "tasks.jsonl"));
+assert.equal(linkedDeckTasks[0].linked_workflow_id, "pitch-deck");
+assert.equal(linkedDeckTasks[0].status, "linked");
 run(["board", "--workflow", "pitch-deck", "--lang", "zh-CN"], tmpDeck);
-const deckBoard = readJson(path.join(workflowDirFor(tmpDeck), "board.json"));
+const deckBoard = readJson(path.join(deckDir, "board.json"));
+assert.equal(deckBoard.workflow_metadata.template_id, "deck.proposal");
+assert.equal(deckBoard.workflow_metadata.deck_variant, "create");
 assert.equal(deckBoard.template.template_id, "deck.proposal");
 assert.equal(deckBoard.template.template_version, deckGraph.metadata.template_version);
 assert.equal(deckBoard.template.deck_variant, "create");
+assert.equal(deckBoard.task_inbox.summary.total, 1);
+assert.equal(deckBoard.task_inbox.tasks[0].task_id, initialDeckTask.task_id);
+assert.equal(deckBoard.task_inbox.tasks[0].linked_workflow_id, "pitch-deck");
 run(["context-pack", "01-intake", "--workflow", "pitch-deck", "--lang", "zh-CN"], tmpDeck);
-const deckContextPack = readJson(path.join(workflowDirFor(tmpDeck), "context-packs", "01-intake.json"));
+const deckContextPack = readJson(path.join(deckDir, "context-packs", "01-intake.json"));
 assert.equal(deckContextPack.workflow_metadata.workflow_id, "pitch-deck");
 assert.equal(deckContextPack.workflow_metadata.template_id, "deck.proposal");
 assert.equal(deckContextPack.workflow_metadata.template_version, deckGraph.metadata.template_version);
@@ -1452,11 +1476,15 @@ const tmpLegacy = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-legacy-
 run(["init", "Legacy task", "--id", "legacy-task"], tmpLegacy);
 const legacyDir = workflowDirFor(tmpLegacy);
 const legacyGraphPath = path.join(legacyDir, "graph.json");
+const legacyStatePath = path.join(legacyDir, "state.json");
 const legacyGraph = readJson(legacyGraphPath);
 delete legacyGraph.metadata.workflow_artifact_version;
 delete legacyGraph.metadata.command_surface;
 delete legacyGraph.metadata.orchestration_policy;
 writeJson(legacyGraphPath, legacyGraph);
+const legacyState = readJson(legacyStatePath);
+delete legacyState.workflow_metadata;
+writeJson(legacyStatePath, legacyState);
 fs.rmSync(path.join(legacyDir, "assignments.jsonl"), { force: true });
 fs.rmSync(path.join(legacyDir, "nodes", "01-intake.json"), { force: true });
 const upgradeOutput = run(["upgrade", "--lang", "zh-CN"], tmpLegacy);
@@ -1466,6 +1494,9 @@ const upgradedGraph = readJson(legacyGraphPath);
 assert.equal(upgradedGraph.metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
 assert.equal(upgradedGraph.metadata.command_surface.manual_dispatch_required, false);
 assert.equal(upgradedGraph.metadata.orchestration_policy.automatic_dispatch_decision, true);
+const upgradedState = readJson(legacyStatePath);
+assert.equal(upgradedState.workflow_metadata.template_id, "change.standard");
+assert.equal(upgradedState.workflow_metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
 assert.ok(fs.existsSync(path.join(legacyDir, "assignments.jsonl")));
 assert.ok(fs.existsSync(path.join(legacyDir, "nodes", "01-intake.json")));
 const upgradeReport = readJson(path.join(legacyDir, "workflow-upgrade.json"));

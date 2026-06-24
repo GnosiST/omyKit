@@ -66,7 +66,7 @@ When the user repeatedly says `$omykit fix bug: ...`, `$omykit do UI: ...`, or a
 - `linked_follow_up`: the related workflow is terminal and the new brief is a same-family follow-up.
 - `new_workflow`: no suitable active workflow exists, or the goal/template is materially different.
 
-The task inbox records language, template recommendation, relation, tags, suggested write scope, conflict risk, and linked workflow. The board projects the task inbox, workstreams, and conflict-arbiter items. `doctor` checks for invalid task inbox JSONL. `orchestrate` carries task-intake summaries into the plan.
+The task inbox records language, template recommendation, relation, tags, suggested write scope, conflict risk, and linked workflow. When `init` creates a new workflow from the same pending brief, it links the matching open task to that workflow so the board and orchestration plan keep the intake context. The board projects the task inbox, workstreams, and conflict-arbiter items. `doctor` checks for invalid task inbox JSONL. `orchestrate` carries task-intake summaries into the plan.
 
 These are controller primitives, not normal user commands:
 
@@ -346,7 +346,7 @@ node scripts/omykit-workflow.mjs upgrade --workflow <workflow-id>
       board.html
 ```
 
-`graph.json` defines the DAG. `state.json` records current node status and may track multiple `active_nodes` for parallel work. `assignments.jsonl` is the runtime Agent Roster and assignment ledger. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
+`graph.json` defines the DAG. `state.json` records current node status, active nodes for parallel work, and a compact `workflow_metadata` summary for recovery surfaces that read state before graph. `assignments.jsonl` is the runtime Agent Roster and assignment ledger. `ledger.jsonl` is append-only event history. `nodes/` contains task cards. `handoffs/` contains structured node results. `context-packs/` stores minimal context packets for recovery or subagents. `commands/` stores command run records and optional logs. `evidence/` contains command output, screenshots, summaries, or export evidence. `board.json` and `board.html` are generated read-only views and can be regenerated at any time.
 
 The `.omykit/` namespace is intentionally unique. In Git projects, `init` writes `.omykit/` to `.git/info/exclude`, not `.gitignore`, so workflow runtime files stay local and do not affect teammates or remote repositories unless the user explicitly asks to vendor them. If `.omykit` already exists as a non-directory file, omyKit stops and reports a namespace conflict instead of overwriting it. Root-level names such as `graph.json`, `state.json`, `board.html`, `nodes/`, or `handoffs/` are treated as possible legacy conflicts and are reported by `doctor`, but they are never moved automatically because they may be real project files.
 

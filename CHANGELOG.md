@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added task-inbox to workflow linking: `init` now links a matching pending task brief to the newly created workflow, and state/board projections expose `workflow_metadata` for recovery surfaces.
 - Added workflow/template/variant metadata to board projections and context packs so resumed threads and delegated workers can distinguish similar workflows without re-reading `graph.json`.
 - Added node-type handoff contract hints to context packs so workers can see required fields for passed intake, failed/reject, blocked, skipped, and delivery handoffs before submitting.
 - Fixed blocked-node timing so `block` records `blocked_at` without marking unfinished nodes with `completed_at`.

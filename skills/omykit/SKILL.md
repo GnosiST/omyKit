@@ -39,7 +39,7 @@ For controller and board requests, use the first available script:
 Map user intent to commands:
 
 - task brief, bug, UI issue, test request, or follow-up work -> internally run `tasks add "<brief>" --lang <user-language>` first so the controller can decide `merge_current`, `linked_follow_up`, or `new_workflow`; users should not need to choose merge, parallel, or conflict primitives manually
-- create or execute tracked workflow -> after task intake, run `init --template auto --lang <user-language>` only when the task decision requires a new workflow and no suitable active workflow exists; controller auto-selects `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, or `mission.orchestration`, and explicit user template requests override auto
+- create or execute tracked workflow -> after task intake, run `init --template auto --lang <user-language>` only when the task decision requires a new workflow and no suitable active workflow exists; controller auto-selects `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, or `mission.orchestration`, links a matching pending task brief to the new workflow, and explicit user template requests override auto
 - continue execution -> `resume`, then `orchestrate --json --lang <user-language>`; follow the orchestration plan internally instead of asking the user to choose subagent, thread, context-pack, or assignment commands
 - skeleton-only workflow -> run only `init` when the user explicitly says `只创建`, `只初始化`, `skeleton only`, or `do not execute`
 - inspect workflow templates -> `templates list`, `templates show <template-id>`, or `templates validate`
