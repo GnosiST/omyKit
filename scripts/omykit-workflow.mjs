@@ -1206,6 +1206,9 @@ Codex chat intents:
   $omykit 收尾 / 整理文档        review docs/AGENTS/memory sync and record delivery knowledge_sync
   $omykit 查看模板               list reusable workflow templates
 
+Pre-execution gate:
+  Before real execution, Codex should present 2-3 viable options, recommend one, explain tradeoffs, and wait for user confirmation or explicit auto-authorization. The controller records execution_options, selected_option, and confirmation in the intake handoff.
+
 Long task loop:
   init/resume -> orchestrate -> start or dispatch ready work internally -> do real work -> write handoff JSON -> complete/reject/block/unblock -> repeat until delivery passes or a real blocker is recorded.
 

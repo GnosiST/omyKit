@@ -63,6 +63,8 @@ assert.match(helpOutput, /record-run/);
 assert.match(helpOutput, /assign/);
 assert.match(helpOutput, /--surface/);
 assert.match(helpOutput, /Codex chat intents:/);
+assert.match(helpOutput, /Pre-execution gate:/);
+assert.match(helpOutput, /2-3 viable options/);
 assert.match(helpOutput, /Long task loop:/);
 assert.match(helpOutput, /Internal commands:/);
 assert.match(helpOutput, /只创建工作流/);
