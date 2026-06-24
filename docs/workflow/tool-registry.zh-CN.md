@@ -42,6 +42,7 @@
 | imagegen | OpenAI 第一方工具 | [OpenAI Images docs](https://platform.openai.com/docs/guides/images) | 位图资产生成/编辑 | Bitmap visuals、moodboards、slide images、thumbnails、hero images、cutouts。 | SVG/icon systems、确定性 UI code、已有 vector assets。 |
 | Canva | 平台连接器 | 已安装 Canva connector/plugin；omyKit 不跟踪低信号 skill repo | 设计/deck 生产 | Canva-native presentations、social formats、brand kits。 | Code-native UI 或本地 editable files。 |
 | presentations | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | Deck 创建/编辑 | PPTX/slide artifacts 和 rendered verification。 | App UI 或非 slide docs。 |
+| [PPT Master](https://github.com/hugohe3/ppt-master) | 高信号候选 deck specialist | [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) (31,003★) | 原生可编辑 PPTX 工作流 | 只有 bundled `presentations`、Canva、项目模板或现有 PPT 工具无法满足原生可编辑 deck 生成/美化要求，且用户或目标项目确实受益于本地试验时才使用。 | 默认 deck 路由、复制其 skill body/templates/assets/branding，或没有 source、license、security、install 和真实输出证据就提交进 omyKit 主线。 |
 | documents/PDF | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | 文档交付物 | DOCX/PDF 创建、编辑、redline、render checks。 | 纯 markdown 工作。 |
 | spreadsheets | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | 数据表 | CSV/XLSX analysis、formulas、charts、exports。 | 自由文本 docs 或 code data models。 |
 | Remotion/ffmpeg | 成熟基础设施 / 官方 GitHub | [remotion-dev/remotion](https://github.com/remotion-dev/remotion) (50,849★) / [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) (61,333★) | 视频渲染 | 确定性视频 composition 和 export。 | 需要 desktop app 的纯手工编辑。 |
@@ -70,12 +71,28 @@
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
 - 平台特定项目：先发现并优先使用该平台官方 CLI 或自动化 API，再考虑 Computer Use。小程序项目如果可用微信开发者工具 CLI，就用它处理支持的 preview、upload、build checks；只有 CLI 覆盖不了的纯 GUI 步骤才降级到 Computer Use。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
+- Deck-specialist 缺口：先用 bundled `presentations`、Canva、项目模板或现有 deck 工具。只有这些能力不足，且 `hugohe3/ppt-master` 这类高信号 specialist 可能实质改善原生可编辑 PPTX 时，才记录 `capability_gaps`，先做 local-only 或 project-local 试验，再由 `codex-workflow-evolution` 根据证据决定是否提升。
 
 只有 specialist skill 已安装、职责狭窄，并且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
 
 当某个模式实质影响决策时，记录应用了哪个模式、哪个决策因此改变、是否调用了 specialist skill 或当前来源，以及是否复制了 licensed third-party content；如有，包含 license 和 attribution。
 
 当节点实际使用 specialist skill，且同类能力存在多个合理候选时，在 handoff `skill_decisions` 记录：能力线、选用 skill、选择依据、未选候选、用户不满意时的 `fallback_policy`、用户反馈和结果。用户不满意时，先按 `fallback_policy.next_skill` 做定向重做或修改；不要把同类 skill 全部叠加。反复有效或反复失败的选择经验进入 delivery `evolution_candidates`，由 `codex-workflow-evolution` 决定是否调整通用路由。
+
+## 能力缺口接入
+
+当当前任务需要 omyKit 尚未覆盖的 skill 或工具时，不要静默装进通用套件，也不要默认直接推主线。
+
+采用以下路径：
+
+1. 确认缺口：说明当前官方、bundled、项目原生或已安装工具不能满足哪个交付质量。
+2. 选择最窄试验：`local_only` 表示用户本地试验，`project_local` 表示目标项目本地 vendoring/config，`omykit_candidate_branch` 表示通用 kit 可能需要新 route，`main_after_review` 只在审查批准后使用，`not_integrated` 表示候选被拒。
+3. 在相关 handoff 记录 `capability_gaps`，包含来源、license、stars 或其他可信信号、安装/运行证据、试验计划和下一步。
+4. 不要把第三方代码、skill body、模板、截图、badge、图片、赞助商文案或 branding 放进 omyKit，除非 license 和 attribution 审查明确允许 vendoring。
+5. 如果本地/项目试验在多个 artifact class 或项目类型里反复有效，再创建 `evolution_candidate`，交给 `codex-workflow-evolution` 审查。
+6. omyKit 规则变更走 branch/PR；只有 owner 明确批准的维护工作，在验证后才直接进入主线。
+
+以 PPT Master 为例：它上游活跃、MIT、非 fork、信号较强，因此有资格进入“记录后的本地试验”，但不是自动默认依赖。
 
 ## 同类能力选择
 
@@ -102,6 +119,7 @@
 | 动效 | `motion-ai-kit`。 | 已选择或明确要求 GSAP 时才补匹配的 `gsap-*`。 |
 | GSAP 实现 | 按具体 API 或集成问题选择匹配的 `gsap-*` skill。 | 只有动效编排目标不清楚时才补 `motion-ai-kit`；确认性能风险时使用 browser profiling 和定向代码修复。 |
 | shadcn/ui 资源 | 先看项目依赖和官方文档。 | 只有需要当前生态发现时才补 `awesome-shadcn-ui`；不要把社区目录内容持久化进 omyKit。 |
+| Deck 交付物 | Bundled `presentations`、Canva、项目模板和现有 PPT 工具。 | 只有原生可编辑 PPTX 生成或美化是未满足质量线时，才本地试验 `ppt-master`；是否进入 omyKit 必须经过 `capability_gaps` 和进化审查。 |
 | 上下文压缩 | 先用 `codex-context-budget`：避免读取、索引、聚焦、紧凑输出，再摘要。 | 只有大型重复内容仍有价值、可取回原文，且路径是本地可信时，才使用可选本地压缩。 |
 | 持久 workflow 状态 | 当前 `codex-change-workflow` 加 Workflow Controller。 | 只用于多节点、可续跑、容易 compact、被打回、需要并行或 Strict 工作；不要把它当单独 route。 |
 | Workflow 进化 | `codex-workflow-evolution`。 | 只有证据表明通用 kit 应改变时，才补相关 owner skill。 |

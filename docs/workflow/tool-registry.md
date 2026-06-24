@@ -42,6 +42,7 @@ Tool selection must prefer official, first-party, dedicated, platform-native, or
 | imagegen | OpenAI first-party tool | [OpenAI Images docs](https://platform.openai.com/docs/guides/images) | Raster asset generation/editing | Bitmap visuals, moodboards, slide images, thumbnails, hero images, cutouts. | SVG/icon systems, deterministic UI code, existing vector assets. |
 | Canva | Platform connector | Installed Canva connector/plugin; no omyKit-tracked low-signal skill repo | Design/deck production | Canva-native presentations, social formats, brand kits. | Code-native UI or local editable files. |
 | presentations | OpenAI bundled artifact tool | OpenAI primary runtime; no public repo tracked | Deck creation/editing | PPTX/slide artifacts and rendered verification. | App UI or non-slide docs. |
+| [PPT Master](https://github.com/hugohe3/ppt-master) | High-signal candidate deck specialist | [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) (31,003 stars) | Native editable PPTX workflow | Only after bundled `presentations`, Canva, project templates, or existing PPT tooling are insufficient for native editable deck generation or polish, and the user or target project benefits from a local trial. | Default deck routing, copying its skill body/templates/assets/branding, or committing it to omyKit mainline without source, license, security, install, and real-output evidence. |
 | documents/PDF | OpenAI bundled artifact tool | OpenAI primary runtime; no public repo tracked | Document artifacts | DOCX/PDF creation, editing, redline, render checks. | Raw markdown-only work. |
 | spreadsheets | OpenAI bundled artifact tool | OpenAI primary runtime; no public repo tracked | Data sheets | CSV/XLSX analysis, formulas, charts, exports. | Free-form docs or code data models. |
 | Remotion/ffmpeg | Mature infrastructure / official GitHub | [remotion-dev/remotion](https://github.com/remotion-dev/remotion) (50,849 stars) / [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) (61,333 stars) | Video rendering | Deterministic video composition and export. | Manual-only editing when a desktop app is required. |
@@ -70,12 +71,28 @@ Apply them only when the active omyKit route sees the matching signal:
 - Context compression work: first narrow source context with indexes, outlines, focused commands, and evidence notes; use an explicitly installed, trusted local compression layer only when large retrievable outputs still exceed the useful budget.
 - Platform-specific projects: discover and prefer the platform's official CLI or automation API before Computer Use. If a Mini Program project exposes WeChat developer tools CLI, use that CLI for supported preview/upload/build checks and reserve Computer Use for GUI-only steps the CLI cannot perform.
 - Upstream reference drift: run `node ./scripts/check-upstream-refs.mjs` monthly, before releases, or when a task depends on current external skill behavior; use `codex-workflow-evolution` before adopting any lesson, and prefer the exact linked official source over forks or mirrors.
+- Deck-specialist gap: use bundled `presentations`, Canva, project templates, or existing deck tooling first. When these are insufficient and a high-signal specialist such as `hugohe3/ppt-master` may materially improve a native editable PPTX, record a `capability_gaps` item, run a local-only or project-local trial, and promote only through `codex-workflow-evolution` after evidence.
 
 Use an installed specialist skill directly inside the current route only when it is available, narrow, and materially improves the deliverable. Query current external sources only when the answer depends on a fast-changing ecosystem. Do not copy third-party skill bodies, templates, resource lists, images, badges, or branding into omyKit.
 
 When a pattern materially changes a decision, record which pattern was applied, what decision changed, whether a specialist skill or current source was used, and whether any licensed third-party content was copied with license and attribution.
 
 When a node uses a specialist skill and multiple same-lane candidates would be reasonable, record handoff `skill_decisions`: capability lane, selected skill, selection basis, skipped alternatives, `fallback_policy` for user dissatisfaction, user feedback, and outcome. If the user is dissatisfied, follow `fallback_policy.next_skill` for targeted rework; do not stack every same-lane skill. Repeatedly effective or ineffective selection lessons become delivery `evolution_candidates` for `codex-workflow-evolution` to decide whether generic routing should change.
+
+## Capability Gap Intake
+
+When the active task needs a skill or tool that omyKit does not already cover, do not silently install it into the generic kit and do not push it to mainline by default.
+
+Use this path:
+
+1. Confirm the gap: name the deliverable quality that current official, bundled, project-native, or installed tools cannot satisfy.
+2. Pick the narrowest experiment: `local_only` for a user-local trial, `project_local` when a target project should vendor/configure it, `omykit_candidate_branch` when the generic kit may need a new route, `main_after_review` only after review approval, or `not_integrated` when the candidate is rejected.
+3. Record `capability_gaps` in the relevant handoff with source, license, stars or other trust signal, install/run evidence, trial plan, and next action.
+4. Keep third-party code, skill bodies, templates, screenshots, badges, images, sponsor text, and branding out of omyKit unless the license and attribution review explicitly allow vendoring.
+5. If the local/project trial repeatedly improves outcomes across artifact classes or project types, create an `evolution_candidate` and review it with `codex-workflow-evolution`.
+6. Use a branch/PR for omyKit rule changes; direct mainline commits are only for owner-approved maintenance work after verification.
+
+For the PPT Master case: it is a credible native-PPTX candidate because its upstream is active, MIT licensed, non-fork, and high-signal. That makes it eligible for a recorded local trial, not an automatic default dependency.
 
 ## Same-Lane Selection
 
@@ -102,6 +119,7 @@ Do not stack same-lane skills by default. Choose one primary capability for the 
 | Motion | `motion-ai-kit`. | Add matching `gsap-*` only when GSAP is already selected or explicitly requested. |
 | GSAP implementation | The matching `gsap-*` skill for the concrete API or integration concern. | Add `motion-ai-kit` only when the intended choreography is unclear; use browser profiling and targeted code fixes for confirmed performance risk. |
 | shadcn/ui resources | Project dependencies and official docs first. | Add `awesome-shadcn-ui` only for current ecosystem discovery; do not persist community catalog contents into omyKit. |
+| Deck artifacts | Bundled `presentations`, Canva, project templates, and existing PPT tooling. | Trial `ppt-master` locally only when native editable PPTX generation or polish is the unsatisfied quality bar; promote to omyKit only through `capability_gaps` and evolution review. |
 | Context compression | `codex-context-budget` first: avoid, index, focus, compact, then summarize. | Use optional local compression only when large repetitive content remains useful, originals can be retrieved, and the path is local and trusted. |
 | Durable workflow state | Active `codex-change-workflow` plus Workflow Controller. | Use only for multi-node, resumable, compact-prone, rejected, parallel, or Strict work; do not use it as a separate route. |
 | Workflow evolution | `codex-workflow-evolution`. | Add owner skills only after evidence shows the generic kit should change. |

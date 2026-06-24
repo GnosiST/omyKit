@@ -89,6 +89,43 @@ Passed delivery nodes must record `evolution_candidates`. Use an empty array whe
 
 Allowed `scope` values are `generic_omykit`, `project_local`, `one_off`, and `volatile_ecosystem`. Allowed `promotion_status` values are `candidate`, `promoted`, `not_promoted`, and `needs_review`. Real candidates require at least one evidence path.
 
+## Capability Gap Review
+
+When the current task exposes a missing skill or tool capability, record `capability_gaps` before adding new dependencies or changing omyKit routing. This keeps local experiments, target-project decisions, and generic omyKit promotion separate.
+
+```json
+{
+  "capability_gaps": [
+    {
+      "capability": "deck-native-pptx-polish",
+      "need": "Improve a presentation while preserving native editable PowerPoint objects.",
+      "current_gap": "Bundled presentations tooling can create and inspect PPTX, but this case needs a specialist native-PPTX workflow before changing omyKit routing.",
+      "candidate_tool": {
+        "name": "ppt-master",
+        "repo": "hugohe3/ppt-master",
+        "url": "https://github.com/hugohe3/ppt-master",
+        "source_mark": "high-signal candidate deck specialist",
+        "license": "MIT",
+        "stars": 31003
+      },
+      "integration_path": "local_only",
+      "status": "trial_needed",
+      "rationale": "Run a user-local trial first; do not vendor or default-route the tool until evidence proves cross-project value.",
+      "trial_plan": "Install outside the target repo, run on copied materials, and record install, output, open/render, and license evidence.",
+      "owner": "codex-workflow-evolution",
+      "next_action": "If repeated deck work benefits, raise an evolution_candidate for candidate-branch review.",
+      "evidence": [
+        "evidence/02-tool-gap-review.txt"
+      ]
+    }
+  ]
+}
+```
+
+Allowed `integration_path` values are `local_only`, `project_local`, `omykit_candidate_branch`, `main_after_review`, and `not_integrated`. Allowed `status` values are `observed`, `trial_needed`, `trialing`, `resolved`, and `not_adopted`.
+
+Use `local_only` for a user-local experiment, `project_local` when the target project should vendor or configure the tool without changing omyKit, `omykit_candidate_branch` when generic routing might change, `main_after_review` only after owner-approved review, and `not_integrated` when the candidate is rejected. Do not copy third-party skill bodies, templates, assets, screenshots, badges, sponsor text, images, or branding into omyKit unless a license and attribution review explicitly allows vendoring.
+
 ## Knowledge Sync Review
 
 Passed delivery nodes must also record `knowledge_sync`. This records whether project knowledge was reconciled at handoff time. It is not a requirement to run a heavy cleanup after every node.
@@ -342,7 +379,7 @@ Use `passed` when the node completed and evidence is available.
 }
 ```
 
-Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `skill_decisions`, `knowledge_sync`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Intake handoffs should include `execution_options`, `selected_option`, and `confirmation` before implementation starts: provide 2-3 viable approaches, mark the recommended one, record the user's correction or confirmation, and keep custom answers allowed. Use node-level `skills_used` for skills that shaped the node as a whole, and `skill_decisions` for same-lane selection rationale, alternatives, fallback, and user feedback. Omit it when there was no same-lane choice or no specialist skill use. Use `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
+Use `language`, `intake_decision`, `work_items`, `changed_files`, `skills_used`, `skill_decisions`, `capability_gaps`, `knowledge_sync`, `context_usage`, and `timing` to make the board a task tracker instead of a generic status board. Intake handoffs should include `execution_options`, `selected_option`, and `confirmation` before implementation starts: provide 2-3 viable approaches, mark the recommended one, record the user's correction or confirmation, and keep custom answers allowed. Use node-level `skills_used` for skills that shaped the node as a whole, and `skill_decisions` for same-lane selection rationale, alternatives, fallback, and user feedback. Use `capability_gaps` when existing approved tools are insufficient and a candidate tool needs local/project/candidate-branch triage. Omit it when there is no tool gap. Use `agent_activity[].skills_used` for skills used by a specific worker. Use `agent_activity` when a subagent, worker, reviewer, or external collaborator actually did work. Each agent entry should have a stable lowercase `agent_id`, role, scope, task, status, `mode`, optional `model_tier`, optional actual `model` and `model_provider`, and evidence.
 
 When the user is dissatisfied with an output, do not blindly stack every same-lane skill. Inspect `skill_decisions[].fallback_policy` for the node. If it names a `next_skill`, keep verified facts and functionality, then route the dissatisfied quality dimension to the next skill for rework. After the rework, update `user_feedback.status`, `outcome`, and evidence in the handoff. Repeatedly effective or ineffective selection lessons should become delivery `evolution_candidates` for `codex-workflow-evolution` to decide whether the generic omyKit rules should change.
 

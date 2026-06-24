@@ -84,6 +84,13 @@ checks:
     severity: recommended
     evidence:
       type: skill_selection_decision_recorded
+  - id: capability-gap-triaged
+    title:
+      en: Capability gaps are triaged before changing omyKit routing
+      zh-CN: 能力缺口在改变 omyKit 路由前完成分流
+    severity: recommended
+    evidence:
+      type: capability_gap_triaged
   - id: required-not-failed
     title:
       en: Required nodes are not failed or blocked

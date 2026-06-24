@@ -41,10 +41,11 @@ Run this workflow once to frame the change, then execute directly. Re-enter the 
 7. For app work, invoke `codex-runtime-readiness` before running local checks that depend on databases, caches, object storage, queues, browsers, or emulators.
 8. For meaningful code/config/content changes, invoke `codex-version-readiness` to check current git state, branch/commit scope, changelog need, and rollback path.
 9. Apply tool-registry patterns inline when signals match: choose one primary same-lane capability, then add a secondary only for a separate high-signal gap such as responsive adaptation, copy, hardening, taste/anti-generic review, advanced UI/UX direction, motion, GSAP implementation, or current shadcn/ecosystem discovery. Handle accessibility, metadata, icons, and performance with project-native checks and targeted fixes unless the user explicitly requests a trusted specialist.
-10. Load only the current project-type reference.
-11. Execute surgically.
-12. Run focused verification as soon as something is testable.
-13. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence appears, route it to `codex-workflow-evolution` after delivery.
+10. If existing official, bundled, project-native, or installed tools cannot satisfy a needed artifact quality, record `capability_gaps` before adopting a new tool: classify `integration_path` as `local_only`, `project_local`, `omykit_candidate_branch`, `main_after_review`, or `not_integrated`; capture source/license/install/run evidence; prefer local or project-local trial before any omyKit routing change. For deck-native PPTX gaps, `hugohe3/ppt-master` is a candidate specialist only after bundled `presentations`, Canva, project templates, or existing PPT tooling are insufficient.
+11. Load only the current project-type reference.
+12. Execute surgically.
+13. Run focused verification as soon as something is testable.
+14. Before handoff, invoke `codex-delivery-gate`; if repeated workflow evidence or capability-gap trial evidence appears, route it to `codex-workflow-evolution` after delivery.
 
 ## App-Code Rules
 

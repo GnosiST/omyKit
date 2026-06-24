@@ -690,6 +690,7 @@ const externalDir = workflowDirFor(tmpExternalHandoff);
 run(["start", "01-intake"], tmpExternalHandoff);
 fs.mkdirSync(path.join(externalDir, "evidence"), { recursive: true });
 fs.writeFileSync(path.join(externalDir, "evidence", "01-intake-summary.txt"), "external intake evidence\n");
+fs.writeFileSync(path.join(externalDir, "evidence", "01-capability-gap.txt"), "ppt-master candidate gap evidence\n");
 const externalIntakeHandoff = readJson(intakeHandoff);
 externalIntakeHandoff.workflow_id = "external-handoff";
 externalIntakeHandoff.outputs = [
@@ -710,6 +711,28 @@ externalIntakeHandoff.verification[0].evidence = {
   type: "text",
   path: path.join(externalDir, "evidence", "01-intake-summary.txt"),
 };
+externalIntakeHandoff.capability_gaps = [
+  {
+    capability: "deck-native-pptx-polish",
+    need: "Improve an editable PPTX when bundled presentations tooling cannot preserve enough native slide structure.",
+    current_gap: "The built-in deck route can create and inspect slides, but this fixture needs a specialist native-PPTX workflow before omyKit changes default routing.",
+    candidate_tool: {
+      name: "ppt-master",
+      repo: "hugohe3/ppt-master",
+      url: "https://github.com/hugohe3/ppt-master",
+      source_mark: "high-signal candidate deck specialist",
+      license: "MIT",
+      stars: 31003,
+    },
+    integration_path: "local_only",
+    status: "trial_needed",
+    rationale: "Use a local trial first; do not vendor or route to the candidate until evidence proves cross-project value.",
+    trial_plan: "Install locally in a non-project workspace, run on a copied deck, and record output/open/render evidence.",
+    owner: "codex-workflow-evolution",
+    next_action: "If repeated deck tasks benefit, raise an evolution_candidate for candidate-branch review.",
+    evidence: ["evidence/01-capability-gap.txt"],
+  },
+];
 const externalHandoffPath = path.join(tmpExternalHandoff, "outside-intake-handoff.json");
 writeJson(externalHandoffPath, externalIntakeHandoff);
 run(["complete", "01-intake", "--handoff", externalHandoffPath], tmpExternalHandoff);
@@ -721,10 +744,16 @@ const externalBoard = readJson(path.join(externalDir, "board.json"));
 assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && /需求已固化/.test(node.handoff_summary)));
 assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && node.evidence_items.some((item) => path.isAbsolute(item.path) && item.exists)));
 assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && !node.evidence_items.some((item) => item.path === "e")));
+assert.ok(externalBoard.columns.passed.some((node) => node.id === "01-intake" && node.evidence_items.some((item) => item.path.endsWith("01-capability-gap.txt") && item.exists)));
+assert.equal(externalBoard.summary.capability_gaps, 1);
+assert.equal(externalBoard.capability_gaps.local_trials.length, 1);
+assert.ok(externalBoard.recommendations.some((item) => item.id === "capability-gap-local-trial"));
 assert.ok(externalBoard.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(externalBoard.scorecard.checks.some((check) => check.id === "capability-gap-triaged" && check.status === "passed"));
 const externalScorecardJson = JSON.parse(run(["scorecard", "--json", "--lang", "zh-CN"], tmpExternalHandoff));
 assert.equal(externalScorecardJson.workflow_id, "external-handoff");
 assert.ok(externalScorecardJson.scorecard.checks.some((check) => check.id === "intake-decision-recorded" && check.status === "passed"));
+assert.ok(externalScorecardJson.scorecard.checks.some((check) => check.id === "capability-gap-triaged" && check.status === "passed"));
 fs.rmSync(tmpExternalHandoff, { recursive: true, force: true });
 
 const workerOrchestrationText = run(["orchestrate", "--lang", "zh-CN"]);

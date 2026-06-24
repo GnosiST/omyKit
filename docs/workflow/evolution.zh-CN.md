@@ -20,6 +20,12 @@ observe -> classify -> abstract -> update smallest surface -> verify -> install 
 delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-evolution review -> smallest owner update -> validation/install -> changelog/evidence
 ```
 
+能力缺口先走前置接入闭环：
+
+```text
+capability_gaps -> 本地/项目试验 -> 证据审查 -> evolution_candidates -> 候选分支或 not_promoted -> validation/install -> changelog/evidence
+```
+
 通过的 delivery 节点必须包含 `evolution_candidates`。空数组表示交付时已经复盘，但没有可复用经验。非空候选必须包含：
 
 - `lesson`：需要改变或保留的经验
@@ -30,7 +36,7 @@ delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-ev
 
 看板会展示候选项，并把 `generic_omykit` 候选转成整改建议。Scorecard 要求 delivery 节点记录复盘，但不会要求每次交付都必须产生通用经验。
 
-这和 delivery `knowledge_sync`、节点级 `skill_decisions` 分工不同：`evolution_candidates` 判断 omyKit 自身是否要改；`knowledge_sync` 记录当前项目交付时 README、docs、AGENTS/CLAUDE 规则或记忆是否已同步；`skill_decisions` 记录同类 skill 的选择、fallback 和用户反馈，只有反复有效或反复失败的选择经验才应升级为通用候选。
+这和 delivery `knowledge_sync`、节点级 `skill_decisions`、`capability_gaps` 分工不同：`evolution_candidates` 判断 omyKit 自身是否要改；`knowledge_sync` 记录当前项目交付时 README、docs、AGENTS/CLAUDE 规则或记忆是否已同步；`skill_decisions` 记录同类 skill 的选择、fallback 和用户反馈；`capability_gaps` 记录当前工具集不足、候选工具需要本地、项目本地或候选分支评估的情况。只有反复有效或反复失败的选择经验、或能力缺口试验证据，才应升级为通用候选。
 
 ## 证据来源
 
@@ -43,6 +49,7 @@ delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-ev
 - 反复手动执行、应该脚本化的命令
 - 反复出现的 controller 摩擦，例如 handoff 无效、重试循环、节点类型缺失、打回目标不清，或状态文件无法支持续跑
 - 上游参考发生变化，并可能包含可复用 workflow 经验
+- 高信号候选工具在本地或项目本地试验后，确实填补了已记录能力缺口
 
 ## 分类
 
@@ -54,6 +61,7 @@ delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-ev
 | 可重复机械检查 | `scripts/` 和 CI |
 | 快速变化生态细节 | 当前来源链接或 registry reference |
 | 上游参考变化 | 用 `upstream-watch` 审查；只提升可复用 workflow 经验 |
+| 能力缺口候选 | 记录 `capability_gaps`；先本地试验；只有经过 `evolution_candidates` 和候选分支才提升 |
 
 ## 提升状态
 
@@ -73,6 +81,7 @@ delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-ev
 - 它可以表达成短规则、路由行、reference 或 validator。
 - 它能降低未来风险、歧义或 token 浪费。
 - 它不复制第三方文本或模板。
+- 如果触发原因是新外部工具，必须有来源、license、安装/运行和真实输出证据。
 
 ## 更新位置
 

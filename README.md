@@ -33,6 +33,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 - **Language-aware output:** match visible plans, questions, reasoning summaries, and handoff to the user's prompt language.
 - **Source-aware selection:** mark each registry entry as a core item, installed skill, tracked upstream reference, platform tool, OpenAI bundled tool, or repo-local mechanism before using it.
 - **Conservative skill admission:** keep community PM, taste, catalog, and meta-UX skills out of default routing unless the user explicitly requests them.
+- **Capability gap intake:** when existing tools cannot meet the job, record the gap, trial candidates locally or in the target project, and promote only through evidence review.
 - **Evidence-based evolution:** delivery handoffs record reusable workflow candidates, scorecards verify the review happened, and only abstracted lessons are promoted into omyKit.
 - **Upstream reference watch:** periodically check referenced external sources for changes, then review useful workflow lessons before adopting anything.
 
@@ -211,6 +212,7 @@ Operational rules:
 - Prefer project-native commands and existing repository conventions before adding new tools.
 - For platform-specific projects, discover official CLIs or automation APIs from project evidence and current official docs, then record them in project-local guidance when useful.
 - Prefer official, first-party, dedicated, or project-native tools before Computer Use; use Computer Use only as the final fallback for local GUI work without a better supported path.
+- When the current skill/tool set cannot satisfy a deliverable quality, record `capability_gaps` before adopting new tools. Use `local_only` or `project_local` trials first; use `omykit_candidate_branch` for generic kit changes; do not commit a new external skill into mainline without source, license, install/run, real-output, and rollback evidence. `hugohe3/ppt-master` is a tracked candidate for native editable PPTX gaps, not a default dependency.
 - Check versioning readiness for durable changes: branch state, history lookup, rollback path, release notes, and customization boundary.
 - Treat generated project rules as local project assets, not global defaults.
 - Ask 1-3 questions only when a safe assumption is not possible and the answer would change the deliverable, target project, risk, runtime, workflow template, or controller choice; when asking, allow custom answers instead of limiting the user to fixed options.

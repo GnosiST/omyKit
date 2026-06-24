@@ -18,6 +18,7 @@ The kit keeps Codex as the control plane. Other tools are context sources, execu
 - Versioning readiness for history lookup, rollback, releases, and project-specific customization.
 - Language-aware visible output for rationale summaries, questions, progress, and handoff.
 - Artifact-specific delivery evidence before claiming completion.
+- Capability-gap intake for missing tools: record local/project/candidate-branch trials before changing omyKit routing.
 - Evidence-based workflow evolution without importing target-project facts into the generic kit.
 - Periodic upstream reference checks for official workflow, spec, code-intelligence, documentation, design, motion, ecosystem, and context-compression sources.
 

@@ -20,6 +20,12 @@ For tracked workflows, the closed loop is:
 delivery handoff -> evolution_candidates -> scorecard audit -> codex-workflow-evolution review -> smallest owner update -> validation/install -> changelog/evidence
 ```
 
+Capability gaps use a preceding intake loop:
+
+```text
+capability_gaps -> local/project trial -> evidence review -> evolution_candidates -> candidate branch or not_promoted -> validation/install -> changelog/evidence
+```
+
 Passed delivery nodes must include `evolution_candidates`. An empty array means the delivery was reviewed and no reusable lesson was found. A non-empty candidate must include:
 
 - `lesson`: what should change or be preserved
@@ -30,7 +36,7 @@ Passed delivery nodes must include `evolution_candidates`. An empty array means 
 
 The board shows candidates and turns `generic_omykit` candidates into improvement actions. Scorecards require delivery nodes to record the review but do not require every delivery to produce a generic lesson.
 
-This is separate from delivery `knowledge_sync` and node-level `skill_decisions`: `evolution_candidates` decide whether omyKit itself should change; `knowledge_sync` records whether README, docs, AGENTS/CLAUDE rules, or memory were reconciled for the current project handoff; `skill_decisions` record same-lane skill selection, fallback, and user feedback. Promote only repeated effective or ineffective selection lessons into generic candidates.
+This is separate from delivery `knowledge_sync`, node-level `skill_decisions`, and `capability_gaps`: `evolution_candidates` decide whether omyKit itself should change; `knowledge_sync` records whether README, docs, AGENTS/CLAUDE rules, or memory were reconciled for the current project handoff; `skill_decisions` record same-lane skill selection, fallback, and user feedback; `capability_gaps` record when the current toolset is insufficient and a candidate tool needs local, project-local, or candidate-branch evaluation. Promote only repeated effective or ineffective selection lessons or capability-gap trials into generic candidates.
 
 ## Evidence Sources
 
@@ -43,6 +49,7 @@ This is separate from delivery `knowledge_sync` and node-level `skill_decisions`
 - repeated manual command that should become a script
 - repeated controller friction such as invalid handoffs, retry loops, missing node types, unclear reject targets, or state that failed to support continuation
 - upstream reference changed and may contain reusable workflow lessons
+- a high-signal candidate tool fills a documented capability gap after a local or project-local trial
 
 ## Classification
 
@@ -54,6 +61,7 @@ This is separate from delivery `knowledge_sync` and node-level `skill_decisions`
 | Repeatable mechanical check | `scripts/` and CI |
 | Fast-changing ecosystem detail | Current source link or registry reference |
 | Changed upstream reference | Review with `upstream-watch`; promote only reusable workflow lessons |
+| Capability gap candidate | Record `capability_gaps`; trial locally first; promote only through `evolution_candidates` and a candidate branch |
 
 ## Promotion States
 
@@ -73,6 +81,7 @@ Before changing omyKit, confirm:
 - It can be expressed as a small rule, routing row, reference, or validator.
 - It lowers future risk, ambiguity, or token waste.
 - It does not copy third-party text or templates.
+- It has source, license, install/run, and real-output evidence when the trigger is a new external tool.
 
 ## Update Surfaces
 

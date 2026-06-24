@@ -255,6 +255,21 @@
       }
     },
     {
+      "id": "ppt-master",
+      "repo": "hugohe3/ppt-master",
+      "url": "https://github.com/hugohe3/ppt-master.git",
+      "baseline": "fdabe40df82364f7213ea231fe16d615a86e761f",
+      "role": "High-signal candidate deck specialist for native editable PPTX generation and polishing when bundled presentation tooling is insufficient",
+      "verification": {
+        "owner": "hugohe3",
+        "owner_type": "User",
+        "stars": 31003,
+        "fork": false,
+        "archived": false,
+        "reference_scope": "Candidate deck-specialist reference only; local trials must record license/source/install/run evidence before any omyKit routing change, and no skill body, templates, sponsor text, images, badges, or branding are copied."
+      }
+    },
+    {
       "id": "ffmpeg",
       "repo": "FFmpeg/FFmpeg",
       "url": "https://github.com/FFmpeg/FFmpeg.git",

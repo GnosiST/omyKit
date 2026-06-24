@@ -34,6 +34,8 @@ const TASK_COMPLEXITIES = new Set(["simple", "standard", "complex", "expert"]);
 const MODEL_TIERS = new Set(["fast", "standard", "frontier"]);
 const EVOLUTION_SCOPES = new Set(["generic_omykit", "project_local", "one_off", "volatile_ecosystem"]);
 const EVOLUTION_PROMOTION_STATUSES = new Set(["candidate", "promoted", "not_promoted", "needs_review"]);
+const CAPABILITY_GAP_INTEGRATION_PATHS = new Set(["local_only", "project_local", "omykit_candidate_branch", "main_after_review", "not_integrated"]);
+const CAPABILITY_GAP_STATUSES = new Set(["observed", "trial_needed", "trialing", "resolved", "not_adopted"]);
 const EXECUTION_SURFACES = new Set(["main-thread", "subagent", "background_thread", "thread_worktree"]);
 const ASSIGNMENT_STATUSES = new Set(["planned", "running", "handoff_received", "passed", "failed", "blocked", "cancelled"]);
 const KNOWLEDGE_SYNC_STATUSES = new Set(["completed", "not_needed", "deferred"]);
@@ -263,6 +265,14 @@ const BOARD_LABELS = {
     knowledgeFilesUpdated: "Files updated",
     knowledgeMemoryUpdated: "Memory updated",
     evolutionCandidates: "Evolution Candidates",
+    capabilityGaps: "Capability Gaps",
+    capabilityGapCandidates: "Gap candidates",
+    noCapabilityGaps: "No capability gaps recorded",
+    integrationPath: "Integration path",
+    candidateTool: "Candidate tool",
+    currentGap: "Current gap",
+    trialPlan: "Trial plan",
+    decisionReason: "Decision reason",
     genericCandidates: "Generic candidates",
     missingEvolutionReview: "Missing evolution review",
     noEvolutionCandidates: "No evolution candidates recorded",
@@ -535,6 +545,14 @@ const BOARD_LABELS = {
     knowledgeFilesUpdated: "已更新文件",
     knowledgeMemoryUpdated: "已更新记忆",
     evolutionCandidates: "进化候选",
+    capabilityGaps: "能力缺口",
+    capabilityGapCandidates: "缺口候选",
+    noCapabilityGaps: "未记录能力缺口",
+    integrationPath: "接入路径",
+    candidateTool: "候选工具",
+    currentGap: "当前缺口",
+    trialPlan: "试验计划",
+    decisionReason: "决策原因",
     genericCandidates: "通用候选",
     missingEvolutionReview: "缺少进化复盘",
     noEvolutionCandidates: "未记录进化候选",
@@ -2438,6 +2456,53 @@ function validateEvolutionCandidatesShape(value, label) {
   return errors;
 }
 
+function validateCapabilityGapsShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!Array.isArray(value)) return [`${label} must be an array`];
+  value.forEach((item, index) => {
+    const prefix = `${label}[${index}]`;
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push(`${prefix} must be an object`);
+      return;
+    }
+    for (const field of ["capability", "need", "current_gap"]) {
+      if (!item[field] || typeof item[field] !== "string") errors.push(`${prefix}.${field} is required`);
+    }
+    if (!item.integration_path || !CAPABILITY_GAP_INTEGRATION_PATHS.has(item.integration_path)) {
+      errors.push(`${prefix}.integration_path must be one of ${[...CAPABILITY_GAP_INTEGRATION_PATHS].join(", ")}`);
+    }
+    if (!item.status || !CAPABILITY_GAP_STATUSES.has(item.status)) {
+      errors.push(`${prefix}.status must be one of ${[...CAPABILITY_GAP_STATUSES].join(", ")}`);
+    }
+    if (!Array.isArray(item.evidence) || item.evidence.length === 0) {
+      errors.push(`${prefix}.evidence must contain at least one evidence path`);
+    } else if (item.evidence.some((entry) => typeof entry !== "string" || !entry)) {
+      errors.push(`${prefix}.evidence must be an array of non-empty strings`);
+    }
+    if (item.candidate_tool !== undefined) {
+      if (!item.candidate_tool || typeof item.candidate_tool !== "object" || Array.isArray(item.candidate_tool)) {
+        errors.push(`${prefix}.candidate_tool must be an object`);
+      } else {
+        for (const field of ["name", "repo", "url", "source_mark", "license"]) {
+          if (item.candidate_tool[field] !== undefined && (typeof item.candidate_tool[field] !== "string" || !item.candidate_tool[field])) {
+            errors.push(`${prefix}.candidate_tool.${field} must be a non-empty string`);
+          }
+        }
+        if (item.candidate_tool.stars !== undefined && (!Number.isInteger(item.candidate_tool.stars) || item.candidate_tool.stars < 0)) {
+          errors.push(`${prefix}.candidate_tool.stars must be a non-negative integer`);
+        }
+      }
+    }
+    for (const field of ["rationale", "trial_plan", "decision_reason", "owner", "next_action"]) {
+      if (item[field] !== undefined && (typeof item[field] !== "string" || !item[field])) {
+        errors.push(`${prefix}.${field} must be a non-empty string`);
+      }
+    }
+  });
+  return errors;
+}
+
 function validateKnowledgeSyncShape(value, label) {
   const errors = [];
   if (value === undefined) return errors;
@@ -2549,6 +2614,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateSkillsUsedShape(handoff.skills_used, "handoff.skills_used"));
   errors.push(...validateSkillDecisionsShape(handoff.skill_decisions, "handoff.skill_decisions"));
   errors.push(...validateEvolutionCandidatesShape(handoff.evolution_candidates, "handoff.evolution_candidates"));
+  errors.push(...validateCapabilityGapsShape(handoff.capability_gaps, "handoff.capability_gaps"));
   errors.push(...validateKnowledgeSyncShape(handoff.knowledge_sync, "handoff.knowledge_sync"));
   errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
   errors.push(...validateUsageObservationShape(handoff.usage_observation, "handoff.usage_observation"));
@@ -3429,6 +3495,9 @@ function collectEvidencePaths(handoff) {
     if (item.evidence) addEvidencePath(paths, item.evidence);
   }
   for (const value of evidenceValues(handoff.downstream_context?.evidence)) addEvidencePath(paths, value);
+  for (const item of handoff.capability_gaps || []) {
+    for (const value of evidenceValues(item.evidence)) addEvidencePath(paths, value);
+  }
   return [...paths];
 }
 
@@ -3712,6 +3781,39 @@ function normalizeEvolutionCandidates(handoff) {
       };
     })
     .filter((item) => item?.lesson);
+}
+
+function normalizeCapabilityGaps(handoff) {
+  const gaps = Array.isArray(handoff?.capability_gaps) ? handoff.capability_gaps : [];
+  return gaps
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+      return {
+        capability: item.capability || null,
+        need: item.need || null,
+        current_gap: item.current_gap || null,
+        candidate_tool: item.candidate_tool && typeof item.candidate_tool === "object" && !Array.isArray(item.candidate_tool)
+          ? {
+            name: item.candidate_tool.name || null,
+            repo: item.candidate_tool.repo || null,
+            url: item.candidate_tool.url || null,
+            source_mark: item.candidate_tool.source_mark || null,
+            license: item.candidate_tool.license || null,
+            stars: Number.isInteger(item.candidate_tool.stars) ? item.candidate_tool.stars : null,
+          }
+          : null,
+        integration_path: item.integration_path || null,
+        status: item.status || null,
+        rationale: item.rationale || null,
+        trial_plan: item.trial_plan || null,
+        decision_reason: item.decision_reason || null,
+        owner: item.owner || null,
+        next_action: item.next_action || null,
+        evidence: Array.isArray(item.evidence) ? item.evidence : [],
+        index,
+      };
+    })
+    .filter((item) => item?.capability);
 }
 
 function normalizeKnowledgeSync(handoff) {
@@ -4250,6 +4352,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
   const evidence = evidenceItems(workflowDir, handoff);
   const intakeDecision = normalizeIntakeDecision(handoff);
   const evolutionCandidates = normalizeEvolutionCandidates(handoff);
+  const capabilityGaps = normalizeCapabilityGaps(handoff);
   const knowledgeSync = normalizeKnowledgeSync(handoff);
   const downstreamContext = normalizeDownstreamContext(handoff);
   const workItems = normalizeWorkItems(handoff);
@@ -4355,6 +4458,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     downstream_context: downstreamContext,
     evolution_review_recorded: Array.isArray(handoff?.evolution_candidates),
     evolution_candidates: evolutionCandidates,
+    capability_gaps: capabilityGaps,
     knowledge_sync_reviewed: Boolean(knowledgeSync),
     knowledge_sync: knowledgeSync,
     work_items: workItems,
@@ -5024,6 +5128,32 @@ function buildEvolution(projectedNodes) {
   };
 }
 
+function buildCapabilityGaps(projectedNodes) {
+  const byNode = projectedNodes
+    .filter((node) => node.capability_gaps.length > 0)
+    .map((node) => ({
+      node_id: node.id,
+      title: node.display_title || node.title,
+      status: node.status,
+      gaps: node.capability_gaps,
+    }));
+  const gaps = projectedNodes.flatMap((node) => node.capability_gaps.map((gap) => ({
+    node_id: node.id,
+    title: node.display_title || node.title,
+    status: node.status,
+    ...gap,
+  })));
+  return {
+    recorded_nodes: byNode.length,
+    gaps,
+    by_node: byNode,
+    by_status: countBy(gaps, "status"),
+    by_integration_path: countBy(gaps, "integration_path"),
+    generic_candidates: gaps.filter((gap) => ["omykit_candidate_branch", "main_after_review"].includes(gap.integration_path)),
+    local_trials: gaps.filter((gap) => ["local_only", "project_local"].includes(gap.integration_path) && ["trial_needed", "trialing"].includes(gap.status)),
+  };
+}
+
 function dependencyHandoffSummaries(node, projectedNodes) {
   const byId = new Map(projectedNodes.map((item) => [item.id, item]));
   return (node.depends_on || []).map((dependency) => {
@@ -5222,7 +5352,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en") {
+function buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en", capabilityGaps = null) {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -5415,6 +5545,36 @@ function buildRecommendations(projectedNodes, usage, context, taskSize, skills, 
       isZh
         ? "运行 codex-workflow-evolution，保留证据、分类结果、更新位置和验证记录；未通过的候选标记为 not_promoted。"
         : "Run codex-workflow-evolution, keep evidence, classification, update surface, and verification; mark candidates that fail as not_promoted.",
+      nodeIds,
+    ));
+  }
+  if (capabilityGaps?.local_trials?.length > 0) {
+    const nodeIds = capabilityGaps.local_trials.map((gap) => gap.node_id);
+    items.push(recommendation(
+      "capability-gap-local-trial",
+      "medium",
+      isZh ? "存在需要本地试验的能力缺口" : "Capability gaps need local trials",
+      isZh
+        ? `已记录 ${capabilityGaps.local_trials.length} 个 local/project-local 能力缺口，应先在目标项目或用户本地验证，不直接进入 omyKit 主线。`
+        : `${capabilityGaps.local_trials.length} local/project-local capability gap(s) are recorded; validate them locally or in the target project before changing omyKit mainline.`,
+      isZh
+        ? "记录安装方式、运行证据、license/source 结论和失败原因；有效后再作为 evolution_candidate 评估是否通用化。"
+        : "Record install path, run evidence, license/source decision, and failure reasons; if effective, raise an evolution_candidate for generic review.",
+      nodeIds,
+    ));
+  }
+  if (capabilityGaps?.generic_candidates?.length > 0) {
+    const nodeIds = capabilityGaps.generic_candidates.map((gap) => gap.node_id);
+    items.push(recommendation(
+      "capability-gap-generic-review",
+      "medium",
+      isZh ? "能力缺口候选需要主仓库评审" : "Capability gap candidates need mainline review",
+      isZh
+        ? `已记录 ${capabilityGaps.generic_candidates.length} 个可能进入 omyKit 的候选能力，不能直接推主线。`
+        : `${capabilityGaps.generic_candidates.length} capability candidate(s) may affect omyKit and must not be pushed directly to mainline.`,
+      isZh
+        ? "先建候选分支或本地试验，运行 source/license/security/实战验证，再由 codex-workflow-evolution 决定是否提升。"
+        : "Use a candidate branch or local trial first, run source/license/security/practical verification, then let codex-workflow-evolution decide promotion.",
       nodeIds,
     ));
   }
@@ -5715,6 +5875,21 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
         .map((node) => node.id);
       return failing.length === 0 ? pass() : fail(failing, isZh ? "使用 skill 的终态节点缺少 skill_decisions，无法复盘同类能力选择和 fallback。" : "Terminal nodes that used skills are missing skill_decisions, so same-lane selection and fallback cannot be audited.");
     }
+    case "capability_gap_triaged": {
+      const gapNodes = terminalNodes.filter((node) => node.capability_gaps.length > 0);
+      if (gapNodes.length === 0) return pending();
+      const failing = gapNodes
+        .filter((node) => node.capability_gaps.some((gap) => (
+          !gap.capability
+          || !gap.need
+          || !gap.current_gap
+          || !gap.integration_path
+          || !gap.status
+          || gap.evidence.length === 0
+        )))
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "能力缺口必须记录能力线、需求、当前缺口、接入路径、状态和证据。" : "Capability gaps must record capability, need, current gap, integration path, status, and evidence.");
+    }
     case "model_tier_policy": {
       const failing = projectedNodes
         .filter((node) => node.task_complexity === "expert" && node.model_tier !== "frontier")
@@ -5805,6 +5980,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const models = buildModelUsage(projectedNodes);
   const timing = buildTiming(projectedNodes);
   const evolution = buildEvolution(projectedNodes);
+  const capabilityGaps = buildCapabilityGaps(projectedNodes);
   const commands = buildCommandRunProjection(readCommandRuns(workflowDir));
   const handoffPackets = buildHandoffPackets(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
@@ -5812,7 +5988,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands, assignments, language);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands, assignments, language, capabilityGaps);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -5859,6 +6035,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       skill_decisions: projectedNodes.reduce((sum, node) => sum + node.skill_decisions.length, 0),
       downstream_contexts: projectedNodes.filter((node) => node.downstream_context).length,
       evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
+      capability_gaps: projectedNodes.reduce((sum, node) => sum + node.capability_gaps.length, 0),
       knowledge_sync_reviews: projectedNodes.filter((node) => node.knowledge_sync_reviewed).length,
       actual_models: projectedNodes.reduce((sum, node) => sum + node.actual_models.length, 0),
       verification_checks: projectedNodes.reduce((sum, node) => sum + node.required_checks.length, 0),
@@ -5902,6 +6079,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     commands,
     handoff_packets: handoffPackets,
     evolution,
+    capability_gaps: capabilityGaps,
     timing,
     scorecard,
     risks,
@@ -6859,6 +7037,34 @@ function renderEvolutionCandidates(items, text) {
   });
 }
 
+function renderCapabilityGaps(items, text) {
+  return renderObjectList(items, text.noCapabilityGaps, (item) => {
+    const node = item.node_id ? `<a href="#node-${escapeHtml(item.node_id)}"><code>${escapeHtml(item.node_id)}</code></a>` : "";
+    const tool = item.candidate_tool
+      ? [
+        item.candidate_tool.name,
+        item.candidate_tool.repo,
+        Number.isInteger(item.candidate_tool.stars) ? `${item.candidate_tool.stars}★` : null,
+        item.candidate_tool.license,
+      ].filter(Boolean).join(" · ")
+      : text.none;
+    const meta = [
+      item.integration_path ? `${text.integrationPath}: ${item.integration_path}` : null,
+      item.status ? `${text.knowledgeSyncStatus}: ${item.status}` : null,
+      item.owner ? `${text.owner}: ${item.owner}` : null,
+    ].filter(Boolean).join(" · ");
+    const rationale = item.rationale ? `<p><strong>${escapeHtml(text.rationale)}:</strong> ${escapeHtml(item.rationale)}</p>` : "";
+    const trialPlan = item.trial_plan ? `<p><strong>${escapeHtml(text.trialPlan)}:</strong> ${escapeHtml(item.trial_plan)}</p>` : "";
+    const decisionReason = item.decision_reason ? `<p><strong>${escapeHtml(text.decisionReason)}:</strong> ${escapeHtml(item.decision_reason)}</p>` : "";
+    const nextAction = item.next_action ? `<p><strong>${escapeHtml(text.nextAction)}:</strong> ${escapeHtml(item.next_action)}</p>` : "";
+    const evidence = item.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(item.evidence.join(", "))}</p>` : "";
+    return `${node} <strong>${escapeHtml(item.capability || text.capability)}</strong>${meta ? `<p class="muted">${escapeHtml(meta)}</p>` : ""}
+      <p><strong>${escapeHtml(text.currentGap)}:</strong> ${escapeHtml(item.current_gap || text.none)}</p>
+      <p><strong>${escapeHtml(text.candidateTool)}:</strong> ${escapeHtml(tool)}</p>
+      <p><strong>${escapeHtml(text.goal)}:</strong> ${escapeHtml(item.need || text.none)}</p>${rationale}${trialPlan}${decisionReason}${nextAction}${evidence}`;
+  });
+}
+
 function renderKnowledgeSync(item, text) {
   if (!item) return `<span class="muted">${escapeHtml(text.notRecorded)}</span>`;
   return `<dl>
@@ -7125,6 +7331,7 @@ function renderNodeCard(node, text) {
       <span>${escapeHtml(text.skillDecisions)} ${escapeHtml(node.skill_decisions.length)}</span>
       <span>${escapeHtml(text.agents)} ${escapeHtml(node.agent_activity.length)}</span>
       <span>${escapeHtml(text.evolutionCandidates)} ${escapeHtml(node.evolution_candidates.length)}</span>
+      <span>${escapeHtml(text.capabilityGaps)} ${escapeHtml(node.capability_gaps.length)}</span>
       <span>${escapeHtml(text.knowledgeSync)} ${escapeHtml(node.knowledge_sync?.status || text.notRecorded)}</span>
     </p>
     <dl>
@@ -7266,6 +7473,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.intakeDecision)}</h4>${renderIntakeDecision(node.intake_decision, text)}</section>
         <section><h4>${escapeHtml(text.downstreamContext)}</h4>${renderDownstreamContext(node.downstream_context, text)}</section>
         <section><h4>${escapeHtml(text.workflowEvolution)}</h4>${renderEvolutionCandidates(node.evolution_candidates, text)}</section>
+        <section><h4>${escapeHtml(text.capabilityGaps)}</h4>${renderCapabilityGaps(node.capability_gaps, text)}</section>
         <section><h4>${escapeHtml(text.knowledgeSync)}</h4>${renderKnowledgeSync(node.knowledge_sync, text)}</section>
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
@@ -7440,6 +7648,7 @@ function renderBoardHtml(board) {
         ${renderMetric(text.actualModel, board.summary.actual_models, "#model-usage")}
         ${renderMetric(text.assignments, board.summary.assignments, "#agent-roster")}
         ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates, "#workflow-evolution")}
+        ${renderMetric(text.capabilityGaps, board.summary.capability_gaps, "#workflow-evolution")}
         ${renderMetric(text.knowledgeSyncReviews, board.summary.knowledge_sync_reviews, "#node-details")}
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
@@ -7490,11 +7699,15 @@ function renderBoardHtml(board) {
       <div class="metrics">
         ${renderMetric(text.evolutionCandidates, board.summary.evolution_candidates || 0)}
         ${renderMetric(text.genericCandidates, board.evolution.generic_candidates.length)}
+        ${renderMetric(text.capabilityGaps, board.summary.capability_gaps || 0)}
+        ${renderMetric(text.capabilityGapCandidates, board.capability_gaps.generic_candidates.length)}
         ${renderMetric(text.missingEvolutionReview, board.evolution.missing_review_nodes.length)}
         ${renderMetric(text.nodes, board.evolution.recorded_nodes)}
       </div>
       <p><strong>${escapeHtml(text.missingEvolutionReview)}:</strong> ${renderNodeLinks(board.evolution.missing_review_nodes, text)}</p>
       ${renderEvolutionCandidates(board.evolution.candidates, text)}
+      <h3>${escapeHtml(text.capabilityGaps)}</h3>
+      ${renderCapabilityGaps(board.capability_gaps.gaps, text)}
     </section>
 
     <section class="panel" id="task-tracker">

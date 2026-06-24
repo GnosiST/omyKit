@@ -89,6 +89,43 @@
 
 `scope` 允许 `generic_omykit`、`project_local`、`one_off` 和 `volatile_ecosystem`。`promotion_status` 允许 `candidate`、`promoted`、`not_promoted` 和 `needs_review`。真实候选至少需要一个证据路径。
 
+## 能力缺口复盘
+
+当当前任务暴露缺失的 skill 或工具能力时，先记录 `capability_gaps`，再考虑新增依赖或改变 omyKit 路由。这样可以把本地试验、目标项目本地决策和通用 omyKit 提升分开。
+
+```json
+{
+  "capability_gaps": [
+    {
+      "capability": "deck-native-pptx-polish",
+      "need": "美化演示文稿，同时保留 PowerPoint 原生可编辑对象。",
+      "current_gap": "Bundled presentations 工具可以创建和检查 PPTX，但这个场景在改变 omyKit 路由前需要 specialist native-PPTX 工作流。",
+      "candidate_tool": {
+        "name": "ppt-master",
+        "repo": "hugohe3/ppt-master",
+        "url": "https://github.com/hugohe3/ppt-master",
+        "source_mark": "high-signal candidate deck specialist",
+        "license": "MIT",
+        "stars": 31003
+      },
+      "integration_path": "local_only",
+      "status": "trial_needed",
+      "rationale": "先做用户本地试验；在证据证明跨项目价值前，不 vendoring，也不默认路由到该工具。",
+      "trial_plan": "安装在目标仓库之外，用复制材料试跑，并记录安装、输出、打开/渲染和 license 证据。",
+      "owner": "codex-workflow-evolution",
+      "next_action": "如果多次 deck 工作受益，再创建 evolution_candidate 进入候选分支审查。",
+      "evidence": [
+        "evidence/02-tool-gap-review.txt"
+      ]
+    }
+  ]
+}
+```
+
+`integration_path` 允许 `local_only`、`project_local`、`omykit_candidate_branch`、`main_after_review` 和 `not_integrated`。`status` 允许 `observed`、`trial_needed`、`trialing`、`resolved` 和 `not_adopted`。
+
+`local_only` 用于用户本地试验，`project_local` 用于目标项目本地 vendoring 或配置且不改变 omyKit，`omykit_candidate_branch` 用于可能改变通用路由的候选，`main_after_review` 只能在 owner 审查批准后使用，`not_integrated` 表示候选被拒。不要把第三方 skill body、模板、资产、截图、badge、赞助商文案、图片或 branding 复制进 omyKit，除非 license 和 attribution 审查明确允许 vendoring。
+
 ## 知识同步审查
 
 通过的 delivery 节点还必须记录 `knowledge_sync`。它表示交付时是否已经同步项目知识库，不表示每个节点都要运行重型清理。
@@ -342,7 +379,7 @@
 }
 ```
 
-使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`skill_decisions`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。入口 handoff 在实现开始前应包含 `execution_options`、`selected_option` 和 `confirmation`：给出 2-3 个可执行方案，标记推荐方案，记录用户纠偏或确认，并保持允许自定义答案。节点级 `skills_used` 记录影响整个节点的 skill，`skill_decisions` 记录同类能力选择依据、候选替代、fallback 和用户反馈；没有同类竞争或没有使用 specialist skill 时可以省略。`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
+使用 `language`、`intake_decision`、`work_items`、`changed_files`、`skills_used`、`skill_decisions`、`capability_gaps`、`knowledge_sync`、`context_usage` 和 `timing`，让看板成为任务追踪表，而不是通用状态板。入口 handoff 在实现开始前应包含 `execution_options`、`selected_option` 和 `confirmation`：给出 2-3 个可执行方案，标记推荐方案，记录用户纠偏或确认，并保持允许自定义答案。节点级 `skills_used` 记录影响整个节点的 skill，`skill_decisions` 记录同类能力选择依据、候选替代、fallback 和用户反馈；当已批准工具不足、候选工具需要本地/项目/候选分支分流时，使用 `capability_gaps`。没有工具缺口时可以省略。`agent_activity[].skills_used` 记录具体 worker 使用的 skill。实际使用了子智能体、worker、reviewer 或外部协作者时，用 `agent_activity` 记录。每个 agent 条目应有稳定的小写 `agent_id`、角色、范围、任务、状态、`mode`、可选 `model_tier`、可选实际 `model` 和 `model_provider`，以及证据。
 
 如果用户对产物不满意，不要盲目叠加所有同类 skill。先查看对应节点的 `skill_decisions[].fallback_policy`；若已有 `next_skill`，保留已验证事实和功能，只把不满意的质量维度交给下一个更擅长的 skill 重做或修改。重做后把 `user_feedback.status`、`outcome` 和新证据写回 handoff。反复有效或反复失败的选择经验，作为 delivery `evolution_candidates` 交给 `codex-workflow-evolution` 判断是否进入通用 omyKit 规则。
 

@@ -14,6 +14,7 @@ Load only the section for the current deliverable.
 
 - Start with audience, objective, narrative, slide count, brand constraints.
 - Use imagegen for raster visuals; use Canva/presentations for deck construction.
+- When native editable PPTX quality cannot be met with bundled presentations, Canva, project templates, or existing PPT tooling, record a `capability_gaps` item and trial a high-signal deck specialist locally or project-locally before changing omyKit routing. `hugohe3/ppt-master` is a candidate for this gap, not a default dependency.
 - Verify rendered slides for overflow, contrast, image quality, and export.
 
 ## Video

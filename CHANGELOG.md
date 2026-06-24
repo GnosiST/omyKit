@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added capability-gap intake for missing tools/skills: handoffs can record `capability_gaps`, boards and scorecards surface local/project/candidate-branch triage, docs define when to trial versus promote, and `hugohe3/ppt-master` is tracked as a high-signal native-PPTX candidate rather than a default dependency.
 - Fixed controller handoff projection after independent E2E testing: `complete`/`reject` now canonicalize external handoff files into workflow-local `handoffs/`; string, object-shaped, and absolute-path evidence records no longer crash, split into character paths, or get misreported by board/scorecard projection; terminal `downstream_context.target_nodes` can be empty; `scorecard --json` emits machine-readable JSON; and tests cover the regressions.
 - Added Git-aware runtime cleanup: doctor now reports Git-tracked `.omykit/` and root-level legacy workflow artifacts, cleanup can generate a removal plan, untrack runtime while preserving local state, or reset runtime by archiving local state without committing, pushing, or rewriting history.
 - Added local-only workflow isolation: init now writes `.omykit/` to local `.git/info/exclude` when available, doctor audits namespace/git-ignore/root-artifact conflicts, and cleanup can uninstall `.omykit/` runtime state into a local non-project archive.
