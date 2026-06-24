@@ -164,9 +164,10 @@ $omykit 升级旧工作流
 - CodeGraph 用于代码地图。
 - Context7 用于当前库文档。
 - 可选本地压缩能力只用于高容量且可取回原文的 tool output、logs、RAG chunks 或会话交接。
+- 平台官方 CLI 只在目标项目需要时接入，例如小程序的微信开发者工具 CLI，或原生移动端/云厂商 CLI。
 - Figma 或其他选中的设计来源用于视觉上下文。
 - Chrome Extension 或 Playwright 用于浏览器检查。
-- Computer Use 用于本地 GUI 工作流。
+- Computer Use 只作为本地 GUI fallback：没有官方/专用 connector、MCP/plugin、浏览器自动化、shell/API 路径、项目脚本或平台官方 CLI 能完成任务时才用。
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion 用于非代码交付物。
 - GitHub/Linear/Sentry/Sonar 或项目已配置的质量工具用于交付和质量工作流。
 

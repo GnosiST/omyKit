@@ -68,6 +68,14 @@ if ! grep -q 'custom answer' "$omykit_skill"; then
   echo "omyKit skill is missing custom-answer intake guidance: $omykit_skill" >&2
   exit 1
 fi
+if ! grep -q 'Use Computer Use only when no suitable official/bundled connector' "$omykit_skill"; then
+  echo "omyKit skill is missing official-tool-first Computer Use fallback guidance: $omykit_skill" >&2
+  exit 1
+fi
+if ! grep -q 'platform provides an official CLI or automation surface' "$omykit_skill"; then
+  echo "omyKit skill is missing platform-official-CLI routing guidance: $omykit_skill" >&2
+  exit 1
+fi
 if ! grep -q 'intake question gate' "$router_skill"; then
   echo "Router skill is missing the intake question gate: $router_skill" >&2
   exit 1

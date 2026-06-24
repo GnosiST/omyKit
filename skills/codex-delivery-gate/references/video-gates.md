@@ -11,7 +11,7 @@
 ## Tools
 
 - Prefer deterministic render commands such as Remotion/ffmpeg.
-- Use Computer Use for desktop editing/export tools when no programmatic path exists.
+- Use Computer Use for desktop editing/export tools only when no official/dedicated connector, MCP/plugin, shell/API path, project script, Remotion, or ffmpeg path exists.
 - Use imagegen only for generated raster assets, thumbnails, backgrounds, or storyboard frames.
 
 ## Evidence

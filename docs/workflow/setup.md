@@ -164,9 +164,10 @@ Install only what the project needs:
 - CodeGraph for code maps.
 - Context7 for current library docs.
 - Optional local compression only for high-volume retrievable tool output, logs, RAG chunks, or conversation handoffs.
+- Platform official CLIs only when the target project needs them, such as WeChat DevTools CLI for Mini Programs or native mobile/cloud provider CLIs.
 - Figma or another selected design source for visual context.
 - Chrome Extension or Playwright for browser checks.
-- Computer Use for local GUI workflows.
+- Computer Use only as local GUI fallback when no official/dedicated connector, MCP/plugin, browser automation, shell/API path, project script, or platform official CLI can complete the task.
 - Canva/presentations/documents/spreadsheets/imagegen/Remotion for non-code artifacts.
 - GitHub/Linear/Sentry/Sonar or project-configured quality tools for delivery and quality workflows.
 

@@ -15,6 +15,12 @@ Match user-facing language to the latest user prompt. Use that language for visi
 
 Use omyKit at task boundaries, not for every action. Route once at intake, when scope/risk changes, or before final delivery. After routing, continue normal execution until new evidence requires a different workflow.
 
+## Tool Priority
+
+Prefer official, first-party, dedicated, or project-native tools before generic GUI automation. Use Computer Use only when no suitable official/bundled connector, MCP/plugin, browser automation, shell/API path, or project script can complete the local GUI task. Do not use Computer Use for code edits, shell work, browser tasks with dedicated tools, or risky UI actions that need explicit user confirmation.
+
+When the target platform provides an official CLI or automation surface, treat it as the preferred tool for that platform and record it in project-local runtime/tool guidance when useful. Examples include WeChat Mini Program developer tools CLI for mini-program preview/upload/build checks, Xcode tools for iOS, Android/Gradle tools for Android, and project framework CLIs. Add these by project evidence; do not hard-code every ecosystem tool into omyKit.
+
 ## Codex-First Operations
 
 Treat terminal commands as internal implementation details. When the user asks in Codex chat to install, update, inspect, resume, validate, or visualize omyKit workflow state, run the needed local command for them and report the result.

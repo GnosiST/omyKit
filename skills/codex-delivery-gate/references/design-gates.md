@@ -16,4 +16,4 @@
 - Use high-signal visual specialists only when they materially change the result: `design-taste-frontend` for taste/anti-generic judgment, `ui-ux-pro-max` for complex high-stakes UI, `motion-ai-kit` for choreography, or matching `gsap-*` implementation skills when GSAP is already chosen. For accessibility, metadata, icons, and performance, prefer project-native checks and targeted code fixes over low-star focused UI skills.
 - imagegen for raster assets and visual references.
 - Chrome/Playwright for web checks.
-- Computer Use for local design apps or export panels without an API path.
+- Computer Use for local design apps or export panels only when no official/dedicated connector, MCP/plugin, browser automation, shell/API path, or project file workflow can produce the needed evidence.

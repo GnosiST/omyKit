@@ -189,6 +189,8 @@ Operational rules:
 - Start with `scan`, move to `focus` for implementation, and use `deep` only when risk or blockage justifies it.
 - For large outputs, avoid and narrow first; summarize next; use optional compression only when the source is trusted, retrievable, and still useful.
 - Prefer project-native commands and existing repository conventions before adding new tools.
+- For platform-specific projects, discover official CLIs or automation APIs from project evidence and current official docs, then record them in project-local guidance when useful.
+- Prefer official, first-party, dedicated, or project-native tools before Computer Use; use Computer Use only as the final fallback for local GUI work without a better supported path.
 - Check versioning readiness for durable changes: branch state, history lookup, rollback path, release notes, and customization boundary.
 - Treat generated project rules as local project assets, not global defaults.
 - Ask 1-3 questions only when a safe assumption is not possible and the answer would change the deliverable, target project, risk, runtime, workflow template, or controller choice; when asking, allow custom answers instead of limiting the user to fixed options.

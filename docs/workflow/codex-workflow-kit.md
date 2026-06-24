@@ -80,12 +80,13 @@ See [controller.md](controller.md), [task-graph.md](task-graph.md), and [handoff
 Use the most specific reliable tool first:
 
 1. Project-native commands, APIs, and files.
-2. Semantic/indexed context such as CodeGraph.
-3. Focused documentation or selected artifact context through tools such as Context7, Figma, or another selected design source.
-4. Optional local compression for large retrievable outputs after native narrowing is insufficient.
-5. Dedicated MCP/plugins such as Canva, GitHub, Sentry, optional local compression, or artifact tools when they materially change the next decision.
-6. Browser automation such as Chrome Extension or Playwright.
-7. Computer Use only for local GUI workflows without a better interface.
+2. Platform official CLIs or automation APIs discovered from project evidence and current official docs, such as WeChat DevTools CLI for Mini Programs.
+3. Semantic/indexed context such as CodeGraph.
+4. Focused documentation or selected artifact context through tools such as Context7, Figma, or another selected design source.
+5. Optional local compression for large retrievable outputs after native narrowing is insufficient.
+6. Dedicated MCP/plugins such as Canva, GitHub, Sentry, optional local compression, or artifact tools when they materially change the next decision.
+7. Browser automation such as Chrome Extension or Playwright.
+8. Computer Use only for local GUI workflows when no official/dedicated connector, MCP/plugin, browser automation, shell/API path, project script, or platform official CLI can do the job.
 
 ## Runtime Philosophy
 

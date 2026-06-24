@@ -8,6 +8,8 @@
 
 默认注册表保持保守。只接纳 omyKit 自有路由、一方平台/工具来源、官方上游 skill、成熟交付基础设施，或高信号且职责不重叠的 specialist skill。视觉/UI 类社区 skill 的默认准入线是 GitHub 10k+ stars，并且必须是非 fork、活跃、来源已核验；低星本地安装可以继续存在于用户 Codex 环境中，但不应列入本表，也不由 omyKit 默认路由调用。Stars 只是辅助信号，不是准入证明。社区 PM、审美、资源目录或 meta-UX 类 skill 是按需参考，不是默认 route，除非用户为当前任务明确要求。
 
+工具选择必须先用官方、一方、专用、平台原生或项目原生能力，再考虑通用 GUI 自动化。只有没有合适的官方/bundled connector、MCP/plugin、浏览器自动化、shell/API 路径、项目脚本或平台官方 CLI 能完成本地 GUI 任务时，才使用 Computer Use 作为 fallback。
+
 | Tool | 来源标记 | 已验证来源 | 角色 | 使用场景 | 避免场景 |
 | --- | --- | --- | --- | --- | --- |
 | Codex | 核心控制面 | [openai/codex](https://github.com/openai/codex) (92,647★) | 控制面 | 始终使用。它负责路由、规划、编辑、验证和总结。 | 不要用不协调的独立工具绕过它。 |
@@ -44,10 +46,11 @@
 | spreadsheets | OpenAI bundled 交付物工具 | OpenAI primary runtime；无公开 repo 跟踪 | 数据表 | CSV/XLSX analysis、formulas、charts、exports。 | 自由文本 docs 或 code data models。 |
 | Remotion/ffmpeg | 成熟基础设施 / 官方 GitHub | [remotion-dev/remotion](https://github.com/remotion-dev/remotion) (50,849★) / [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) (61,333★) | 视频渲染 | 确定性视频 composition 和 export。 | 需要 desktop app 的纯手工编辑。 |
 | RTK | 本地运行时包装 | 当前环境的本地命令包装 | 命令噪声控制 | 配置环境中的 shell commands。 | 文档例外要求绕过 RTK 的命令。 |
+| 平台官方 CLI | 一方平台工具 / 官方文档 | 当前平台官方文档，例如小程序的 [微信开发者工具 CLI](https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html) | 平台 build、preview、upload、simulator 或 validation 自动化 | 目标项目绑定到提供官方 CLI 或自动化 API 的平台，例如微信小程序、iOS、Android、Expo 或云厂商工具。 | 没有项目证据表明属于该平台、用非官方 wrapper 替代官方工具，或项目脚本已经覆盖该任务。 |
 | Docker/Compose | 成熟基础设施 / 官方 GitHub | [docker/compose](https://github.com/docker/compose) (37,579★) / [moby/moby](https://github.com/moby/moby) (71,728★) | 运行时依赖 | Databases、caches、object storage、queues、local emulators。 | 服务已运行或 tests 使用 in-memory/testcontainers。 |
 | Chrome Extension | 平台工具 / 官方 GitHub | [GoogleChrome/chrome-extensions-samples](https://github.com/GoogleChrome/chrome-extensions-samples) (17,619★) | 真实 Chrome profile | 登录态网站、项目要求 Chrome、真实 profile visual checks。 | Localhost checks 可由 in-app browser/Playwright 完成。 |
 | Playwright MCP | 成熟基础设施 / 官方 GitHub | [microsoft/playwright](https://github.com/microsoft/playwright) (91,381★) | 可重复浏览器自动化 | 结构化 web interactions 和 accessibility snapshots。 | Desktop apps 或 native mobile devtools。 |
-| Computer Use | OpenAI 平台 / 官方示例 | [openai/openai-cua-sample-app](https://github.com/openai/openai-cua-sample-app) (1,740★) | 本地 GUI fallback | Desktop design/video/deck apps、OS file pickers、export panels，或没有更好 API 的本地 GUI 工具。 | Code edits、shell tasks、已有专用工具的 browser tasks、未经确认的 risky UI actions。 |
+| Computer Use | OpenAI 平台 / 官方示例 | [openai/openai-cua-sample-app](https://github.com/openai/openai-cua-sample-app) (1,740★) | 最后一级本地 GUI fallback | 只有官方/bundled connector、MCP/plugin、浏览器自动化、shell/API 路径、项目脚本和平台官方 CLI 都不可用或不足时，才用于 desktop design/video/deck apps、OS file pickers、export panels 或本地 GUI 工具。 | Code edits、shell tasks、已有专用工具的 browser tasks、未经确认的 risky UI actions，或任何已有官方/专用工具路径的任务。 |
 | GitHub/Linear | 平台工具 / 官方 GitHub | [github/github-mcp-server](https://github.com/github/github-mcp-server) (30,870★) / [linear/linear](https://github.com/linear/linear) (1,454★) | 工作追踪 | Issues、PRs、review threads、handoff。 | 仓库本地已有的代码事实。 |
 | Sentry/observability | 平台工具 / 官方 GitHub | [getsentry/sentry](https://github.com/getsentry/sentry) (44,146★) | 运行时失败 | 部署系统中的 logs、errors、traces。 | 本地 build 或 unit test failures。 |
 | SonarQube / project quality gates | 成熟基础设施 / 项目已配置工具 | [SonarSource/sonarqube](https://github.com/SonarSource/sonarqube) (10,699★)；其他质量工具必须来自当前项目配置或官方产品文档 | 外部质量门禁 | 项目已配置时用于 static quality/security、PR review 或 visual regression。 | 替代本地验证，或默认新增外部门禁。 |
@@ -65,6 +68,7 @@
 - Workflow controller 工作：只有持久任务图状态、结构化 handoff、打回循环、阻塞项或 compact 后恢复能实质提高可靠性时，才在当前 change route 内使用；不要创建单独 route，也不要强加给 Lite 任务。
 - 知识同步：只在阶段收口、文档/记忆过期或追踪型交付 `knowledge_sync` 时使用 `neat-freak` 或等价定向审查；不要每个节点都运行。
 - 上下文压缩工作：先用索引、大纲、聚焦命令和证据摘要缩小上下文；只有大型可取回输出仍超过有效预算时，才使用已明确安装、可信的本地压缩层。
+- 平台特定项目：先发现并优先使用该平台官方 CLI 或自动化 API，再考虑 Computer Use。小程序项目如果可用微信开发者工具 CLI，就用它处理支持的 preview、upload、build checks；只有 CLI 覆盖不了的纯 GUI 步骤才降级到 Computer Use。
 - 上游参考漂移：每月、release 前，或任务依赖当前外部 skill 行为时运行 `node ./scripts/check-upstream-refs.mjs`；吸收任何经验前先使用 `codex-workflow-evolution`，并优先使用已链接的精确官方来源，不用 fork 或镜像替代。
 
 只有 specialist skill 已安装、职责狭窄，并且能实质改善当前交付物时，才在当前 route 内直接使用它。只有答案依赖快速变化生态时才查询当前外部来源。不要把第三方 skill body、模板、资源列表、图片、badge 或 branding 复制进 omyKit。
@@ -109,4 +113,4 @@
 
 ## 默认选择规则
 
-使用能回答下一个问题的最窄工具。如果某个工具会增加大量上下文但不改变下一步决策，就跳过它。选择同类 skill 时按任务信号、交付物类型、风险、项目上下文、来源可信度和历史反馈综合判断；stars 和官方来源是准入/可信信号，不是自动优先级。
+使用能回答下一个问题的最窄工具。优先使用项目原生和官方/专用工具，再考虑通用 fallback；Computer Use 是本地 GUI 工作在没有更好支持面时的最后选项。如果某个工具会增加大量上下文但不改变下一步决策，就跳过它。选择同类 skill 时按任务信号、交付物类型、风险、项目上下文、来源可信度和历史反馈综合判断；stars 和官方来源是准入/可信信号，不是自动优先级。

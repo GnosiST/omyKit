@@ -4,10 +4,10 @@ Route by deliverable, not by repository technology.
 
 | Type | Signals | Primary workflow | Typical tools |
 | --- | --- | --- | --- |
-| `app` | source code, tests, dev server, database, UI | spec/change -> impact -> build -> verify | CodeGraph, Context7, runtime-readiness, RTK, Chrome/Playwright |
+| `app` | source code, tests, dev server, database, UI | spec/change -> impact -> build -> verify | CodeGraph, Context7, runtime-readiness, RTK, project scripts, platform official CLIs, Chrome/Playwright |
 | `maintenance` | bug, regression, refactor, migration | reproduce -> impact -> minimal fix -> regression check | CodeGraph, Superpowers debugging/TDD, tests |
 | `deck` | slides, keynote, pptx, canva, presentation | brief -> outline -> storyboard -> deck -> render QA | presentations, Canva, imagegen, pdf render |
-| `video` | script, timeline, clips, remotion, export | brief -> script -> shot list -> render -> frame QA | Remotion, ffmpeg, imagegen, Computer Use |
+| `video` | script, timeline, clips, remotion, export | brief -> script -> shot list -> render -> frame QA | Remotion, ffmpeg, imagegen, Computer Use only for local GUI fallback |
 | `design` | UI, prototype, brand, image, Figma, selected design source | brief -> selected source/frame -> design system -> prototype -> visual QA | Figma, frontend-design, critique/audit, high-signal visual specialists, imagegen |
 | `research` | report, citations, market/tool analysis | question -> source plan -> research -> synthesis -> cite | web, Notion/Drive, hv-analysis, PDF/doc tools |
 | `data` | spreadsheet, CSV, metrics, chart | question -> schema -> clean -> analyze -> visualize -> export | spreadsheets, Python/Node, charts |
@@ -24,10 +24,11 @@ Route by deliverable, not by repository technology.
 Keep the selected route until scope, risk, artifact type, or user intent changes.
 
 1. Native/project APIs and files.
-2. Semantic/indexed tools such as CodeGraph or outline readers.
-3. Dedicated MCP/plugins such as Figma, Canva, GitHub, Context7.
-4. Browser automation for web runtime checks.
-5. Computer Use only for local GUI workflows without a better API/plugin.
+2. Project scripts and platform official CLIs or automation APIs, such as WeChat DevTools CLI for Mini Programs when the project evidence supports it.
+3. Semantic/indexed tools such as CodeGraph or outline readers.
+4. Dedicated MCP/plugins such as Figma, Canva, GitHub, Context7.
+5. Browser automation for web runtime checks.
+6. Computer Use only for local GUI workflows when no official/dedicated connector, MCP/plugin, browser automation, shell/API path, project script, or platform official CLI can do the job.
 
 ## Versioning Route
 

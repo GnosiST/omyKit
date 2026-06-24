@@ -80,12 +80,13 @@ Controller 把状态保存到 `.omykit/workflows/<workflow-id>/`，校验 handof
 优先使用最具体且可靠的工具：
 
 1. 项目原生命令、API 和文件。
-2. 语义化或索引化上下文，例如 CodeGraph。
-3. 通过 Context7、Figma 或其他选中的设计来源获取聚焦文档或选中交付物上下文。
-4. 原生缩小范围仍不够时，对大型可取回输出使用可选本地压缩。
-5. 当 Canva、GitHub、Sentry、可选本地压缩或 artifact 工具能实质改变下一步决策时，才调用专用 MCP/plugins。
-6. 浏览器自动化，例如 Chrome Extension 或 Playwright。
-7. 只有在本地 GUI 工作流没有更好接口时才使用 Computer Use。
+2. 根据项目证据和当前官方文档发现的平台官方 CLI 或自动化 API，例如小程序的微信开发者工具 CLI。
+3. 语义化或索引化上下文，例如 CodeGraph。
+4. 通过 Context7、Figma 或其他选中的设计来源获取聚焦文档或选中交付物上下文。
+5. 原生缩小范围仍不够时，对大型可取回输出使用可选本地压缩。
+6. 当 Canva、GitHub、Sentry、可选本地压缩或 artifact 工具能实质改变下一步决策时，才调用专用 MCP/plugins。
+7. 浏览器自动化，例如 Chrome Extension 或 Playwright。
+8. 只有官方/专用 connector、MCP/plugin、浏览器自动化、shell/API 路径、项目脚本或平台官方 CLI 都无法完成本地 GUI 任务时，才使用 Computer Use。
 
 ## 运行时哲学
 

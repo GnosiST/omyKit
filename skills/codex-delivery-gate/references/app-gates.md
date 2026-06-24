@@ -21,7 +21,7 @@ Choose gates by risk and touched surface.
 
 - Use in-app browser or Playwright for localhost/public web.
 - Use Chrome Extension when signed-in Chrome profile or project policy requires it.
-- Use Computer Use for local GUI apps such as mobile devtools or emulators when no dedicated tool is available.
+- Use Computer Use for local GUI apps such as mobile devtools or emulators only when no official/dedicated connector, MCP/plugin, browser automation, shell/API path, or project script can produce the evidence.
 
 ## Handoff
 
