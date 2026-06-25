@@ -54,7 +54,7 @@ $omykit 诊断工作流健康
 $omykit 清理旧工作流残留
 ```
 
-Codex 应该优先选择项目本地 controller 脚本；没有本地脚本时，使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、推荐模型和实际模型记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
+Codex 应该优先选择项目级 `.omykit/kit/scripts/omykit-workflow.mjs`；如果项目明确 vendor 了 controller，再使用 `scripts/omykit-workflow.mjs`；只有用户明确要求或客户端不能加载项目级入口时，才使用全局安装脚本。然后运行命令，并把状态、下一步、生成的看板路径、任务追踪摘要、skill 使用记录、推荐模型和实际模型记录、token/上下文覆盖率、耗时或 ETA 信号、failed/blocked 节点、生成的整改建议和剩余风险报告给用户。
 
 只有在自动化、CI、排障，或 Codex 无法操作本地 shell 时，才需要直接手动运行 shell 命令。
 
@@ -212,12 +212,12 @@ node scripts/omykit-workflow.mjs record-run 05-verify \
 
 ## 运行位置
 
-全局安装后，omyKit 会把 controller 放到：
+项目级启用后，omyKit 会把 controller 放到目标项目：
 
 ```text
-${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs
-${CODEX_HOME:-$HOME/.codex}/omykit/schemas/*.schema.json
-${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/
+.omykit/kit/scripts/omykit-workflow.mjs
+.omykit/kit/schemas/*.schema.json
+.omykit/kit/workflow-templates/
 ```
 
 在 omyKit 源码仓库内使用：
@@ -226,7 +226,18 @@ ${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/
 node scripts/omykit-workflow.mjs status
 ```
 
-在目标项目中，优先使用项目本地的 `scripts/omykit-workflow.mjs`。没有项目本地脚本时，使用全局安装路径。
+在目标项目中，优先使用项目级 `.omykit/kit/scripts/omykit-workflow.mjs`。如果项目明确 vendor 了 controller，也可以使用 `scripts/omykit-workflow.mjs`。只有用户明确要求全局 fallback，或 Codex 客户端不能加载项目级入口时，才使用 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`。
+
+项目级入口可以随时开关：
+
+```bash
+/path/to/omyKit/scripts/project-local.sh status <project>
+/path/to/omyKit/scripts/project-local.sh disable <project>
+/path/to/omyKit/scripts/project-local.sh enable <project>
+/path/to/omyKit/scripts/project-local.sh uninstall <project>
+```
+
+`disable` 只移除项目里的 Codex skill/prompt 入口，保留 `.omykit` 运行历史和 controller；`uninstall` 才会归档 `.omykit`。
 
 ## 命令
 

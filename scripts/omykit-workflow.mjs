@@ -1482,6 +1482,49 @@ function ensureLocalGitIgnore(cwd = process.cwd()) {
   return { status: "added", path: projectRelativePath(file, cwd) };
 }
 
+function readKeyValueManifest(file) {
+  if (!fs.existsSync(file)) return {};
+  return Object.fromEntries(fs.readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#") && line.includes("="))
+    .map((line) => {
+      const index = line.indexOf("=");
+      return [line.slice(0, index), line.slice(index + 1)];
+    }));
+}
+
+function inspectProjectLocalInstall(cwd = process.cwd()) {
+  const manifestPath = path.join(omykitRoot(cwd), "kit", "install-manifest");
+  const controllerPath = path.join(omykitRoot(cwd), "kit", "scripts", "omykit-workflow.mjs");
+  const schemasPath = path.join(omykitRoot(cwd), "kit", "schemas");
+  const templatesPath = path.join(omykitRoot(cwd), "kit", "workflow-templates");
+  const skillEntryPath = path.join(cwd, ".codex", "skills", "omykit");
+  const promptPath = path.join(cwd, ".codex", "prompts", "omykit.md");
+  const manifest = readKeyValueManifest(manifestPath);
+  const installed = fs.existsSync(manifestPath) || fs.existsSync(controllerPath) || fs.existsSync(skillEntryPath) || fs.existsSync(promptPath);
+  const entrypointsPresent = fs.existsSync(skillEntryPath) && fs.existsSync(promptPath);
+  const controllerPresent = fs.existsSync(controllerPath);
+  const supportFilesPresent = fs.existsSync(schemasPath) && fs.existsSync(templatesPath);
+  const manifestEnabled = manifest.enabled || null;
+  const enabled = installed && entrypointsPresent && controllerPresent && supportFilesPresent && manifestEnabled !== "false";
+  return {
+    installed,
+    enabled,
+    scope: manifest.scope || (installed ? "project" : null),
+    manifest_enabled: manifestEnabled,
+    manifest: fs.existsSync(manifestPath) ? projectRelativePath(manifestPath, cwd) : null,
+    skill_entry: fs.existsSync(skillEntryPath) ? projectRelativePath(skillEntryPath, cwd) : null,
+    prompt: fs.existsSync(promptPath) ? projectRelativePath(promptPath, cwd) : null,
+    controller: controllerPresent ? projectRelativePath(controllerPath, cwd) : null,
+    schemas: fs.existsSync(schemasPath) ? projectRelativePath(schemasPath, cwd) : null,
+    workflow_templates: fs.existsSync(templatesPath) ? projectRelativePath(templatesPath, cwd) : null,
+    source_root: manifest.source_root || null,
+    git_commit: manifest.git_commit || null,
+    git_dirty: manifest.git_dirty || null,
+  };
+}
+
 function runGitText(cwd, args) {
   const result = spawnSync("git", args, {
     cwd,
@@ -8686,6 +8729,7 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
   const root = workflowsRoot(cwd);
   const namespace = omyKitNamespaceStatus(cwd);
   const localGitIgnore = inspectLocalGitIgnore(cwd);
+  const projectLocalInstall = inspectProjectLocalInstall(cwd);
   const rootArtifactConflicts = rootWorkflowArtifactConflicts(cwd);
   const gitRemovalPlan = buildGitRemovalPlan(cwd);
   const allDirs = options.workflow
@@ -8710,6 +8754,7 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
     active_workflow: activeId,
     active_workflow_valid: activeId ? fs.existsSync(path.join(root, activeId, "graph.json")) : null,
     local_git_ignore: localGitIgnore,
+    project_local_install: projectLocalInstall,
     remote_hygiene: {
       runtime_state_policy: "local_only",
       default_ignore_surface: ".git/info/exclude",
@@ -8751,6 +8796,17 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       detail: "Workflow state is local runtime data and should not be submitted unless the user explicitly asks to vendor it.",
       fixable: true,
       next_action: "Run doctor --fix to add .omykit/ to .git/info/exclude.",
+    }));
+  }
+  if (projectLocalInstall.installed && !projectLocalInstall.enabled) {
+    issues.push(doctorIssue({
+      id: "project_local_omykit_disabled",
+      severity: "info",
+      scope: "project",
+      path: projectLocalInstall.manifest || ".omykit/kit/install-manifest",
+      summary: "Project-local omyKit is installed but disabled.",
+      detail: "Project-local Codex entry points are missing or manifest enabled=false; workflow runtime can be kept and re-enabled later.",
+      next_action: "Run scripts/project-local.sh enable <project> from the omyKit checkout to re-enable, or uninstall if the project should stop using omyKit.",
     }));
   }
   if (gitRemovalPlan.tracked_runtime_files.length > 0) {
@@ -8838,8 +8894,8 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       scope: "project",
       path: project.repo_local_skill_dirs.join(", "),
       summary: "Repo-local skill directories exist.",
-      detail: "Keep them only when the project intentionally vendors skills for team or CI use; otherwise prefer global omyKit.",
-      next_action: "Compare repo-local skills with global install before relying on them.",
+      detail: "Use them when the project intentionally runs omyKit in project-local mode; otherwise compare them with the active project-local manifest before relying on them.",
+      next_action: "Run doctor or scripts/project-local.sh status to confirm whether project-local omyKit is enabled.",
     }));
   }
   if (taskInbox.invalid.length > 0) {

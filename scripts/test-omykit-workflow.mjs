@@ -7,6 +7,7 @@ import path from "node:path";
 
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const controller = path.join(repoRoot, "scripts", "omykit-workflow.mjs");
+const projectLocalScript = path.join(repoRoot, "scripts", "project-local.sh");
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-"));
 
 function run(args, cwd = tmpRoot) {
@@ -296,6 +297,66 @@ const rootArtifactPlan = JSON.parse(run(["cleanup", "--git-removal-plan", "--jso
 assert.ok(rootArtifactPlan.cleanup.tracked_legacy_artifact_files.includes("graph.json"));
 assert.ok(rootArtifactPlan.cleanup.tracked_legacy_artifact_files.includes("board.html"));
 fs.rmSync(tmpTrackedRootArtifacts, { recursive: true, force: true });
+
+const tmpProjectLocal = fs.mkdtempSync(path.join("/tmp", "omykit-project-local-"));
+execFileSync("git", ["init"], { cwd: tmpProjectLocal, stdio: ["ignore", "ignore", "pipe"] });
+execFileSync("git", ["config", "user.email", "omykit-test@example.invalid"], { cwd: tmpProjectLocal });
+execFileSync("git", ["config", "user.name", "omyKit Test"], { cwd: tmpProjectLocal });
+fs.writeFileSync(path.join(tmpProjectLocal, "README.md"), "# Project-local fixture\n");
+const projectLocalEnv = { ...process.env };
+const projectLocalEnable = execFileSync("bash", [projectLocalScript, "enable", tmpProjectLocal], {
+  cwd: repoRoot,
+  env: projectLocalEnv,
+  encoding: "utf8",
+});
+assert.match(projectLocalEnable, /Enabled project-local omyKit/);
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".codex", "skills", "omykit", "SKILL.md")));
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".codex", "prompts", "omykit.md")));
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".omykit", "kit", "scripts", "omykit-workflow.mjs")));
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".omykit", "kit", "schemas", "workflow-graph.schema.json")));
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".omykit", "kit", "workflow-templates", "templates", "change.standard.yaml")));
+const projectLocalExclude = fs.readFileSync(path.join(tmpProjectLocal, ".git", "info", "exclude"), "utf8");
+assert.match(projectLocalExclude, /^\.omykit\/$/m);
+assert.match(projectLocalExclude, /^\.codex\/skills\/omykit\/$/m);
+assert.match(projectLocalExclude, /^\.codex\/prompts\/omykit\.md$/m);
+assert.equal(gitOutput(tmpProjectLocal, ["status", "--short", "--", ".omykit", ".codex"]), "");
+const projectLocalDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpProjectLocal));
+assert.equal(projectLocalDoctor.project.project_local_install.enabled, true);
+assert.equal(projectLocalDoctor.project.project_local_install.scope, "project");
+assert.equal(projectLocalDoctor.project.project_local_install.controller, ".omykit/kit/scripts/omykit-workflow.mjs");
+const projectLocalDisable = execFileSync("bash", [projectLocalScript, "disable", tmpProjectLocal], {
+  cwd: repoRoot,
+  env: projectLocalEnv,
+  encoding: "utf8",
+});
+assert.match(projectLocalDisable, /Disabled project-local omyKit/);
+assert.ok(!fs.existsSync(path.join(tmpProjectLocal, ".codex", "skills", "omykit")));
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".omykit", "kit", "scripts", "omykit-workflow.mjs")));
+const disabledDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"], tmpProjectLocal));
+assert.equal(disabledDoctor.project.project_local_install.enabled, false);
+assert.ok(disabledDoctor.issues.some((issue) => issue.id === "project_local_omykit_disabled"));
+const projectLocalStatus = execFileSync("bash", [projectLocalScript, "status", tmpProjectLocal], {
+  cwd: repoRoot,
+  env: projectLocalEnv,
+  encoding: "utf8",
+});
+assert.match(projectLocalStatus, /enabled: false/);
+execFileSync("bash", [projectLocalScript, "enable", tmpProjectLocal], {
+  cwd: repoRoot,
+  env: projectLocalEnv,
+  encoding: "utf8",
+});
+assert.ok(fs.existsSync(path.join(tmpProjectLocal, ".codex", "skills", "omykit", "SKILL.md")));
+const projectLocalUninstall = execFileSync("bash", [projectLocalScript, "uninstall", tmpProjectLocal], {
+  cwd: repoRoot,
+  env: projectLocalEnv,
+  encoding: "utf8",
+});
+assert.match(projectLocalUninstall, /Uninstalled project-local omyKit/);
+assert.ok(!fs.existsSync(path.join(tmpProjectLocal, ".omykit")));
+assert.ok(!fs.existsSync(path.join(tmpProjectLocal, ".codex", "skills", "omykit")));
+assert.equal(gitOutput(tmpProjectLocal, ["status", "--short", "--", ".omykit", ".codex"]), "");
+fs.rmSync(tmpProjectLocal, { recursive: true, force: true });
 
 const dispatchOutput = run(["dispatch-plan", "--lang", "zh-CN"]);
 assert.match(dispatchOutput, /派发计划: feature-x/);

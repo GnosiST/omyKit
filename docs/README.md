@@ -16,7 +16,7 @@ Languages: [English](README.md) | [简体中文](README.zh-CN.md)
 | [Handoff protocol](workflow/handoff-protocol.md) | Structured node outputs for passed, failed, blocked, and skipped states. |
 | [Multi-agent coordination](workflow/multi-agent-coordination.md) | Workflow intent, references, implementation assessment, and Codex thread-native multi-agent roadmap. |
 | [Language policy](workflow/language-policy.md) | How visible reasoning summaries, questions, status, and handoff match the user's language. |
-| [Setup](workflow/setup.md) | Codex-first install, first-use prompts, optional repo-local copy, and validation notes. |
+| [Setup](workflow/setup.md) | Codex-first project-local enablement, first-use prompts, optional explicit vendor copy, and validation notes. |
 | [Project profile](workflow/project-profile.md) | omyKit repository profile: source of truth, maintenance gates, health checks, runtime, versioning, and customization boundaries. |
 | [Context budget](workflow/context-budget.md) | How to keep Codex context loading small, progressive, and compression-aware. |
 | [Runtime readiness](workflow/runtime-readiness.md) | How to prepare local middleware before verification. |

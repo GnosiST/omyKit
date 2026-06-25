@@ -27,14 +27,18 @@ Treat terminal commands as internal implementation details. When the user asks i
 
 For omyKit maintenance:
 
-- first-time install from Codex can only start from a plain user request because `$omykit` is not available yet; after install, tell the user to open a fresh Codex thread
-- update/reinstall omyKit with the current trusted checkout when available; otherwise use the official repository URL the user supplied or `https://github.com/GnosiST/omyKit`
-- run `./scripts/install-global.sh` from the omyKit checkout, then confirm `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`
+- first-time project enablement from Codex can only start from a plain user request if `$omykit` is not available yet; after project-local enablement, tell the user to open a fresh Codex thread when the skill list does not refresh in the current session
+- update/reinstall project-local omyKit with the current trusted checkout when available; otherwise use the official repository URL the user supplied or `https://github.com/GnosiST/omyKit`
+- run `/path/to/omyKit/scripts/project-local.sh enable <target-project>` from the trusted omyKit checkout for project-local enablement, then confirm `<target-project>/.omykit/kit/install-manifest`
+- use `./scripts/install-global.sh` only when the user explicitly requests a global install or a Codex client cannot load project-local skills
 
 For controller and board requests, use the first available script:
 
-1. project `scripts/omykit-workflow.mjs`
-2. `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`
+1. project-local `.omykit/kit/scripts/omykit-workflow.mjs`
+2. project `scripts/omykit-workflow.mjs`
+3. `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs`
+
+If `.omykit/kit/install-manifest` exists with `enabled=false`, treat omyKit as disabled for that target project. Do not silently fall back to the global controller for that project unless the user explicitly asks for a global override; report the disabled state and offer to re-enable project-local omyKit.
 
 Map user intent to commands:
 
@@ -94,7 +98,8 @@ Include these concise groups:
 - health and cleanup: `$omykit 诊断工作流健康`, `$omykit 修复工作流健康`, `$omykit 清理旧工作流残留`
 - git cleanup: `$omykit 撤回已提交的工作流运行态`, `$omykit 工作流运行态撤出 Git`, `$omykit 重置本地工作流运行态`
 - local uninstall: `$omykit 卸载本项目 omyKit 运行状态`, `$omykit 移除本地工作流状态`
-- maintenance: `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
+- project-local kit: `$omykit 启用本项目 omyKit`, `$omykit 关闭本项目 omyKit`, `$omykit 查看本项目 omyKit 状态`, `$omykit 卸载本项目 omyKit`
+- maintenance: `$omykit 更新本项目 omyKit`, `$omykit 更新自己`, `$omykit 升级旧工作流`, `$omykit 交付检查`, `$omykit 收尾`, `$omykit 整理文档`
 - templates: `$omykit 查看模板`, `$omykit 查看 frontend-ui.strict 模板`
 - diagnostics, only when asked: `$omykit 查看编排计划`, `$omykit 导出交接包`, `$omykit 查看 Agent 通讯录`
 
@@ -102,7 +107,7 @@ Explain that task-specific shortcuts go through the controller task inbox first.
 
 Mention that `$omykit` is a Codex chat trigger, not a shell prompt. If the user wants terminal fallback, give only the local controller examples they need, such as `node scripts/omykit-workflow.mjs help`, `workflows`, `orchestrate`, `upgrade --all`, `templates list`, `status`, or `board --open`. Do not present `tasks`, `dispatch-plan`, `context-pack`, or `assign` as normal user choices; they are internal primitives unless the user is debugging the controller.
 
-Treat workflow runtime state as local-only by default. Do not ask users to commit or push `.omykit/` unless they explicitly want to vendor workflow state into a repository. In Git projects, `init` should keep `.omykit/` ignored through local `.git/info/exclude`; use `doctor --fix` for safe local ignore repair, `cleanup --git-removal-plan` when workflow files may already be tracked, `cleanup --untrack-runtime --apply` to stage index removal while preserving local state, `cleanup --reset-runtime --apply` to archive and reset local state, and `cleanup --uninstall-local --apply` when the user wants to remove project-local omyKit runtime state. These commands do not commit, push, or rewrite history; sensitive already-pushed artifacts require explicit manual Git history cleanup.
+Treat workflow runtime state and project-local omyKit entry points as local-only by default. Do not ask users to commit or push `.omykit/` or omyKit-managed `.codex/skills/*` entry points unless they explicitly want to vendor them into a repository. In Git projects, project-local enablement and `init` should keep `.omykit/` and omyKit-managed `.codex` entry points ignored through local `.git/info/exclude`; use `doctor --fix` for safe runtime ignore repair, `scripts/project-local.sh disable <project>` to turn off Codex entry points while keeping runtime history, `scripts/project-local.sh enable <project>` to turn them back on, `cleanup --git-removal-plan` when workflow files may already be tracked, `cleanup --untrack-runtime --apply` to stage index removal while preserving local state, `cleanup --reset-runtime --apply` to archive and reset local state, and `cleanup --uninstall-local --apply` or `scripts/project-local.sh uninstall <project>` when the user wants to remove project-local omyKit runtime state. These commands do not commit, push, or rewrite history; sensitive already-pushed artifacts require explicit manual Git history cleanup.
 
 ## Start
 

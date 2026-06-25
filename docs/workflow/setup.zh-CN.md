@@ -1,18 +1,18 @@
-# 安装 Codex Workflow Kit
+# 项目级启用 Codex Workflow Kit
 
 语言：[English](setup.md) | [简体中文](setup.zh-CN.md)
 
-使用本指南把套件安装到任何项目中。
+使用本指南把套件以项目级方式启用到任何项目中。
 
-## Codex-first 安装
+## Codex-first 启用
 
 首次安装时还没有 `$omykit`，所以直接用普通对话告诉 Codex：
 
 ```text
-帮我安装 omyKit：https://github.com/GnosiST/omyKit
+帮我给当前项目启用 omyKit：https://github.com/GnosiST/omyKit
 ```
 
-Codex 应该 clone 仓库、运行 `./scripts/install-global.sh`、返回 install manifest，并提醒你打开新的 Codex 线程刷新 skill 列表。全局安装会复制真实文件，不用 symlink 安装 Codex skills。
+Codex 应该 clone 仓库、运行 `./scripts/project-local.sh enable <target-project>`、返回目标项目的 `.omykit/kit/install-manifest`，并在当前线程无法刷新 skill 列表时提醒你打开新的 Codex 线程。项目级启用会复制真实文件，不用 symlink 安装 Codex skills，并把 `.omykit/` 与 omyKit 管理的 `.codex` 入口写入目标项目 `.git/info/exclude`。
 
 安装后，日常使用 `$omykit`：
 
@@ -29,28 +29,36 @@ $omykit 升级旧工作流
 $omykit 诊断工作流健康
 $omykit 清理旧工作流残留
 $omykit 交付检查
-$omykit 更新自己
+$omykit 查看本项目 omyKit 状态
+$omykit 关闭本项目 omyKit
+$omykit 启用本项目 omyKit
+$omykit 更新本项目 omyKit
 ```
 
 开头的 `$` 是 skill 触发写法的一部分，不是 shell 提示符。
 
 想看常用命令时，直接输入 `$omykit help` 或 `$omykit 帮助`，不需要打开文档。
 
-## 手动全局安装
+## 手动项目级启用
 
 当 Codex 无法操作本地 shell，或你想逐步检查时，使用这个 fallback：
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
 cd omyKit
-./scripts/install-global.sh
+./scripts/project-local.sh enable /path/to/target-project
 ```
 
-从已有本地 checkout 安装：
+从已有本地 checkout 启用、停用、查看或卸载：
 
 ```bash
-./scripts/install-global.sh
+./scripts/project-local.sh status /path/to/target-project
+./scripts/project-local.sh disable /path/to/target-project
+./scripts/project-local.sh enable /path/to/target-project
+./scripts/project-local.sh uninstall /path/to/target-project
 ```
+
+`disable` 只关闭项目里的 Codex skill/prompt 入口，保留 `.omykit` runtime 和历史 workflow，适合临时停用。`enable` 会重新写入项目级入口。`uninstall` 会把 `.omykit` 移到本地非项目归档目录，适合完全剥离。
 
 然后打开新的 Codex 线程，并在 Codex 对话中输入：
 
@@ -58,13 +66,13 @@ cd omyKit
 $omykit 初始化项目
 ```
 
-全局安装是正常路径。它让可复用 workflow 留在单个项目之外，避免把通用 skill 文件复制进每个仓库。
+项目级启用是正常路径。它让 omyKit 能随项目开关，又默认通过 `.git/info/exclude` 留在本机，不影响队友或远程仓库。
 
-全局安装也会把可选 workflow controller 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`，controller schemas 复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`，并把可复用 workflow 模板复制到 `${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/`。
+项目级启用会把 controller 复制到 `.omykit/kit/scripts/`，controller schemas 复制到 `.omykit/kit/schemas/`，并把可复用 workflow 模板复制到 `.omykit/kit/workflow-templates/`。只有用户明确要求全局安装，或当前 Codex 客户端不能加载项目级 skills 时，才使用 `./scripts/install-global.sh`。
 
 ## 新项目
 
-1. 通过 Codex 全局安装 omyKit，或使用手动 fallback。
+1. 通过 Codex 给当前项目启用 omyKit，或使用手动 fallback。
 2. 创建或打开目标仓库。
 3. 询问 Codex：
 
@@ -77,7 +85,7 @@ $omykit 初始化项目
 
 ## 现有项目
 
-1. 通过 Codex 全局安装 omyKit，或使用手动 fallback。
+1. 通过 Codex 给当前项目启用 omyKit，或使用手动 fallback。
 2. 打开现有仓库。
 3. 询问 Codex：
 
@@ -87,9 +95,9 @@ $omykit 改造旧项目
 
 4. 审查生成的 project profile，只保留符合现有项目的规则。
 
-## 可选 Repo-Local 副本
+## 可选显式 Vendor 副本
 
-只有当项目需要为团队或 CI 环境 vendor workflow 时才使用：
+只有当项目明确需要把 workflow skills 提交给团队或 CI 环境时才使用；普通项目级启用不需要提交这些文件：
 
 ```bash
 mkdir -p .codex/skills docs
@@ -105,7 +113,7 @@ cp -R /path/to/omyKit/docs/workflow docs/workflow
 $omykit 初始化项目
 ```
 
-不要无理由同时保留陈旧的 repo-local 副本和较新的全局副本。
+不要无理由同时保留陈旧的 vendored 副本和较新的项目级 `.omykit/kit` 副本。
 
 ## 推荐 Codex Prompt
 

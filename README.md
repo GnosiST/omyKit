@@ -8,7 +8,7 @@
 
 **A lightweight Codex workflow kit for context-aware project routing, low-waste execution, verification gates, runtime readiness, and rollback-aware delivery.**
 
-omyKit packages a small, procedural operating layer for Codex. It helps agents decide when to initialize project rules, retrofit an existing repository, execute a scoped change, prepare local runtime dependencies, check version readiness, and run delivery gates before handoff.
+omyKit packages a small project-local operating layer for Codex. It helps agents decide when to initialize project rules, retrofit an existing repository, execute a scoped change, prepare local runtime dependencies, check version readiness, and run delivery gates before handoff.
 
 The kit is designed to stay out of the way after routing. Once a task is classified, normal execution continues without re-running the workflow for every file read, edit, command, or intermediate check.
 
@@ -57,23 +57,34 @@ flowchart LR
 
 ## Quick Start
 
-### Install From Codex
+### Enable In A Project From Codex
 
 For first-time install, you do not have `$omykit` yet. Ask Codex in plain language:
 
 ```text
-Install omyKit from https://github.com/GnosiST/omyKit
+Enable omyKit for this project from https://github.com/GnosiST/omyKit
 ```
 
-Codex can clone the repository, run the installer, and report the install manifest. The installer copies real files and does not install Codex skills as symlinks. After installation, open a fresh Codex thread so the skill list refreshes.
+Codex can clone the repository, run the project-local enable script, and report the target project's `.omykit/kit/install-manifest`. The script copies real files, does not use symlinks, and writes `.omykit/` plus omyKit-managed `.codex` entry points to the target project's `.git/info/exclude` by default. If the current Codex thread does not refresh the skill list, open a fresh thread after enablement.
 
 Manual fallback:
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
 cd omyKit
-./scripts/install-global.sh
+./scripts/project-local.sh enable /path/to/your/project
 ```
+
+Enable, disable, inspect, or uninstall later:
+
+```bash
+./scripts/project-local.sh status /path/to/your/project
+./scripts/project-local.sh disable /path/to/your/project
+./scripts/project-local.sh enable /path/to/your/project
+./scripts/project-local.sh uninstall /path/to/your/project
+```
+
+`disable` removes the project Codex skill/prompt entry points while preserving `.omykit` runtime history for later re-enable. `uninstall` archives `.omykit` into a local non-project directory for full removal.
 
 ### Use From Codex
 
@@ -94,7 +105,10 @@ $omykit 升级旧工作流
 $omykit 诊断工作流健康
 $omykit 清理旧工作流残留
 $omykit 交付检查
-$omykit 更新自己
+$omykit 查看本项目 omyKit 状态
+$omykit 关闭本项目 omyKit
+$omykit 启用本项目 omyKit
+$omykit 更新本项目 omyKit
 ```
 
 Codex should run any required controller or install commands internally and return the result, paths, and residual risks. The leading `$` is part of the skill trigger, not a shell prompt.
@@ -136,17 +150,24 @@ node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 node scripts/omykit-workflow.mjs board --open --lang zh-CN
 ```
 
+In project-local mode, the default controller lives under the target project:
+
+```bash
+node .omykit/kit/scripts/omykit-workflow.mjs status
+node .omykit/kit/scripts/omykit-workflow.mjs board --open --lang zh-CN
+```
+
 The controller still exposes lower-level primitives such as `tasks`, `dispatch-plan`, `context-pack`, `assign`, and `record-run` for Codex internals, CI, or troubleshooting. They are not normal user choices. Task-specific Codex requests first enter the task inbox so the merge gate can decide whether to merge into the active workflow, link as a follow-up, or create a new workflow; when `init` creates that new workflow from the same pending brief, the matching task is linked automatically. `doctor` writes `.omykit/health/health-report.json` and inspects retrofit completeness, local-only isolation, namespace conflicts, active workflow pointers, task inbox parseability, legacy artifact gaps, stale boards, command recovery signals, Git-tracked runtime or legacy artifact files, cleanup candidates, and next recommendations. `doctor --fix` only applies safe compatibility repairs and local `.git/info/exclude` ignore repair; it does not fabricate handoffs, usage, model, skill, or verification evidence, and it does not edit project `.gitignore` by default. `cleanup` defaults to dry-run, `cleanup --apply` archives safe candidates under `.omykit/archive/`, `cleanup --untrack-runtime --apply` stages Git index removal while keeping local `.omykit/`, `cleanup --reset-runtime --apply` stages runtime untracking and archives local `.omykit/`, and `cleanup --uninstall-local --apply` moves the whole `.omykit/` runtime state into a local non-project archive. These cleanup commands never commit, push, or rewrite history; sensitive already-pushed history requires explicit manual Git history cleanup. The board command writes `.omykit/workflows/<workflow-id>/board.json` and `board.html`. New tracked workflows can use `--template auto` to choose among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, and `mission.orchestration`; explicit template choices override auto. The board language follows the workflow language by default and can be overridden with `--lang zh-CN`. It also shows the workflow metadata, task inbox, workstreams, conflict-arbiter signals, recorded skill usage, execution options and confirmation, recommended models, actual model records, delivery knowledge sync review, the Agent Roster, handoff packets, compact context packets, and command-run recovery records per node and per worker when handoffs or assignments provide them. It is a local static view, not a realtime service.
 
 ## What It Includes
 
 | Path | Purpose |
 | --- | --- |
-| `skills/` | Codex skills installed into `${CODEX_HOME:-$HOME/.codex}/skills/`. |
+| `skills/` | Codex skills copied into a target project's `.codex/skills/` in project-local mode; global install is an explicit fallback. |
 | `prompts/` | Optional prompt alias for starting omyKit from clients that support prompt files. |
 | `docs/workflow/` | Workflow notes for setup, routing, controller, context budgeting, runtime readiness, versioning, tool selection, and delivery gates. |
 | `schemas/` | JSON schemas for controller graphs, node cards, state, assignments, and handoffs. |
-| `scripts/` | Validation, workflow controller, global installation, install-from-ref, and rollback helpers. |
+| `scripts/` | Validation, workflow controller, project-local enable/disable, explicit global installation, install-from-ref, and rollback helpers. |
 | `workflow-templates/` | Layered YAML workflow templates, agent/model/runtime/safety profiles, and scorecards used by the controller. |
 | `upstream-sources.json` | Tracked external reference baselines plus source-integrity snapshots for official workflow, spec, local-skill, platform-tool, design, motion, ecosystem, and context-compression sources. |
 | `AGENTS.md` | Maintenance rules for agents working in this repository. |
@@ -172,7 +193,7 @@ See [Skill coordination](docs/workflow/skill-coordination.md) for what each inte
 
 For long or Strict work, omyKit can persist a task graph under `.omykit/workflows/<workflow-id>/` and use `scripts/omykit-workflow.mjs` to record task briefs, run the merge gate, validate handoffs, show ready nodes, record blockers, generate node context packs, record long-running command recovery metadata, generate a static collaboration board, and support compact recovery.
 
-The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Runtime workflow state is local-only by default: in Git projects, `init` adds `.omykit/` to `.git/info/exclude` so state does not enter remote commits unless the user explicitly chooses to vendor it. Global install copies the controller to `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` with schemas under `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`.
+The controller is local and deterministic. It does not call models, spawn agents, edit code by itself, replace Codex, or make Lite tasks heavy by default. Project-local enablement copies the controller to `.omykit/kit/scripts/omykit-workflow.mjs`, schemas to `.omykit/kit/schemas/`, and workflow templates to `.omykit/kit/workflow-templates/` in the target project. The global install path is only a fallback when the user explicitly asks for it or a client cannot load project-local skills.
 
 The controller is template-driven. Built-in YAML templates define graph topology, agent roles, model profile, runtime profile, safety limits, and scorecards separately, so the same task class can reuse a stable workflow while each issue supplies different inputs and evidence. `init --template auto` chooses among `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, and `mission.orchestration`; explicit template requests still override auto. Use `templates list`, `templates show <id>`, and `templates validate` to inspect or validate the installed templates.
 
@@ -192,7 +213,7 @@ Operational rules:
 - Before implementation or worker dispatch, present execution options, recommend one, explain tradeoffs, and capture user confirmation or explicit auto-authorization.
 - Use workflow skills at task boundaries and meaningful phase changes, not for every individual action.
 - Enable the controller only for tracked multi-node, resumable, compact-prone, rejected, parallel, or Strict work.
-- Keep runtime state local-only by default: use the unique `.omykit/` namespace, local `.git/info/exclude`, doctor isolation checks, `cleanup --untrack-runtime --apply` when already tracked runtime should stay local, and `cleanup --reset-runtime --apply` or `cleanup --uninstall-local --apply` when a project should return to a clean non-omyKit state.
+- Keep runtime state and omyKit-managed project `.codex` entry points local-only by default: use the unique `.omykit/` namespace, local `.git/info/exclude`, doctor isolation checks, `scripts/project-local.sh disable <project>` for a reversible off switch, `scripts/project-local.sh enable <project>` to turn it back on, `cleanup --untrack-runtime --apply` when already tracked runtime should stay local, and `cleanup --reset-runtime --apply`, `cleanup --uninstall-local --apply`, or `scripts/project-local.sh uninstall <project>` when a project should return to a clean non-omyKit state.
 - Creating a tracked workflow is not task completion; for long work, continue `resume/orchestrate -> internal start or dispatch -> work -> handoff -> complete/reject/block/unblock` until delivery passes or a real blocker is recorded.
 - For multi-agent work, let the orchestration plan choose main-thread, subagent, background-thread, or worktree execution from task fit; keep the main thread on its current model as orchestrator-observer, create real workers when `dispatch_worker` is returned, and pass the node's recommended model override only when the active runtime tool and policy allow it.
 - Read `collaboration_topology` in `orchestrate --json` for the current collaboration shape: `one_to_one` when exactly one bounded worker node is ready, `one_to_many` when multiple independent worker nodes are ready within safety limits, and `many_to_one` when a downstream node must join several upstream handoffs by dependency or `handoff_target`.
@@ -269,6 +290,9 @@ It checks whether the target project has an appropriate version source, changelo
 For this repository itself:
 
 ```bash
+./scripts/project-local.sh enable <target-project>
+./scripts/project-local.sh status <target-project>
+./scripts/project-local.sh disable <target-project>
 ./scripts/install-global.sh
 ./scripts/install-ref.sh main
 ./scripts/install-ref.sh <release-tag-or-commit-sha>
@@ -283,10 +307,10 @@ After changing skill files:
 2. Run `node scripts/test-omykit-workflow.mjs` when controller scripts or schemas changed.
 3. Run `node ./scripts/validate-docs.mjs`.
 4. Run `node ./scripts/check-upstream-refs.mjs` before releases or when external references may affect workflow rules.
-5. Run `./scripts/install-global.sh` to update the global Codex skill copy and controller files; installed outputs must be real files/directories, not symlinks.
-6. Review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`.
+5. Run `./scripts/project-local.sh enable <target-project>` to verify project-local installation; installed outputs must be real files/directories, not symlinks. Run `./scripts/install-global.sh` only when the user explicitly requests global installation.
+6. Review `<target-project>/.omykit/kit/install-manifest`; release/handoff installs should point to the final commit with `git_dirty=false`. For global fallback, review `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
 7. Review `git diff --check`.
-8. Commit locally only after the local and global copies are verified; push to a remote only for an explicit release or user-requested publish.
+8. Commit locally only after local checks and project-local install verification pass; push to a remote only for an explicit release or user-requested publish.
 
 ## Copyright And Third-Party References
 

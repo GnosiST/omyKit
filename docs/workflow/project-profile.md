@@ -8,13 +8,13 @@ This profile describes the omyKit repository itself. It is the local source of t
 
 omyKit is a workflow tooling and documentation repository. It packages:
 
-- global Codex skills under `skills/`
+- Codex skills under `skills/` that can be copied into target project `.codex/skills/`
 - a prompt alias under `prompts/`
 - a local workflow controller under `scripts/omykit-workflow.mjs`
 - reusable workflow templates under `workflow-templates/`
 - JSON schemas under `schemas/`
 - setup, controller, routing, delivery, versioning, and tool-selection docs under `docs/workflow/`
-- install, rollback, upstream-watch, validation, and controller test scripts under `scripts/`
+- project-local enable/disable, explicit global install, rollback, upstream-watch, validation, and controller test scripts under `scripts/`
 
 This repository is the generic kit. Do not put target-project product rules, ports, credentials, stack assumptions, or business-specific workflow habits here.
 
@@ -90,10 +90,13 @@ Historical dogfood workflows under `.omykit/workflows/` may predate current hand
 - `VERSION` records the current omyKit version.
 - `CHANGELOG.md` records user-visible changes.
 - Git commits and tags provide historical lookup.
-- `./scripts/install-global.sh` installs the current checkout into `${CODEX_HOME:-$HOME/.codex}`.
+- `./scripts/project-local.sh enable <target-project>` enables the current checkout project-locally in a target project.
+- `./scripts/project-local.sh disable <target-project>` temporarily disables target-project Codex entry points while preserving `.omykit` runtime history.
+- `./scripts/project-local.sh uninstall <target-project>` archives target `.omykit` and removes project-local entry points.
+- `./scripts/install-global.sh` installs the current checkout into `${CODEX_HOME:-$HOME/.codex}` only when the user explicitly requests the global fallback.
 - `./scripts/install-ref.sh <ref>` installs a historical branch, tag, or commit.
 - `./scripts/rollback-global.sh latest` restores the latest global install backup.
-- Release or handoff installs must be run from the final clean commit and the install manifest must show `git_dirty=false`.
+- Release or handoff installs must be run from the final clean commit and the project-local or global install manifest must show `git_dirty=false`.
 
 ## Customization Boundary
 
@@ -101,7 +104,7 @@ Keep target-project customization in the target project:
 
 - `AGENTS.md` or equivalent project rules
 - target `docs/workflow/project-profile.md`
-- optional repo-local `.codex/skills/` only when intentionally vendored
+- local ignored project `.codex/skills/` entry points by default; commit them only when intentionally vendored
 - target project scripts and runtime docs
 
 omyKit should provide reusable routing and workflow mechanics, not project-specific product policy.

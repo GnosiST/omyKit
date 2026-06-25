@@ -39,7 +39,7 @@ Use this at learning boundaries: after delivery, retrospectives, repeated fricti
    - `project_local`, `one_off`, `volatile_ecosystem`, or failed abstraction test -> record why it was not promoted.
    - Candidate external tool -> trial locally or project-locally first; use a candidate branch for omyKit changes; do not push directly to mainline unless the owner explicitly approved the maintenance change after verification.
 7. Verify with `validate-skills`, docs link checks, diff hygiene, and targeted forward tests when the rule is substantial.
-8. Install global omyKit after skill or prompt changes.
+8. Verify project-local enablement after skill or prompt changes; use global install only when explicitly requested or when the client cannot load project-local skills.
 
 For referenced external skill repositories, read [upstream-watch.md](../../docs/workflow/upstream-watch.md) and use `node ./scripts/check-upstream-refs.mjs`. Treat upstream changes as review signals, not automatic doctrine.
 

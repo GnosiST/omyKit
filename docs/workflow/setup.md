@@ -1,18 +1,18 @@
-# Setup Codex Workflow Kit
+# Project-Local Codex Workflow Kit Setup
 
 Language: [English](setup.md) | [简体中文](setup.zh-CN.md)
 
-Use this guide to install the kit into any project.
+Use this guide to enable the kit inside any project.
 
-## Codex-First Install
+## Codex-First Enablement
 
 For first-time install, `$omykit` is not available yet. Ask Codex in plain language:
 
 ```text
-Install omyKit from https://github.com/GnosiST/omyKit
+Enable omyKit for this project from https://github.com/GnosiST/omyKit
 ```
 
-Codex should clone the repository, run `./scripts/install-global.sh`, report the install manifest, and tell you to open a fresh Codex thread so the skill list refreshes. Global install copies real files and does not install Codex skills as symlinks.
+Codex should clone the repository, run `./scripts/project-local.sh enable <target-project>`, report the target project's `.omykit/kit/install-manifest`, and tell you to open a fresh Codex thread when the current thread cannot refresh the skill list. Project-local enablement copies real files, does not install Codex skills as symlinks, and writes `.omykit/` plus omyKit-managed `.codex` entry points to the target project's `.git/info/exclude`.
 
 After install, use `$omykit` for normal operation:
 
@@ -29,28 +29,36 @@ $omykit 升级旧工作流
 $omykit 诊断工作流健康
 $omykit 清理旧工作流残留
 $omykit 交付检查
-$omykit 更新自己
+$omykit 查看本项目 omyKit 状态
+$omykit 关闭本项目 omyKit
+$omykit 启用本项目 omyKit
+$omykit 更新本项目 omyKit
 ```
 
 The leading `$` is part of the skill trigger, not a shell prompt.
 
 Use `$omykit help` or `$omykit 帮助` to get the common command list inside Codex without opening the docs.
 
-## Manual Global Install
+## Manual Project-Local Enablement
 
 Use this fallback when Codex cannot operate the local shell or when you want to inspect each step:
 
 ```bash
 git clone https://github.com/GnosiST/omyKit.git
 cd omyKit
-./scripts/install-global.sh
+./scripts/project-local.sh enable /path/to/target-project
 ```
 
-From an existing local checkout:
+From an existing local checkout, inspect, disable, enable, or uninstall:
 
 ```bash
-./scripts/install-global.sh
+./scripts/project-local.sh status /path/to/target-project
+./scripts/project-local.sh disable /path/to/target-project
+./scripts/project-local.sh enable /path/to/target-project
+./scripts/project-local.sh uninstall /path/to/target-project
 ```
+
+`disable` removes the project Codex skill/prompt entry points while preserving `.omykit` runtime state and historical workflows. `enable` restores those entry points. `uninstall` moves `.omykit` into a local non-project archive for full removal.
 
 Then open a fresh Codex thread and type this in Codex chat:
 
@@ -58,13 +66,13 @@ Then open a fresh Codex thread and type this in Codex chat:
 $omykit 初始化项目
 ```
 
-The global install is the normal path. It keeps the reusable workflow outside individual projects and avoids copying generic skill files into every repository.
+Project-local enablement is the normal path. It makes omyKit reversible per project while staying local-only by default through `.git/info/exclude`.
 
-Global install also copies the optional workflow controller into `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/`, controller schemas into `${CODEX_HOME:-$HOME/.codex}/omykit/schemas/`, and reusable workflow templates into `${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/`.
+Project-local enablement copies the controller into `.omykit/kit/scripts/`, controller schemas into `.omykit/kit/schemas/`, and reusable workflow templates into `.omykit/kit/workflow-templates/`. Use `./scripts/install-global.sh` only when the user explicitly asks for a global install or the current Codex client cannot load project-local skills.
 
 ## New Project
 
-1. Install omyKit globally through Codex, or use the manual fallback.
+1. Enable omyKit for the current project through Codex, or use the manual fallback.
 2. Create or open the target repository.
 3. Ask Codex:
 
@@ -77,7 +85,7 @@ $omykit 初始化项目
 
 ## Existing Project
 
-1. Install omyKit globally through Codex, or use the manual fallback.
+1. Enable omyKit for the current project through Codex, or use the manual fallback.
 2. Open the existing repository.
 3. Ask Codex:
 
@@ -87,9 +95,9 @@ $omykit 改造旧项目
 
 4. Review the generated project profile and keep only rules that match the existing project.
 
-## Optional Repo-Local Copy
+## Optional Explicit Vendor Copy
 
-Use this only when a project needs to vendor the workflow for a team or CI environment:
+Use this only when a project explicitly needs to commit workflow skills for a team or CI environment; normal project-local enablement does not require committing these files:
 
 ```bash
 mkdir -p .codex/skills docs
@@ -105,7 +113,7 @@ Then ask Codex:
 $omykit 初始化项目
 ```
 
-Do not keep both a stale repo-local copy and a newer global copy without a reason.
+Do not keep both a stale vendored copy and a newer project-local `.omykit/kit` copy without a reason.
 
 ## Recommended Codex Prompt
 

@@ -8,13 +8,13 @@
 
 omyKit 是一个 workflow 工具和文档仓库。它打包：
 
-- `skills/` 下的全局 Codex skills
+- `skills/` 下可复制到目标项目 `.codex/skills/` 的 Codex skills
 - `prompts/` 下的 prompt alias
 - `scripts/omykit-workflow.mjs` 本地 workflow controller
 - `workflow-templates/` 下的可复用 workflow 模板
 - `schemas/` 下的 JSON schemas
 - `docs/workflow/` 下的安装、controller、路由、交付、版本管理和工具选择文档
-- `scripts/` 下的安装、回滚、上游监控、校验和 controller 测试脚本
+- `scripts/` 下的项目级启停、显式全局安装、回滚、上游监控、校验和 controller 测试脚本
 
 本仓库是通用套件。不要把目标项目的产品规则、端口、凭据、技术栈假设或业务特定 workflow 习惯写进这里。
 
@@ -90,10 +90,13 @@ node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 - `VERSION` 记录当前 omyKit version。
 - `CHANGELOG.md` 记录用户可见变化。
 - Git commits 和 tags 提供历史追踪。
-- `./scripts/install-global.sh` 把当前 checkout 安装到 `${CODEX_HOME:-$HOME/.codex}`。
+- `./scripts/project-local.sh enable <target-project>` 把当前 checkout 以项目级方式启用到目标项目。
+- `./scripts/project-local.sh disable <target-project>` 临时关闭目标项目里的 Codex entry points，但保留 `.omykit` 运行历史。
+- `./scripts/project-local.sh uninstall <target-project>` 归档目标项目 `.omykit` 并移除项目级 entry points。
+- `./scripts/install-global.sh` 仅在用户明确要求全局 fallback 时把当前 checkout 安装到 `${CODEX_HOME:-$HOME/.codex}`。
 - `./scripts/install-ref.sh <ref>` 安装历史 branch、tag 或 commit。
 - `./scripts/rollback-global.sh latest` 恢复最近一次全局安装备份。
-- release 或 handoff 安装必须从最终干净提交运行，install manifest 必须显示 `git_dirty=false`。
+- release 或 handoff 安装必须从最终干净提交运行，项目级或全局 install manifest 必须显示 `git_dirty=false`。
 
 ## 定制边界
 
@@ -101,7 +104,7 @@ node scripts/omykit-workflow.mjs cleanup --uninstall-local --apply --lang zh-CN
 
 - `AGENTS.md` 或等价项目规则
 - 目标项目的 `docs/workflow/project-profile.md`
-- 仅在明确 vendoring 时使用可选 repo-local `.codex/skills/`
+- 默认使用本地 ignored 的项目级 `.codex/skills/` entry points；只有明确 vendoring 时才提交它们
 - 目标项目脚本和运行时文档
 
 omyKit 提供可复用路由和 workflow 机制，不承载项目特定产品政策。

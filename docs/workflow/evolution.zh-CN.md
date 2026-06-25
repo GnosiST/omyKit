@@ -107,5 +107,5 @@ capability_gaps -> 本地/项目试验 -> 证据审查 -> evolution_candidates -
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs
 git diff --check
-./scripts/install-global.sh
+./scripts/project-local.sh enable <target-project>
 ```

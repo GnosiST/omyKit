@@ -107,18 +107,21 @@
 - `VERSION` 是当前 omyKit version。
 - `CHANGELOG.md` 记录用户可见变更。
 - Git tags 标记已发布版本。使用 `vMAJOR.MINOR.PATCH`。
-- 全局安装会在 `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest` 写入 manifest。
-- 全局安装会在 `${CODEX_HOME:-$HOME/.codex}/omykit/backups/` 保留 backups。
-- 回滚会恢复已备份的 skills、prompt、controller、schemas 和 workflow templates。
+- 项目级启用会在目标项目 `.omykit/kit/install-manifest` 写入 manifest。
+- 项目级启用会在目标项目 `.omykit/kit/backups/` 保留 backups。
+- `disable` 会关闭项目 entry points 但保留 runtime；`uninstall` 会归档 `.omykit`。
+- 全局安装和回滚只作为显式 fallback。
 - release 和 handoff 安装应从最终干净提交运行，这样 manifest 会记录当前 commit 且 `git_dirty=false`。
 
-安装当前工作树：
+给目标项目启用当前工作树：
 
 ```bash
-./scripts/install-global.sh
+./scripts/project-local.sh enable <target-project>
+./scripts/project-local.sh status <target-project>
+./scripts/project-local.sh disable <target-project>
 ```
 
-安装历史 omyKit git ref：
+安装历史 omyKit git ref 到全局 fallback：
 
 ```bash
 ./scripts/install-ref.sh main
@@ -136,6 +139,8 @@
 检查已安装 omyKit：
 
 ```bash
+cat <target-project>/.omykit/kit/install-manifest
+# global fallback only:
 cat "${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest"
 ```
 

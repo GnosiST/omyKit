@@ -107,18 +107,21 @@ For this repository itself:
 - `VERSION` is the current omyKit version.
 - `CHANGELOG.md` records user-visible changes.
 - Git tags mark released versions. Use `vMAJOR.MINOR.PATCH`.
-- Global installs write a manifest under `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest`.
-- Global installs keep backups under `${CODEX_HOME:-$HOME/.codex}/omykit/backups/`.
-- Rollback restores the backed-up skills, prompt, controller, schemas, and workflow templates.
+- Project-local enablement writes a manifest under target `.omykit/kit/install-manifest`.
+- Project-local enablement keeps backups under target `.omykit/kit/backups/`.
+- `disable` turns off project entry points while preserving runtime; `uninstall` archives `.omykit`.
+- Global install and rollback remain explicit fallbacks.
 - Release and handoff installs should be run from the final clean commit so the manifest records the current commit and `git_dirty=false`.
 
-Install current working tree:
+Enable the current working tree in a target project:
 
 ```bash
-./scripts/install-global.sh
+./scripts/project-local.sh enable <target-project>
+./scripts/project-local.sh status <target-project>
+./scripts/project-local.sh disable <target-project>
 ```
 
-Install a historical omyKit git ref:
+Install a historical omyKit git ref into the global fallback:
 
 ```bash
 ./scripts/install-ref.sh main
@@ -136,6 +139,8 @@ Restore a previous global omyKit install:
 Inspect installed omyKit:
 
 ```bash
+cat <target-project>/.omykit/kit/install-manifest
+# global fallback only:
 cat "${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest"
 ```
 

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository packages omyKit as global Codex skills plus human-readable workflow docs.
+This repository packages omyKit as project-local Codex workflow entry points plus human-readable workflow docs. Global installation remains available only as a compatibility fallback.
 
 ## Maintenance Rules
 
@@ -13,8 +13,9 @@ This repository packages omyKit as global Codex skills plus human-readable workf
 - When adding, removing, or changing skills, update `README.md`, `CHANGELOG.md`, and relevant `docs/workflow/` files.
 - Review referenced upstream sources with `node ./scripts/check-upstream-refs.mjs` before releases or when changing workflow/spec/code-intelligence/docs/design/motion/ecosystem/context-compression routing.
 - For tracked delivery handoffs, record `knowledge_sync` as `completed`, `not_needed`, or `deferred` with a reason; use `neat-freak` only for milestone/stale-doc cleanup, not every node.
-- Update the global install by running `./scripts/install-global.sh` after changing skill files. For release/handoff, run it from the final clean commit and confirm `${CODEX_HOME:-$HOME/.codex}/omykit/install-manifest` points to that commit with `git_dirty=false`.
-- Keep global installed skills, prompts, controller, schemas, and workflow templates as real files/directories, not symlinks.
+- Prefer project-local enablement with `./scripts/project-local.sh enable <target-project>`. Use `./scripts/install-global.sh` only when the user explicitly asks for a global install or a Codex client cannot load project-local skills.
+- For release/handoff installs, run the chosen install from the final clean commit and confirm the install manifest points to that commit with `git_dirty=false`.
+- Keep installed skills, prompts, controller, schemas, and workflow templates as real files/directories, not symlinks.
 - Validate all skills before handoff:
 
 ```bash

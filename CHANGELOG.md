@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added project-local omyKit enable/disable/uninstall support with local-only `.codex` entry points, `.omykit/kit` manifests, doctor visibility, and documentation that treats global install as an explicit fallback.
 - Added runtime policy blocker tracking for worker assignments and orchestration projections, and preserved passed intake-decision evidence across reject/retry loops without fabricating new handoffs.
 - Added task-inbox to workflow linking: `init` now links a matching pending task brief to the newly created workflow, and state/board projections expose `workflow_metadata` for recovery surfaces.
 - Added workflow/template/variant metadata to board projections and context packs so resumed threads and delegated workers can distinguish similar workflows without re-reading `graph.json`.

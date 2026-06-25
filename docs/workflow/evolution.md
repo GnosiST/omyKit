@@ -107,5 +107,5 @@ After changing skills or workflow docs:
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs
 git diff --check
-./scripts/install-global.sh
+./scripts/project-local.sh enable <target-project>
 ```

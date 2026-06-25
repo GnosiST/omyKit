@@ -54,7 +54,7 @@ $omykit 诊断工作流健康
 $omykit 清理旧工作流残留
 ```
 
-Codex should choose the project-local controller script when present, otherwise the globally installed script, run the command, and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
+Codex should choose project-local `.omykit/kit/scripts/omykit-workflow.mjs` first; if the project intentionally vendors the controller, use `scripts/omykit-workflow.mjs`; use the globally installed script only when the user explicitly asks for that fallback or the client cannot load project-local entry points. Then run the command and report the status, next action, generated board paths, task-tracker highlights, skill usage, recommended and actual model records, token/context coverage, timing or ETA signals, failed/blocked nodes, generated improvement actions, and residual risk.
 
 Use shell commands directly only for automation, CI, troubleshooting, or when Codex cannot operate the local shell.
 
@@ -212,12 +212,12 @@ Records append to `commands/commands.jsonl` and appear in `resume` plus the boar
 
 ## Runtime Location
 
-When installed globally, omyKit places the controller here:
+When enabled project-locally, omyKit places the controller in the target project:
 
 ```text
-${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs
-${CODEX_HOME:-$HOME/.codex}/omykit/schemas/*.schema.json
-${CODEX_HOME:-$HOME/.codex}/omykit/workflow-templates/
+.omykit/kit/scripts/omykit-workflow.mjs
+.omykit/kit/schemas/*.schema.json
+.omykit/kit/workflow-templates/
 ```
 
 Inside the omyKit source repository, use:
@@ -226,7 +226,18 @@ Inside the omyKit source repository, use:
 node scripts/omykit-workflow.mjs status
 ```
 
-In a target project, prefer a project-local `scripts/omykit-workflow.mjs` if present. Otherwise use the global installed controller path.
+In a target project, prefer `.omykit/kit/scripts/omykit-workflow.mjs`. If the project intentionally vendors the controller, `scripts/omykit-workflow.mjs` is also valid. Use `${CODEX_HOME:-$HOME/.codex}/omykit/scripts/omykit-workflow.mjs` only when the user explicitly requests the global fallback or the Codex client cannot load project-local entry points.
+
+Project-local entry points can be toggled at any time:
+
+```bash
+/path/to/omyKit/scripts/project-local.sh status <project>
+/path/to/omyKit/scripts/project-local.sh disable <project>
+/path/to/omyKit/scripts/project-local.sh enable <project>
+/path/to/omyKit/scripts/project-local.sh uninstall <project>
+```
+
+`disable` only removes the project Codex skill/prompt entry points while preserving `.omykit` runtime history and controller files. `uninstall` archives `.omykit`.
 
 ## Commands
 
