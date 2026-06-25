@@ -270,18 +270,21 @@ The validator uses Codex's `skill-creator` validation script and also enforces o
 
 ```bash
 PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh
+PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs
 ```
 
 Recommended pre-handoff checks:
 
 ```bash
-./scripts/validate-skills.sh
+PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh
 node scripts/omykit-workflow.mjs templates validate
-node scripts/test-omykit-workflow.mjs
+PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs
 git diff --check
 ```
+
+`test-omykit-workflow.mjs` covers project-local install paths, so it inherits the same `PYTHON` requirement when local `python3` lacks `PyYAML`.
 
 ## Version And Rollback Readiness
 

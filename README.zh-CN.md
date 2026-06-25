@@ -269,18 +269,21 @@ intake -> task inbox/merge gate -> route -> context budget -> spec/brief -> runt
 
 ```bash
 PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh
+PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs
 ```
 
 交付前推荐运行：
 
 ```bash
-./scripts/validate-skills.sh
+PYTHON=/path/to/venv/bin/python ./scripts/validate-skills.sh
 node scripts/omykit-workflow.mjs templates validate
-node scripts/test-omykit-workflow.mjs
+PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs
 node ./scripts/validate-docs.mjs
 node ./scripts/check-upstream-refs.mjs
 git diff --check
 ```
+
+`test-omykit-workflow.mjs` 会覆盖 project-local 安装路径；当本地 `python3` 没有 `PyYAML` 时，它也需要继承同一个 `PYTHON`。
 
 ## 版本与回滚
 

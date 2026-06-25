@@ -207,7 +207,7 @@ Check:
 - versioning and rollback expectations are documented for durable projects
 - `./scripts/validate-skills.sh` passes
 - `node scripts/omykit-workflow.mjs templates validate` passes when workflow templates changed
-- `node scripts/test-omykit-workflow.mjs` passes when controller scripts or schemas changed
+- `PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs` passes when controller scripts or schemas changed and local `python3` lacks `PyYAML`
 - `node ./scripts/validate-docs.mjs` passes
 - `git diff --check` passes
 

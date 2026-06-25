@@ -207,7 +207,7 @@ $omykit 初始化项目，并检查版本管理、回滚、历史版本和定制
 - 持久项目记录了 versioning 和 rollback expectations
 - `./scripts/validate-skills.sh` 通过
 - workflow 模板变化时，`node scripts/omykit-workflow.mjs templates validate` 通过
-- controller 脚本或 schemas 变化时，`node scripts/test-omykit-workflow.mjs` 通过
+- controller 脚本或 schemas 变化且本地 `python3` 缺少 `PyYAML` 时，`PYTHON=/path/to/venv/bin/python node scripts/test-omykit-workflow.mjs` 通过
 - `node ./scripts/validate-docs.mjs` 通过
 - `git diff --check` 通过
 

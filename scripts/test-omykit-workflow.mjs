@@ -263,6 +263,68 @@ assert.ok(missionBoard.scorecard.checks.some((check) => check.id === "communicat
 assert.ok(missionBoard.scorecard.checks.some((check) => check.id === "communication-audit-findings-resolved" && check.status === "passed"));
 fs.rmSync(tmpMission, { recursive: true, force: true });
 
+const tmpCrossWorkflow = fs.mkdtempSync(path.join(os.tmpdir(), "omykit-workflow-cross-isolation-"));
+fs.writeFileSync(path.join(tmpCrossWorkflow, "README.md"), "# Cross-workflow isolation fixture\n");
+run(["init", "修复首页卡片间距", "--id", "cross-a", "--template", "bugfix.standard", "--lang", "zh-CN"], tmpCrossWorkflow);
+run(["init", "修复服务页卡片间距", "--id", "cross-b", "--template", "bugfix.standard", "--lang", "zh-CN"], tmpCrossWorkflow);
+const crossADir = path.join(tmpCrossWorkflow, ".omykit", "workflows", "cross-a");
+const crossBDir = path.join(tmpCrossWorkflow, ".omykit", "workflows", "cross-b");
+run(["context-pack", "01-intake", "--workflow", "cross-a", "--lang", "zh-CN"], tmpCrossWorkflow);
+run(["context-pack", "01-intake", "--workflow", "cross-b", "--lang", "zh-CN"], tmpCrossWorkflow);
+assert.equal(readJson(path.join(crossADir, "context-packs", "01-intake.json")).workflow_metadata.workflow_id, "cross-a");
+assert.equal(readJson(path.join(crossBDir, "context-packs", "01-intake.json")).workflow_metadata.workflow_id, "cross-b");
+const wrongHandoffPath = path.join(crossBDir, "handoffs", "wrong-from-cross-a.json");
+writeJson(wrongHandoffPath, {
+  schema_version: "1",
+  workflow_id: "cross-a",
+  node_id: "01-intake",
+  status: "passed",
+  language: "zh-CN",
+  summary: "故意把 cross-a 的 handoff 放入 cross-b 验证隔离。",
+  outputs: ["cross-a intake evidence"],
+  verification: [{ command: "probe cross workflow handoff", result: "passed" }],
+  intake_decision: {
+    goal: "修复首页卡片间距",
+    route: {
+      entry: "omykit",
+      project_type: "app",
+      mode: "Standard",
+      next_skill: "codex-change-workflow",
+    },
+    workflow: { shape: "tracked", template_id: "bugfix.standard" },
+    assumptions: ["cross workflow probe"],
+    custom_answers_allowed: true,
+    execution_options: [
+      {
+        id: "direct-fix",
+        label: "直接修复",
+        summary: "按缺陷修复流程推进。",
+        recommended: true,
+      },
+    ],
+    selected_option: "direct-fix",
+    confirmation: {
+      status: "auto_authorized",
+      by: "test",
+      evidence: "cross workflow isolation regression",
+    },
+  },
+});
+runFails(["validate", "--workflow", "cross-b"], /handoff\.workflow_id must match graph\.workflow_id/, tmpCrossWorkflow);
+runFails(["board", "--workflow", "cross-b", "--lang", "zh-CN"], /handoff\.workflow_id must match graph\.workflow_id/, tmpCrossWorkflow);
+fs.rmSync(wrongHandoffPath);
+run(["assign", "04-implement", "--workflow", "cross-a", "--agent", "cross.worker", "--surface", "thread", "--status", "planned", "--scope", "src/a/**"], tmpCrossWorkflow);
+fs.copyFileSync(path.join(crossADir, "assignments.jsonl"), path.join(crossBDir, "assignments.jsonl"));
+runFails(["validate", "--workflow", "cross-b"], /assignments\.jsonl:1: workflow_id must match graph\.workflow_id/, tmpCrossWorkflow);
+runFails(["board", "--workflow", "cross-b", "--lang", "zh-CN"], /assignments\.jsonl:1: workflow_id must match graph\.workflow_id/, tmpCrossWorkflow);
+fs.rmSync(path.join(crossBDir, "assignments.jsonl"));
+run(["workflows", "use", "cross-a"], tmpCrossWorkflow);
+const crossResume = run(["resume"], tmpCrossWorkflow);
+assert.match(crossResume, /Active workflow: cross-a/);
+assert.match(crossResume, /自动编排计划: cross-a/);
+assert.doesNotMatch(crossResume, /cross-b/);
+fs.rmSync(tmpCrossWorkflow, { recursive: true, force: true });
+
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
 assert.match(initOutput, /Workflow created: feature-x/);
 assert.match(initOutput, /Template: change\.standard \(auto\)/);
