@@ -126,6 +126,43 @@
 
 `local_only` 用于用户本地试验，`project_local` 用于目标项目本地 vendoring 或配置且不改变 omyKit，`omykit_candidate_branch` 用于可能改变通用路由的候选，`main_after_review` 只能在 owner 审查批准后使用，`not_integrated` 表示候选被拒。不要把第三方 skill body、模板、资产、截图、badge、赞助商文案、图片或 branding 复制进 omyKit，除非 license 和 attribution 审查明确允许 vendoring。
 
+## 协作审计
+
+多智能体工作出现多个真实 worker 或 assignment 时，集成前应由独立全局审查者记录 `communication_audit`。`mission.orchestration` 已把它作为专门的 `global-auditor` 节点；其他模板只有在实际出现多 agent 证据但缺少审计时才提醒。
+
+```json
+{
+  "communication_audit": {
+    "auditor_agent_id": "global-auditor",
+    "decision": "passed",
+    "reviewed_agents": [
+      "frontend-worker",
+      "visual-qa"
+    ],
+    "reviewed_handoffs": [
+      "handoffs/04-implement.json",
+      "handoffs/05-visual-qa.json"
+    ],
+    "reviewed_assignments": [
+      "04-implement:frontend-worker",
+      "05-visual-qa:visual-qa"
+    ],
+    "evidence_independence": "verified",
+    "contradiction_status": "none",
+    "scope_drift_status": "none",
+    "agreement_without_evidence": false,
+    "cross_check_method": "集成前对比 worker handoff、assignment 范围、变更文件和验证证据。",
+    "summary": "worker 结论一致，且一致性有可独立核对的证据支撑。",
+    "evidence": [
+      "evidence/05-global-audit.txt"
+    ],
+    "findings": []
+  }
+}
+```
+
+`decision` 允许 `passed`、`needs_rework`、`blocked` 和 `not_applicable`。`evidence_independence` 允许 `verified`、`partial`、`not_verified` 或 `not_applicable`。`contradiction_status` 与 `scope_drift_status` 允许 `none`、`resolved`、`unresolved` 或 `not_checked`。如果发现项仍是 `open` 或 `blocking`，集成节点应打回或阻塞受影响工作，而不是把 worker 一致当作证明。
+
 ## 知识同步审查
 
 通过的 delivery 节点还必须记录 `knowledge_sync`。它表示交付时是否已经同步项目知识库，不表示每个节点都要运行重型清理。

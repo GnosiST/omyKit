@@ -133,6 +133,20 @@ checks:
     severity: required
     evidence:
       type: assignment_write_scope_conflicts
+  - id: communication-audit-recorded
+    title:
+      en: Global auditor records communication audit before integration
+      zh-CN: 全局审查者在集成前记录协作审计
+    severity: required
+    evidence:
+      type: communication_audit_recorded
+  - id: communication-audit-findings-resolved
+    title:
+      en: Communication audit findings are resolved or accepted
+      zh-CN: 协作审计发现已处理或明确接受
+    severity: required
+    evidence:
+      type: communication_audit_findings_resolved
   - id: evolution-review-recorded
     title:
       en: Delivery nodes record workflow evolution review

@@ -79,6 +79,7 @@ pending -> ready -> running -> passed
 
 - `parallel_group`、`worker_profile`、`claimed_by` 和 `join_policy` 描述逻辑协作地图。
 - handoff 里的 `agent_activity` 和相关 ledger event 描述真实 worker 活动，包括范围、任务、状态、证据、skill 使用记录，以及可用时的 token 消耗、上下文用量和时间戳。
+- global-auditor handoff 里的 `communication_audit` 是多 agent 工作的独立交叉审查层：集成前记录已审查智能体、已审查 handoff、证据独立性、矛盾、范围漂移和未解决发现。
 - `orchestrate` 是面向用户的桥：它读取就绪节点和模型策略，写入 `orchestration-plan.json`，并返回 Codex 应在主线程、同 turn 子智能体、后台线程还是 worktree 中执行。`dispatch-plan` 保留为诊断和 controller 内部使用的低层原子命令。
 - `downstream_context` 是节点交给下游的压缩事实包：保留目标、输入、证据、风险和上下文预算，避免下游重新加载整段对话。
 - `context-pack` 是 controller 生成给单个节点或 worker 的最小可执行上下文，来源于 state、graph、节点卡、依赖 handoff、`downstream_context`、最近事件和后台命令记录。通常由 Codex 在 `orchestrate` 建议派发或需要 compact-safe 续接时内部生成。

@@ -101,6 +101,13 @@ agent_sets:
         scope:
           en: Monitor workflow state, assign bounded workers, integrate handoffs, and avoid main-thread drift.
           zh-CN: 监听 workflow 状态、分配有边界 worker、集成交接，并避免主线程漂移。
+      - id: global-auditor
+        role:
+          en: Global collaboration auditor
+          zh-CN: 全局协作审查者
+        scope:
+          en: Independently review worker handoffs, assignment records, evidence independence, contradictions, and scope drift before integration.
+          zh-CN: 在集成前独立审查 worker 交接、任务分配记录、证据独立性、矛盾和范围漂移。
       - id: integrator
         role:
           en: Integration verifier

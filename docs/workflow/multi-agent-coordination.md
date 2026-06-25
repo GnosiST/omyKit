@@ -63,16 +63,16 @@ These sources were added during maintenance to cover platform, tool, and deliver
 | Repeated same-family task handling | Project-level Task Inbox records each brief, the Merge Gate automatically decides `merge_current`, `linked_follow_up`, or `new_workflow`, and overlapping write scopes appear in the conflict-arbiter projection. | First slice implemented; merge judgment is still heuristic and should evolve from real project feedback. |
 | Long tasks continue after workflow creation | Skills, docs, and controller status output require the `resume/orchestrate -> start or dispatch -> work -> handoff -> complete/reject/block` loop. | Rules and orchestration artifact exist; real execution still depends on the active Codex turn. |
 | Reusable templates | `change.standard`, `bugfix.standard`, `frontend-ui.strict`, `deck.proposal`, and `mission.orchestration`, with topology, agent, model, runtime, safety, and scorecard layers. | Covers ordinary change, bugfix, strict UI, PPT/deck create-remake-modify work, and broad mission orchestration; future templates should be added only when topology materially differs. |
-| Structured handoff | Schema, validation, `downstream_context`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
+| Structured handoff | Schema, validation, `downstream_context`, `communication_audit`, work items, evidence, skills, model, token/context, and timing. | Relatively complete. |
 | Subagent parallelism | `orchestrate` emits `collaboration_topology`, ready actions, `dispatch_batch_id`, worker profile, model recommendation, and context pack policy. | 1:1 and 1:N dispatch decisions are explicit; Codex runtime performs the actual worker spawn. |
-| Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, runtime policy blockers, handoff coverage scorecard, write-scope scorecard, and N:1 join tracking exist. | Recording, audit, policy-blocker visibility, and join visibility exist; the controller still does not create threads/worktrees by itself. |
+| Multi-thread / worktree agents | `dispatch-plan --surface`, `assign`, `assignments.jsonl`, Agent Roster, runtime policy blockers, handoff coverage scorecard, write-scope scorecard, global communication audit, and N:1 join tracking exist. | Recording, audit, policy-blocker visibility, and join visibility exist; the controller still does not create threads/worktrees by itself. |
 | Low-context continuation | `active-workflow`, `context-pack`, `downstream_context`, and `commands/commands.jsonl`. | Solid base; missing thread-aware resume packets. |
-| Board | Shows tasks, evidence, skills, models, token/context, timing, commands, handoff packets, and improvement actions. | Upgraded into a task tracker, but not a realtime scheduler. |
+| Board | Shows tasks, evidence, global communication audits, skills, models, token/context, timing, commands, handoff packets, and improvement actions. | Upgraded into a task tracker, but not a realtime scheduler. |
 | Task-fit model choice | Model profiles recommend `fast`, `standard`, `frontier`, and concrete models. | Recommendations and records exist; actual switching depends on Codex runtime support. |
 | Token/context/time records | Handoffs and board support source-aware records. | Supported, but not every internal Codex metric can be auto-collected. |
 | Self-evolution | Delivery `evolution_candidates`, scorecards, and `codex-workflow-evolution`. | Closed loop exists; more real task data should drive template upgrades. |
 
-Conclusion: omyKit has moved from a set of skill instructions to a workflow kit made of skills, a lightweight controller, YAML templates, scorecards, and a board. It satisfies most core requirements. The controller now makes 1:1, 1:N, and N:1 collaboration visible in `orchestration-plan.json` and records runtime policy blockers when Codex cannot create the requested worker. The largest remaining gap is a runtime helper that consumes that contract and creates Codex app threads/worktrees automatically when the current tool surface allows it.
+Conclusion: omyKit has moved from a set of skill instructions to a workflow kit made of skills, a lightweight controller, YAML templates, scorecards, and a board. It satisfies most core requirements. The controller now makes 1:1, 1:N, and N:1 collaboration visible in `orchestration-plan.json`, records runtime policy blockers when Codex cannot create the requested worker, and requires/encourages a `global-auditor` communication audit before integration when multi-agent evidence exists. The largest remaining gap is a runtime helper that consumes that contract and creates Codex app threads/worktrees automatically when the current tool surface allows it.
 
 ## Feasibility Of Codex Multi-Thread Coordination
 
@@ -106,6 +106,7 @@ The "contact list" should be split into template and runtime layers:
 | Node layer | graph / node card | Suggested role, model tier, execution surface, write scope, and handoff target for the node. |
 | Runtime layer | `state.json` / `ledger.jsonl` / `assignments.jsonl` | Actual Codex thread, subagent, worktree, model, start/end time, and evidence path. |
 | Handoff layer | `handoffs/*.json` | Real outputs, `downstream_context`, evidence, usage, skill/model records. |
+| Audit layer | `handoff.communication_audit` | Independent review of worker agreement, reviewed handoffs, evidence independence, contradictions, and scope drift before integration. |
 
 Runtime `assignments.jsonl` record shape:
 
@@ -133,8 +134,9 @@ Runtime `assignments.jsonl` record shape:
 4. `assign` writes `.omykit/workflows/<id>/assignments.jsonl` with `thread_id`, worktree, worker, model, scope, status, context pack, handoff path, and optional `policy_blocker` after a real worker exists or when a runtime policy prevents that worker from being created.
 5. The board includes an Agent Roster with each agent's role, surface, thread/worktree, nodes, and status counts.
 6. Scorecards check assignment handoff coverage and active write-scope conflicts, while board/orchestration projections expose runtime policy blockers separately from missing handoffs.
-7. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
-8. Task Inbox and Merge Gate record repeated user briefs, merge same-family tasks into the current workflow or link them to historical workflows, and show workstreams plus conflict-arbiter items on the board.
+7. `mission.orchestration` includes a `global-auditor` node before integration, and all scorecards can surface missing or unresolved `communication_audit` records when multi-agent evidence appears.
+8. Compact recovery now includes `orchestration-plan.json` and `assignments.jsonl` before context packs, so the orchestrator can recover the intended route and roster first.
+9. Task Inbox and Merge Gate record repeated user briefs, merge same-family tasks into the current workflow or link them to historical workflows, and show workstreams plus conflict-arbiter items on the board.
 
 ## Remaining Optimization Roadmap
 

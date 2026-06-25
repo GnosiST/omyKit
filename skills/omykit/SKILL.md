@@ -194,6 +194,8 @@ When `orchestrate --json` returns `action=dispatch_worker`, treat it as an execu
 
 Subagents must hand off through the controller, not through informal chat alone. Before delegation or recovery, generate a context pack for the node. The worker receives that pack, exact files only when needed, and a handoff contract. The completed handoff must include `downstream_context` when later nodes need a compact, accurate carry-forward summary.
 
+When two or more workers, assignments, background threads, or worktrees participate in one tracked workflow, add or run an independent global-auditor step before integration. For `mission.orchestration`, use the built-in `05-global-audit` node. For other templates, record an equivalent terminal handoff with `communication_audit` when multi-agent evidence exists. The audit must name reviewed agents, reviewed handoffs, evidence independence, contradictions, scope drift, findings, and any agreement without evidence. If findings remain `open` or `blocking`, reject or block the affected node instead of merging worker conclusions.
+
 Treat conversation compaction as lossy. Do not let a worker inherit the full main-thread conversation just because it is convenient; pass the generated context pack plus exact source/evidence paths. Use `context_loss_guard` and `downstream_context` as the recovery contract after compact, interruption, or cross-thread handoff. If the board flags a large task contract or large context pack, split the node, shrink dependency summaries, or replace bulky evidence bodies with retrievable paths before dispatch.
 
 Codex Desktop thread and subagent tools may expose model overrides, but tool policy controls whether the active call can set them. For worker creation, map the node's `recommended_model` to the concrete model parameter and pass it only when the current runtime tool and policy allow it, or when the user explicitly authorized the concrete model. Keep the main thread's model stable as the orchestrator-observer; do not switch the main thread to satisfy a worker need. If a non-Codex client, permission boundary, or tool policy prevents model override, omit the override and record the recommendation/actual-model gap. The controller recommends models and records intended assignment; Codex runtime performs the actual worker creation.
@@ -208,7 +210,7 @@ For tracked controller work, select the nearest reusable template instead of inv
 - `bugfix.standard`: reproduce, diagnose, fix, verify, review, and delivery loops
 - `frontend-ui.strict`: design-sensitive UI work with visual QA and review
 - `deck.proposal`: PPT/deck work with create, remake, and modify variants, direction options, source-safe specialist selection, artifact production, feedback rework, export verification, and delivery evidence
-- `mission.orchestration`: broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, integration gates, and workflow learning
+- `mission.orchestration`: broad requirements that need demand insight, task decomposition, workflow routing, monitored execution, global collaboration audit, integration gates, and workflow learning
 
 Do not force strict UI, bugfix, deck, or mission templates onto unrelated work. For PPT/deck work, classify `deck_variant` as `create`, `remake`, or `modify`; intake should offer 2-3 directions, recommend one, and allow a custom answer before generating or editing the artifact. If no template fits, use `change.standard` and record the mismatch as a possible workflow evolution candidate.
 

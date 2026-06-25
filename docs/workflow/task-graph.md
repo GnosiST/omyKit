@@ -79,6 +79,7 @@ For multi-agent work, treat this as two layers:
 
 - `parallel_group`, `worker_profile`, `claimed_by`, and `join_policy` describe the logical collaboration map.
 - `agent_activity` in handoffs and related ledger events describe actual worker activity, including scope, task, status, evidence, skill usage, token usage, context usage, and timestamps when available.
+- `communication_audit` in a global-auditor handoff is the independent cross-check layer for multi-agent work: it records reviewed agents, reviewed handoffs, evidence independence, contradictions, scope drift, and unresolved findings before integration.
 - `orchestrate` is the user-facing bridge between the two: it reads ready nodes and model policy, writes `orchestration-plan.json`, and returns whether Codex should run the node in the main thread, a same-turn subagent, a background thread, or a worktree. `dispatch-plan` remains a lower-level primitive for diagnostics and controller internals.
 - `downstream_context` is the compressed fact packet a node carries forward: target nodes, inputs, evidence, risks, and context budget.
 - `context-pack` is the controller-generated minimal executable context for one node or worker, built from state, graph, the node card, dependency handoffs, `downstream_context`, recent events, and command run records. Codex usually generates it internally when `orchestrate` recommends delegation or compact-safe recovery.

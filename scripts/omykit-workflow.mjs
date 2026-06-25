@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCHEMA_VERSION = "1";
-const WORKFLOW_ARTIFACT_VERSION = "2026-06-24.intent-orchestration";
+const WORKFLOW_ARTIFACT_VERSION = "2026-06-25.global-audit";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DEFAULT_TEMPLATE_ID = "change.standard";
@@ -44,6 +44,11 @@ const SKILL_FEEDBACK_STATUSES = new Set(["accepted", "needs_revision", "rejected
 const SKILL_ALTERNATIVE_DECISIONS = new Set(["backup", "rejected", "next_retry", "selected"]);
 const INTAKE_CONFIRMATION_STATUSES = new Set(["pending", "confirmed", "auto_authorized", "changed", "rejected"]);
 const USAGE_OBSERVATION_STATUSES = new Set(["recorded", "unavailable", "not_applicable", "not_recorded"]);
+const COMMUNICATION_AUDIT_DECISIONS = new Set(["passed", "needs_rework", "blocked", "not_applicable"]);
+const COMMUNICATION_AUDIT_INDEPENDENCE = new Set(["verified", "partial", "not_verified", "not_applicable"]);
+const COMMUNICATION_AUDIT_STATUSES = new Set(["none", "resolved", "unresolved", "not_checked"]);
+const COMMUNICATION_AUDIT_FINDING_STATUSES = new Set(["open", "resolved", "accepted", "blocking"]);
+const COMMUNICATION_AUDIT_FINDING_SEVERITIES = new Set(["low", "medium", "high"]);
 const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,80}$/;
 const ESTIMATED_BYTES_PER_TOKEN = 4;
 const LARGE_TASK_CONTRACT_ESTIMATED_TOKENS = 1500;
@@ -135,6 +140,21 @@ const BOARD_LABELS = {
     dispatchBatch: "Dispatch batch",
     collaborationLanes: "Collaboration Lanes",
     agentRoster: "Agent Roster",
+    globalAudit: "Global Audit",
+    communicationAudit: "Communication Audit",
+    communicationAudits: "Communication audits",
+    communicationFindings: "Audit findings",
+    communicationOpenFindings: "Open audit findings",
+    reviewedAgents: "Reviewed agents",
+    reviewedHandoffs: "Reviewed handoffs",
+    evidenceIndependence: "Evidence independence",
+    contradictionStatus: "Contradictions",
+    scopeDriftStatus: "Scope drift",
+    agreementWithoutEvidence: "Agreement without evidence",
+    auditDecision: "Audit decision",
+    crossCheckMethod: "Cross-check method",
+    auditHelp: "A global auditor reviews worker handoffs and assignment records independently, then records contradictions, scope drift, and evidence gaps before integration.",
+    noCommunicationAudits: "No communication audits recorded",
     assignments: "Assignments",
     executionSurface: "Execution surface",
     threadId: "Thread ID",
@@ -417,6 +437,21 @@ const BOARD_LABELS = {
     dispatchBatch: "派发批次",
     collaborationLanes: "协作泳道",
     agentRoster: "Agent 通讯录",
+    globalAudit: "全局审查",
+    communicationAudit: "协作审计",
+    communicationAudits: "协作审计记录",
+    communicationFindings: "审计发现",
+    communicationOpenFindings: "未关闭审计发现",
+    reviewedAgents: "已审查智能体",
+    reviewedHandoffs: "已审查交接",
+    evidenceIndependence: "证据独立性",
+    contradictionStatus: "矛盾状态",
+    scopeDriftStatus: "范围漂移",
+    agreementWithoutEvidence: "无证据一致",
+    auditDecision: "审计结论",
+    crossCheckMethod: "交叉检查方式",
+    auditHelp: "全局审查者独立读取 worker 交接和任务分配记录，在集成前记录矛盾、范围漂移和证据缺口。",
+    noCommunicationAudits: "未记录协作审计",
     assignments: "任务分配",
     executionSurface: "执行面",
     threadId: "Thread ID",
@@ -2679,6 +2714,77 @@ function validateUsageObservationShape(value, label) {
   return errors;
 }
 
+function validateCommunicationAuditShape(value, label) {
+  const errors = [];
+  if (value === undefined) return errors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${label} must be an object`];
+  }
+  if (!value.auditor_agent_id || typeof value.auditor_agent_id !== "string") {
+    errors.push(`${label}.auditor_agent_id is required`);
+  } else if (!AGENT_ID_PATTERN.test(value.auditor_agent_id)) {
+    errors.push(`${label}.auditor_agent_id must use lowercase letters, digits, dot, colon, underscore, or hyphen`);
+  }
+  if (!value.decision || !COMMUNICATION_AUDIT_DECISIONS.has(value.decision)) {
+    errors.push(`${label}.decision must be one of ${[...COMMUNICATION_AUDIT_DECISIONS].join(", ")}`);
+  }
+  if (!value.evidence_independence || !COMMUNICATION_AUDIT_INDEPENDENCE.has(value.evidence_independence)) {
+    errors.push(`${label}.evidence_independence must be one of ${[...COMMUNICATION_AUDIT_INDEPENDENCE].join(", ")}`);
+  }
+  for (const field of ["contradiction_status", "scope_drift_status"]) {
+    if (!value[field] || !COMMUNICATION_AUDIT_STATUSES.has(value[field])) {
+      errors.push(`${label}.${field} must be one of ${[...COMMUNICATION_AUDIT_STATUSES].join(", ")}`);
+    }
+  }
+  if (value.agreement_without_evidence !== undefined && typeof value.agreement_without_evidence !== "boolean") {
+    errors.push(`${label}.agreement_without_evidence must be boolean`);
+  }
+  for (const field of ["reviewed_agents", "reviewed_handoffs"]) {
+    if (!Array.isArray(value[field]) || value[field].length === 0 || value[field].some((item) => typeof item !== "string" || !item)) {
+      errors.push(`${label}.${field} must be a non-empty array of non-empty strings`);
+    }
+  }
+  for (const field of ["reviewed_assignments", "evidence"]) {
+    errors.push(...validateStringArrayShape(value[field], `${label}.${field}`));
+  }
+  for (const field of ["summary", "cross_check_method"]) {
+    if (value[field] !== undefined && (typeof value[field] !== "string" || !value[field])) {
+      errors.push(`${label}.${field} must be a non-empty string`);
+    }
+  }
+  if (value.findings !== undefined) {
+    if (!Array.isArray(value.findings)) {
+      errors.push(`${label}.findings must be an array`);
+    } else {
+      value.findings.forEach((finding, index) => {
+        const prefix = `${label}.findings[${index}]`;
+        if (!finding || typeof finding !== "object" || Array.isArray(finding)) {
+          errors.push(`${prefix} must be an object`);
+          return;
+        }
+        for (const field of ["id", "summary"]) {
+          if (!finding[field] || typeof finding[field] !== "string") errors.push(`${prefix}.${field} is required`);
+        }
+        if (!finding.severity || !COMMUNICATION_AUDIT_FINDING_SEVERITIES.has(finding.severity)) {
+          errors.push(`${prefix}.severity must be one of ${[...COMMUNICATION_AUDIT_FINDING_SEVERITIES].join(", ")}`);
+        }
+        if (!finding.status || !COMMUNICATION_AUDIT_FINDING_STATUSES.has(finding.status)) {
+          errors.push(`${prefix}.status must be one of ${[...COMMUNICATION_AUDIT_FINDING_STATUSES].join(", ")}`);
+        }
+        for (const field of ["owner", "action"]) {
+          if (finding[field] !== undefined && (typeof finding[field] !== "string" || !finding[field])) {
+            errors.push(`${prefix}.${field} must be a non-empty string`);
+          }
+        }
+        for (const field of ["evidence", "nodes"]) {
+          errors.push(...validateStringArrayShape(finding[field], `${prefix}.${field}`));
+        }
+      });
+    }
+  }
+  return errors;
+}
+
 function validateTaskTrackingFields(handoff) {
   const errors = [];
   if (handoff.language !== undefined && typeof handoff.language !== "string") {
@@ -2702,6 +2808,7 @@ function validateTaskTrackingFields(handoff) {
   errors.push(...validateKnowledgeSyncShape(handoff.knowledge_sync, "handoff.knowledge_sync"));
   errors.push(...validateDownstreamContextShape(handoff.downstream_context, "handoff.downstream_context"));
   errors.push(...validateUsageObservationShape(handoff.usage_observation, "handoff.usage_observation"));
+  errors.push(...validateCommunicationAuditShape(handoff.communication_audit, "handoff.communication_audit"));
   if (handoff.work_items !== undefined) {
     if (!Array.isArray(handoff.work_items)) {
       errors.push("handoff.work_items must be an array");
@@ -2769,6 +2876,10 @@ function validateTaskTrackingFields(handoff) {
   return errors;
 }
 
+function isGlobalAuditorNode(node) {
+  return node?.agent === "global-auditor" || node?.worker_profile === "global-auditor";
+}
+
 function validateHandoff(graph, handoff) {
   const errors = [];
   const map = nodeMap(graph);
@@ -2796,6 +2907,9 @@ function validateHandoff(graph, handoff) {
     }
     if (node?.type === "delivery" && !handoff.knowledge_sync) {
       errors.push("passed delivery handoff requires knowledge_sync");
+    }
+    if (isGlobalAuditorNode(node) && !handoff.communication_audit) {
+      errors.push("passed global-auditor handoff requires communication_audit");
     }
   }
   if (handoff.status === "failed") {
@@ -4134,6 +4248,40 @@ function normalizeSkillDecisions(value) {
     .filter(Boolean);
 }
 
+function normalizeCommunicationAudit(handoff) {
+  const value = handoff?.communication_audit;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return {
+    auditor_agent_id: value.auditor_agent_id || null,
+    decision: value.decision || null,
+    reviewed_agents: Array.isArray(value.reviewed_agents) ? value.reviewed_agents : [],
+    reviewed_handoffs: Array.isArray(value.reviewed_handoffs) ? value.reviewed_handoffs : [],
+    reviewed_assignments: Array.isArray(value.reviewed_assignments) ? value.reviewed_assignments : [],
+    evidence_independence: value.evidence_independence || null,
+    contradiction_status: value.contradiction_status || null,
+    scope_drift_status: value.scope_drift_status || null,
+    agreement_without_evidence: value.agreement_without_evidence === true,
+    cross_check_method: value.cross_check_method || null,
+    summary: value.summary || null,
+    evidence: Array.isArray(value.evidence) ? value.evidence : [],
+    findings: Array.isArray(value.findings)
+      ? value.findings
+        .filter((finding) => finding && typeof finding === "object" && !Array.isArray(finding))
+        .map((finding, index) => ({
+          id: finding.id || `finding-${index + 1}`,
+          severity: finding.severity || "medium",
+          status: finding.status || "open",
+          summary: finding.summary || null,
+          owner: finding.owner || null,
+          action: finding.action || null,
+          evidence: Array.isArray(finding.evidence) ? finding.evidence : [],
+          nodes: Array.isArray(finding.nodes) ? finding.nodes : [],
+          index,
+        }))
+      : [],
+  };
+}
+
 function normalizeAgentActivity(handoff) {
   const activity = Array.isArray(handoff?.agent_activity) ? handoff.agent_activity : [];
   return activity.map((item, index) => ({
@@ -4503,6 +4651,7 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     agentActivity.flatMap((activity) => activity.skills_used || []),
   );
   const skillDecisions = normalizeSkillDecisions(handoff?.skill_decisions);
+  const communicationAudit = normalizeCommunicationAudit(handoff);
   const explicitTokenUsage = normalizeTokenUsage(handoff?.token_usage);
   const tokenUsage = explicitTokenUsage.recorded ? explicitTokenUsage : deriveTokenUsageFromAgents(agentActivity);
   const timeline = readNodeLedgerEvents(allEvents, node.id);
@@ -4606,6 +4755,8 @@ function projectNode(workflowDir, state, cards, handoffs, allEvents, node, langu
     skills_used: skillsUsed,
     skill_decisions: skillDecisions,
     skill_decision_reviewed: skillsUsed.length === 0 || skillDecisions.length > 0,
+    communication_audit: communicationAudit,
+    communication_audit_reviewed: Boolean(communicationAudit),
     agent_activity: agentActivity,
     token_usage: tokenUsage,
     context_usage: contextUsage,
@@ -5305,6 +5456,55 @@ function buildCapabilityGaps(projectedNodes) {
   };
 }
 
+function communicationAuditNodes(projectedNodes) {
+  return projectedNodes.filter((node) => node.communication_audit);
+}
+
+function hasMultiAgentSignals(projectedNodes, assignments = null) {
+  const assignedAgents = new Set((assignments?.records || []).map((record) => record.agent_id).filter(Boolean));
+  const activityAgents = new Set(projectedNodes
+    .flatMap((node) => node.agent_activity || [])
+    .map((activity) => activity.agent_id)
+    .filter(Boolean));
+  return assignedAgents.size > 1
+    || activityAgents.size > 1
+    || (assignments?.records || []).filter((record) => record.execution_surface !== "main-thread").length > 1;
+}
+
+function communicationAuditHasUnresolvedIssues(audit) {
+  if (!audit) return false;
+  if (["needs_rework", "blocked"].includes(audit.decision)) return true;
+  if (audit.evidence_independence === "not_verified") return true;
+  if (audit.contradiction_status === "unresolved" || audit.scope_drift_status === "unresolved") return true;
+  if (audit.agreement_without_evidence === true) return true;
+  return audit.findings.some((finding) => ["open", "blocking"].includes(finding.status));
+}
+
+function buildCommunicationAudits(projectedNodes) {
+  const byNode = communicationAuditNodes(projectedNodes).map((node) => ({
+    node_id: node.id,
+    title: node.display_title || node.title,
+    status: node.status,
+    audit: node.communication_audit,
+  }));
+  const findings = byNode.flatMap((item) => (item.audit.findings || []).map((finding) => ({
+    node_id: item.node_id,
+    title: item.title,
+    ...finding,
+  })));
+  return {
+    recorded_nodes: byNode.length,
+    missing_audit_nodes: projectedNodes
+      .filter((node) => isGlobalAuditorNode(node) && TERMINAL_STATUSES.has(node.status) && !node.communication_audit)
+      .map((node) => node.id),
+    by_node: byNode,
+    findings,
+    open_findings: findings.filter((finding) => ["open", "blocking"].includes(finding.status)),
+    by_decision: countBy(byNode.map((item) => item.audit), "decision"),
+    by_evidence_independence: countBy(byNode.map((item) => item.audit), "evidence_independence"),
+  };
+}
+
 function dependencyHandoffSummaries(node, projectedNodes) {
   const byId = new Map(projectedNodes.map((item) => [item.id, item]));
   return (node.depends_on || []).map((dependency) => {
@@ -5396,6 +5596,7 @@ function handoffContractForNode(node, board) {
   const passedFields = ["outputs", "verification"];
   if (node.type === "intake") passedFields.push("intake_decision");
   if (node.type === "delivery") passedFields.push("evolution_candidates", "knowledge_sync");
+  if (isGlobalAuditorNode(node)) passedFields.push("communication_audit");
   return {
     required: true,
     output_path: `handoffs/${node.id}.json`,
@@ -5412,6 +5613,17 @@ function handoffContractForNode(node, board) {
       verification: ["command", "result"],
       skills_used: ["name", "purpose"],
       agent_activity: ["agent_id", "role", "scope", "task", "status"],
+      communication_audit: [
+        "auditor_agent_id",
+        "decision",
+        "reviewed_agents[]",
+        "reviewed_handoffs[]",
+        "evidence_independence",
+        "contradiction_status",
+        "scope_drift_status",
+        "findings[].summary",
+        "findings[].status",
+      ],
       intake_decision: [
         "goal",
         "route.entry",
@@ -5549,7 +5761,7 @@ function recommendation(id, severity, title, detail, action, nodeIds = []) {
   return { id, severity, title, detail, action, node_ids: [...new Set(nodeIds.filter(Boolean))] };
 }
 
-function buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en", capabilityGaps = null) {
+function buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands = null, assignments = null, language = "en", capabilityGaps = null, communicationAudits = null) {
   const items = [];
   const isZh = language === "zh-CN";
   const text = boardText(language);
@@ -5728,6 +5940,40 @@ function buildRecommendations(projectedNodes, usage, context, taskSize, skills, 
       isZh ? "多个活跃 assignment 可能同时改同一范围，容易产生冲突或覆盖。" : "Multiple active assignments may edit the same scope, increasing conflict and overwrite risk.",
       isZh ? "缩小 write_scope、串行化相关节点，或改用隔离 worktree。" : "Narrow write_scope, serialize related nodes, or isolate work with worktrees.",
       assignments.write_scope_conflicts.flatMap((item) => [item.left_node_id, item.right_node_id]),
+    ));
+  }
+  const auditNodes = communicationAuditNodes(projectedNodes);
+  const terminalAuditNodesMissing = projectedNodes.filter((node) => isGlobalAuditorNode(node) && TERMINAL_STATUSES.has(node.status) && !node.communication_audit);
+  if (hasMultiAgentSignals(projectedNodes, assignments) && auditNodes.length === 0) {
+    items.push(recommendation(
+      "missing-global-communication-audit",
+      "high",
+      isZh ? "多智能体协作缺少全局审查" : "Multi-agent work is missing a global communication audit",
+      isZh ? "已有多个 worker/assignment 信号，但没有独立审查者核对交接、证据和范围，集成阶段可能只是在汇总未验证结论。" : "Multiple worker or assignment signals exist, but no independent auditor checked handoffs, evidence, and scope before integration.",
+      isZh ? "启动或补交 global-auditor 节点 handoff，并记录 communication_audit；发现矛盾时打回对应节点。" : "Run or submit the global-auditor handoff with communication_audit; reject affected nodes when contradictions are found.",
+      projectedNodes.filter((node) => isGlobalAuditorNode(node)).map((node) => node.id),
+    ));
+  }
+  if (terminalAuditNodesMissing.length > 0) {
+    items.push(recommendation(
+      "terminal-global-audit-missing-record",
+      "high",
+      isZh ? "全局审查节点通过但缺少审计记录" : "Global audit node passed without an audit record",
+      isZh ? "全局审查节点不能只写自然语言总结，必须留下可验票的 communication_audit。" : "A global audit node cannot rely on narrative summary only; it must leave a scorecard-readable communication_audit.",
+      isZh ? "补齐 auditor_agent_id、reviewed_agents、reviewed_handoffs、证据独立性、矛盾/漂移状态和发现项。" : "Add auditor_agent_id, reviewed_agents, reviewed_handoffs, evidence independence, contradiction/scope-drift status, and findings.",
+      terminalAuditNodesMissing.map((node) => node.id),
+    ));
+  }
+  if ((communicationAudits?.open_findings || []).length > 0) {
+    items.push(recommendation(
+      "communication-audit-open-findings",
+      "high",
+      isZh ? "协作审计存在未关闭发现" : "Communication audit has open findings",
+      isZh ? "全局审查者发现了矛盾、证据不足或范围漂移，集成前必须处理或记录接受理由。" : "The global auditor found contradictions, weak evidence, or scope drift that must be handled before integration.",
+      isZh
+        ? `处理审计发现：${communicationAudits.open_findings.map((finding) => `${finding.node_id}:${finding.id}`).join(", ")}。`
+        : `Resolve audit findings: ${communicationAudits.open_findings.map((finding) => `${finding.node_id}:${finding.id}`).join(", ")}.`,
+      communicationAudits.open_findings.flatMap((finding) => finding.nodes?.length ? finding.nodes : [finding.node_id]),
     ));
   }
   if (evolution.generic_candidates.length > 0) {
@@ -6059,6 +6305,37 @@ function evaluateEvidenceCheck(check, projectedNodes, graph, project, assignment
       const failing = assignments.write_scope_conflicts.flatMap((item) => [item.left_node_id, item.right_node_id]);
       return failing.length === 0 ? pass() : fail([...new Set(failing)], isZh ? "多个活跃 agent assignment 的写入范围重叠，需要收敛或隔离 worktree。" : "Multiple active agent assignments have overlapping write scopes; narrow scope or isolate worktrees.");
     }
+    case "communication_audit_recorded": {
+      const audits = communicationAuditNodes(projectedNodes);
+      const auditCarrierNodes = projectedNodes.filter((node) => isGlobalAuditorNode(node) && TERMINAL_STATUSES.has(node.status));
+      const multiAgent = hasMultiAgentSignals(projectedNodes, assignments);
+      if (audits.length === 0 && !multiAgent && auditCarrierNodes.length === 0) return pending();
+      if (audits.length === 0) {
+        const failing = auditCarrierNodes.length > 0 ? auditCarrierNodes.map((node) => node.id) : projectedNodes.filter((node) => isGlobalAuditorNode(node)).map((node) => node.id);
+        return fail(failing, isZh ? "多智能体协作或全局审查节点缺少 communication_audit 记录。" : "Multi-agent work or global audit nodes are missing communication_audit records.");
+      }
+      const failing = audits
+        .filter((node) => {
+          const audit = node.communication_audit;
+          return !audit.auditor_agent_id
+            || !audit.decision
+            || audit.reviewed_agents.length === 0
+            || audit.reviewed_handoffs.length === 0
+            || !audit.evidence_independence
+            || !audit.contradiction_status
+            || !audit.scope_drift_status;
+        })
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "communication_audit 必须记录审查者、审过的 agents/handoffs、证据独立性、矛盾/漂移状态和结论。" : "communication_audit must record auditor, reviewed agents/handoffs, evidence independence, contradiction/scope-drift status, and decision.");
+    }
+    case "communication_audit_findings_resolved": {
+      const audits = communicationAuditNodes(projectedNodes);
+      if (audits.length === 0) return pending();
+      const failing = audits
+        .filter((node) => communicationAuditHasUnresolvedIssues(node.communication_audit))
+        .map((node) => node.id);
+      return failing.length === 0 ? pass() : fail(failing, isZh ? "协作审计仍有未解决发现、未验证证据、无证据一致、未解决矛盾或范围漂移。" : "Communication audits still have unresolved findings, unverified evidence, agreement without evidence, contradictions, or scope drift.");
+    }
     case "skills_used_recorded": {
       if (terminalNodes.length === 0) return pending();
       const failing = terminalNodes.filter((node) => node.skills_used.length === 0).map((node) => node.id);
@@ -6184,6 +6461,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   const timing = buildTiming(projectedNodes);
   const evolution = buildEvolution(projectedNodes);
   const capabilityGaps = buildCapabilityGaps(projectedNodes);
+  const communicationAudits = buildCommunicationAudits(projectedNodes);
   const commands = buildCommandRunProjection(readCommandRuns(workflowDir));
   const handoffPackets = buildHandoffPackets(projectedNodes);
   const project = buildProjectSnapshot(workflowDir, graph);
@@ -6192,7 +6470,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
   project.main_changes = buildProjectChanges(projectedNodes, project.git?.status || []);
   const risks = buildRisks(workflowDir, graph, state, projectedNodes, handoffs);
   const scorecard = evaluateScorecards(graph, projectedNodes, project, assignments, language);
-  const recommendations = buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands, assignments, language, capabilityGaps);
+  const recommendations = buildRecommendations(projectedNodes, usage, context, taskSize, skills, models, evolution, risks, project, commands, assignments, language, capabilityGaps, communicationAudits);
   for (const check of scorecard.checks.filter((item) => item.status === "failed")) {
     recommendations.push(recommendation(
       `scorecard-${check.id}`,
@@ -6239,6 +6517,8 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
       changed_files: projectedNodes.reduce((sum, node) => sum + node.changed_files.length, 0),
       skills_used: projectedNodes.reduce((sum, node) => sum + node.skills_used.length, 0),
       skill_decisions: projectedNodes.reduce((sum, node) => sum + node.skill_decisions.length, 0),
+      communication_audits: communicationAudits.recorded_nodes,
+      communication_findings: communicationAudits.findings.length,
       downstream_contexts: projectedNodes.filter((node) => node.downstream_context).length,
       evolution_candidates: projectedNodes.reduce((sum, node) => sum + node.evolution_candidates.length, 0),
       capability_gaps: projectedNodes.reduce((sum, node) => sum + node.capability_gaps.length, 0),
@@ -6286,6 +6566,7 @@ function buildBoardProjection(workflowDir, graph, state, language = "en") {
     handoff_packets: handoffPackets,
     evolution,
     capability_gaps: capabilityGaps,
+    communication_audits: communicationAudits,
     timing,
     scorecard,
     risks,
@@ -7404,6 +7685,32 @@ function renderAgentRoster(items, text) {
   });
 }
 
+function renderCommunicationAudits(items, text) {
+  return renderObjectList(items, text.noCommunicationAudits, (item) => {
+    const audit = item.audit || item.communication_audit || item;
+    const findings = (audit.findings || []).length
+      ? `<h4>${escapeHtml(text.communicationFindings)}</h4>${renderObjectList(audit.findings, text.none, (finding) => {
+        const nodes = finding.nodes?.length ? `<p><strong>${escapeHtml(text.nodes)}:</strong> ${renderNodeLinks(finding.nodes, text)}</p>` : "";
+        const evidence = finding.evidence?.length ? `<p><strong>${escapeHtml(text.evidence)}:</strong> ${escapeHtml(finding.evidence.join(", "))}</p>` : "";
+        return `<strong>${escapeHtml(finding.severity || "medium")}</strong> ${escapeHtml(finding.status || "open")} · ${escapeHtml(finding.id || "")}<p>${escapeHtml(finding.summary || text.none)}</p>${nodes}${evidence}${finding.action ? `<p><strong>${escapeHtml(text.actionHint)}:</strong> ${escapeHtml(finding.action)}</p>` : ""}`;
+      })}`
+      : "";
+    return `<strong>${renderNodeLinks([item.node_id].filter(Boolean), text)} ${escapeHtml(audit.auditor_agent_id || text.none)}</strong>
+      <dl>
+        <dt>${escapeHtml(text.auditDecision)}</dt><dd>${escapeHtml(audit.decision || text.none)}</dd>
+        <dt>${escapeHtml(text.reviewedAgents)}</dt><dd>${escapeHtml((audit.reviewed_agents || []).join(", ") || text.none)}</dd>
+        <dt>${escapeHtml(text.reviewedHandoffs)}</dt><dd>${escapeHtml((audit.reviewed_handoffs || []).join(", ") || text.none)}</dd>
+        <dt>${escapeHtml(text.evidenceIndependence)}</dt><dd>${escapeHtml(audit.evidence_independence || text.none)}</dd>
+        <dt>${escapeHtml(text.contradictionStatus)}</dt><dd>${escapeHtml(audit.contradiction_status || text.none)}</dd>
+        <dt>${escapeHtml(text.scopeDriftStatus)}</dt><dd>${escapeHtml(audit.scope_drift_status || text.none)}</dd>
+        <dt>${escapeHtml(text.agreementWithoutEvidence)}</dt><dd>${escapeHtml(String(audit.agreement_without_evidence === true))}</dd>
+      </dl>
+      ${audit.cross_check_method ? `<p><strong>${escapeHtml(text.crossCheckMethod)}:</strong> ${escapeHtml(audit.cross_check_method)}</p>` : ""}
+      ${audit.summary ? `<p>${escapeHtml(audit.summary)}</p>` : ""}
+      ${findings}`;
+  });
+}
+
 function renderPolicyBlockers(items, text) {
   return renderObjectList(items, text.none, (item) => {
     return `<strong>${escapeHtml(item.agent_id || text.none)}</strong> <span class="muted">${escapeHtml(item.execution_surface || text.none)} · ${escapeHtml(item.status || text.none)}</span>
@@ -7694,6 +8001,7 @@ function renderBoardHtml(board) {
         <section><h4>${escapeHtml(text.actualWork)}</h4>${renderWorkItems(node.work_items, text)}</section>
         <section><h4>${escapeHtml(text.skillsUsed)}</h4>${renderSkillsUsed(node.skills_used, text)}</section>
         <section><h4>${escapeHtml(text.skillDecisions)}</h4>${renderSkillDecisions(node.skill_decisions, text)}</section>
+        <section><h4>${escapeHtml(text.communicationAudit)}</h4>${renderCommunicationAudits(node.communication_audit ? [{ node_id: node.id, audit: node.communication_audit }] : [], text)}</section>
         <section><h4>${escapeHtml(text.changedFiles)}</h4>${renderChangedFiles(node.changed_files, text)}</section>
         <section><h4>${escapeHtml(text.verification)}</h4>${renderList(node.required_checks, text.none)}</section>
         <section><h4>${escapeHtml(text.evidencePaths)}</h4>${renderEvidenceItems(node.evidence_items, text)}</section>
@@ -7869,6 +8177,8 @@ function renderBoardHtml(board) {
         ${renderMetric(text.changedFiles, board.summary.changed_files, "#main-changes")}
         ${renderMetric(text.checks, board.summary.verification_checks, "#task-tracker")}
         ${renderMetric(text.agents, board.summary.agent_activities, "#collaboration")}
+        ${renderMetric(text.communicationAudits, board.summary.communication_audits, "#global-audit")}
+        ${renderMetric(text.communicationFindings, board.summary.communication_findings, "#global-audit")}
       </div>
     </section>
 
@@ -7908,6 +8218,19 @@ function renderBoardHtml(board) {
     <section class="panel" id="task-inbox">
       <h2>${escapeHtml(text.taskInbox)}</h2>
       ${renderTaskInbox(board.task_inbox, board.workstreams, board.conflicts, text)}
+    </section>
+
+    <section class="panel" id="global-audit">
+      <h2>${escapeHtml(text.globalAudit)}</h2>
+      <p class="muted">${escapeHtml(text.auditHelp)}</p>
+      <div class="metrics">
+        ${renderMetric(text.communicationAudits, board.communication_audits.recorded_nodes)}
+        ${renderMetric(text.communicationFindings, board.communication_audits.findings.length)}
+        ${renderMetric(text.communicationOpenFindings, board.communication_audits.open_findings.length)}
+        ${renderMetric(text.missing, board.communication_audits.missing_audit_nodes.length)}
+      </div>
+      <p><strong>${escapeHtml(text.missing)}:</strong> ${renderNodeLinks(board.communication_audits.missing_audit_nodes, text)}</p>
+      ${renderCommunicationAudits(board.communication_audits.by_node, text)}
     </section>
 
     <section class="panel" id="workflow-evolution">

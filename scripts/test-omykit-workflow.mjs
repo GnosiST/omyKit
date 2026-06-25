@@ -165,8 +165,102 @@ assert.match(missionInit, /Workflow created: mission-task/);
 assert.match(missionInit, /Template: mission\.orchestration \(auto\)/);
 const missionGraph = readJson(path.join(workflowDirFor(tmpMission), "graph.json"));
 assert.equal(missionGraph.metadata.template_id, "mission.orchestration");
-assert.equal(missionGraph.nodes.length, 6);
+assert.equal(missionGraph.nodes.length, 7);
 assert.ok(missionGraph.nodes.some((node) => node.id === "03-workflow-map" && node.agent === "workflow-architect"));
+assert.ok(missionGraph.nodes.some((node) => node.id === "05-global-audit" && node.agent === "global-auditor"));
+assert.equal(missionGraph.nodes.find((node) => node.id === "04-orchestrate").handoff_target, "05-global-audit");
+assert.equal(missionGraph.nodes.find((node) => node.id === "06-integrate-verify").depends_on[0], "05-global-audit");
+const missionDir = workflowDirFor(tmpMission);
+run(["context-pack", "05-global-audit", "--workflow", "mission-task", "--lang", "zh-CN"], tmpMission);
+const missionAuditPack = readJson(path.join(missionDir, "context-packs", "05-global-audit.json"));
+assert.ok(missionAuditPack.handoff_contract.status_required_fields.passed.includes("communication_audit"));
+assert.ok(missionAuditPack.handoff_contract.structured_field_requirements.communication_audit.includes("reviewed_agents[]"));
+run([
+  "assign",
+  "04-orchestrate",
+  "--agent",
+  "worker-a",
+  "--role",
+  "Worker A",
+  "--surface",
+  "subagent",
+  "--status",
+  "running",
+  "--scope",
+  "src/a/**",
+], tmpMission);
+run([
+  "assign",
+  "04-orchestrate",
+  "--agent",
+  "worker-b",
+  "--role",
+  "Worker B",
+  "--surface",
+  "background_thread",
+  "--status",
+  "running",
+  "--scope",
+  "src/b/**",
+], tmpMission);
+run(["board", "--workflow", "mission-task", "--lang", "zh-CN"], tmpMission);
+let missionBoard = readJson(path.join(missionDir, "board.json"));
+assert.ok(missionBoard.scorecard.checks.some((check) => check.id === "communication-audit-recorded" && check.status === "failed"));
+assert.ok(missionBoard.recommendations.some((item) => item.id === "missing-global-communication-audit"));
+fs.writeFileSync(path.join(missionDir, "evidence", "05-global-audit.txt"), "global audit evidence\n");
+writeJson(path.join(missionDir, "handoffs", "05-global-audit.json"), {
+  workflow_id: "mission-task",
+  node_id: "05-global-audit",
+  status: "passed",
+  language: "zh-CN",
+  summary: "全局审查者已核对两个 worker 的交接范围、证据独立性和范围漂移。",
+  work_items: [
+    {
+      title: "审查 worker 交接与分配记录",
+      status: "done",
+      detail: "两个 worker 的写入范围互不重叠，未发现无证据一致。",
+      evidence: ["evidence/05-global-audit.txt"],
+    },
+  ],
+  outputs: ["evidence/05-global-audit.txt"],
+  verification: [
+    {
+      command: "manual global audit",
+      result: "passed",
+      evidence: "evidence/05-global-audit.txt",
+    },
+  ],
+  communication_audit: {
+    auditor_agent_id: "global-auditor",
+    decision: "passed",
+    reviewed_agents: ["worker-a", "worker-b"],
+    reviewed_handoffs: ["assignments.jsonl", "orchestration-plan.json"],
+    reviewed_assignments: ["04-orchestrate:worker-a", "04-orchestrate:worker-b"],
+    evidence_independence: "verified",
+    contradiction_status: "none",
+    scope_drift_status: "none",
+    agreement_without_evidence: false,
+    cross_check_method: "Read assignments.jsonl and compare worker scopes before integration.",
+    summary: "两个 worker 的职责、写入范围和证据路径可以独立核对。",
+    evidence: ["evidence/05-global-audit.txt"],
+    findings: [],
+  },
+});
+let missionState = readJson(path.join(missionDir, "state.json"));
+missionState.nodes["05-global-audit"] = {
+  status: "passed",
+  updated_at: new Date().toISOString(),
+  last_handoff: "handoffs/05-global-audit.json",
+  reason: null,
+};
+writeJson(path.join(missionDir, "state.json"), missionState);
+assert.match(run(["validate", "--workflow", "mission-task"], tmpMission), /Workflow valid: mission-task/);
+run(["board", "--workflow", "mission-task", "--lang", "zh-CN"], tmpMission);
+missionBoard = readJson(path.join(missionDir, "board.json"));
+assert.equal(missionBoard.summary.communication_audits, 1);
+assert.equal(missionBoard.communication_audits.recorded_nodes, 1);
+assert.ok(missionBoard.scorecard.checks.some((check) => check.id === "communication-audit-recorded" && check.status === "passed"));
+assert.ok(missionBoard.scorecard.checks.some((check) => check.id === "communication-audit-findings-resolved" && check.status === "passed"));
 fs.rmSync(tmpMission, { recursive: true, force: true });
 
 const initOutput = run(["init", "Feature X", "--id", "feature-x"]);
@@ -378,7 +472,7 @@ assert.equal(orchestrationJson.execution_mode, "main_thread_node");
 assert.equal(orchestrationJson.continue_automatically, true);
 assert.equal(orchestrationJson.human_intervention_required, false);
 assert.ok(orchestrationJson.actions.some((action) => action.action === "start_in_main_thread" && action.node_id === "01-intake"));
-assert.equal(readJson(path.join(workflowDir(), "orchestration-plan.json")).artifact_version, "2026-06-24.intent-orchestration");
+assert.equal(readJson(path.join(workflowDir(), "orchestration-plan.json")).artifact_version, "2026-06-25.global-audit");
 
 const dir = workflowDir();
 const graphPath = path.join(dir, "graph.json");
@@ -1583,16 +1677,16 @@ const upgradeOutput = run(["upgrade", "--lang", "zh-CN"], tmpLegacy);
 assert.match(upgradeOutput, /工作流升级完成: 1/);
 assert.match(upgradeOutput, /不会伪造 handoff/);
 const upgradedGraph = readJson(legacyGraphPath);
-assert.equal(upgradedGraph.metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
+assert.equal(upgradedGraph.metadata.workflow_artifact_version, "2026-06-25.global-audit");
 assert.equal(upgradedGraph.metadata.command_surface.manual_dispatch_required, false);
 assert.equal(upgradedGraph.metadata.orchestration_policy.automatic_dispatch_decision, true);
 const upgradedState = readJson(legacyStatePath);
 assert.equal(upgradedState.workflow_metadata.template_id, "change.standard");
-assert.equal(upgradedState.workflow_metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
+assert.equal(upgradedState.workflow_metadata.workflow_artifact_version, "2026-06-25.global-audit");
 assert.ok(fs.existsSync(path.join(legacyDir, "assignments.jsonl")));
 assert.ok(fs.existsSync(path.join(legacyDir, "nodes", "01-intake.json")));
 const upgradeReport = readJson(path.join(legacyDir, "workflow-upgrade.json"));
-assert.equal(upgradeReport.artifact_version, "2026-06-24.intent-orchestration");
+assert.equal(upgradeReport.artifact_version, "2026-06-25.global-audit");
 assert.ok(upgradeReport.actions.some((action) => /workflow_artifact_version/.test(action)));
 const upgradeAllJson = JSON.parse(run(["upgrade", "--all", "--json"], tmpLegacy));
 assert.equal(upgradeAllJson.length, 1);
@@ -1634,7 +1728,7 @@ assert.match(doctorFixOutput, /工作流健康检查/);
 assert.match(doctorFixOutput, /已应用修复/);
 assert.equal(fs.readFileSync(path.join(tmpDoctor, ".omykit", "active-workflow"), "utf8").trim(), "doctor-task");
 const doctorFixedGraph = readJson(doctorGraphPath);
-assert.equal(doctorFixedGraph.metadata.workflow_artifact_version, "2026-06-24.intent-orchestration");
+assert.equal(doctorFixedGraph.metadata.workflow_artifact_version, "2026-06-25.global-audit");
 assert.ok(fs.existsSync(path.join(doctorDir, "assignments.jsonl")));
 assert.ok(fs.existsSync(path.join(doctorDir, "nodes", "01-intake.json")));
 

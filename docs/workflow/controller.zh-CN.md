@@ -166,6 +166,8 @@ Codex Desktop 的新线程和子智能体工具可能暴露模型 override，但
 
 `assign` 会把实际分工追加到 `assignments.jsonl`：节点、agent id、角色、执行面、thread id、worktree、模型档位、写入范围、context pack、handoff 路径、运行时策略阻塞原因和状态。它是运行时通讯录，不写入模板。看板会投影 Agent 通讯录和运行时策略阻塞，Scorecard 会提醒 assignment 缺少可读取 handoff 或多个活跃 agent 写入范围重叠。
 
+当多个 worker 或 assignment 同时出现时，集成不能只靠主线程总结 worker 聊天。`global-auditor` 节点或等价终态 handoff 必须记录 `communication_audit`：已审查智能体、已审查 handoff、可用时的 assignment、证据独立性、矛盾状态、范围漂移状态、发现项，以及是否存在无证据一致。`mission.orchestration` 已在集成前内置该节点；其他模板只在实际出现多 agent 证据时触发推荐级 scorecard 提醒。
+
 ## Thread-native 多 Agent 协作
 
 Codex app 还可以在独立 thread 或 worktree 中运行后台任务。omyKit controller 现在能在编排计划中要求 worker 派发、记录 thread/worktree assignment、生成对应 context pack、在看板显示 Agent 通讯录，并用 scorecard 审计 handoff 回流和写入范围冲突；但它仍不会自动创建 Codex thread、自动创建 worktree 或跨线程发送消息。线程创建和交接仍由 Codex 主控按当前运行时工具能力执行。
@@ -314,13 +316,13 @@ node scripts/omykit-workflow.mjs board --workflow <workflow-id> --lang zh-CN --o
 .omykit/workflows/<workflow-id>/board.html
 ```
 
-`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、执行方案和确认状态、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、任务合同大小、上下文来源分布、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
+`board.json` 是稳定的投影数据，可供测试或未来工具复用。`board.html` 是可直接用浏览器打开的单文件 dashboard。它展示可点击总控指标、入口决策、执行方案和确认状态、任务追踪表、每个节点实际完成的工作项、下游交接上下文、交接包、全局审查面板、Agent 通讯录、后台命令记录、变更文件摘要、skill 使用记录、同类 skill 选择决策、fallback 策略、验证结果、证据是否存在、workflow 进化候选、子智能体活动、模型档位策略、推荐具体模型、实际模型记录、token/上下文覆盖率、任务合同大小、上下文来源分布、耗时与 ETA 估算、项目快照、Git 分支/提交/状态、依赖边、打回边、并行组、worker profile 分道、blocker、decision、重试告警、最近 ledger 事件和自动生成的整改建议。
 
 token、上下文、skill 和实际模型总量是来源感知的。Provider token 只有 handoff 或 ledger event 提供来源时才聚合；缺失 token 节点会显示为未记录，不会被当成 0 成本。上下文用量在缺少精确 worker 记录时，会由 controller 做确定性投影：已生成的 context-pack 文件大小、节点上下文估算、任务合同、依赖 handoff 摘要、下游 context、最近事件和 workflow 文件大小提示。运行环境不可观测的用量会通过 `usage_observation` 和缺失记录分开展示。推荐模型来自所选 `model_profile` 和节点策略；当 Codex runtime 策略允许时，worker 创建应把这些推荐模型作为 model override 传入。实际模型来自 `handoff.model`、`handoff.token_usage.model`、`agent_activity[].model` 或 `agent_activity[].token_usage.model`。
 
 看板语言按这个顺序确定：显式 `--lang`、workflow metadata 语言、最新 handoff 语言、标题语言推断。只有需要覆盖 workflow 语言时才手动传 `--lang zh-CN`。在 Codex Desktop 中，Codex 应返回生成的 `board.html` 本地链接，并在可用时用内置浏览器打开。CLI 的 `--open` fallback 会让操作系统尝试用系统默认浏览器打开 HTML；如果自动打开失败，文件仍会保留，命令会打印 HTML 路径。
 
-看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设、执行方案、已选方案、确认状态和自定义答案策略。如果下游打回让 intake 重新回到 `ready`，Scorecard 仍会把上一次可读取的 passed intake handoff 当作历史证据，不强迫用户重建原入口决策记录。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择或运行环境没有暴露模型的节点伪造记录。
+看板还会展示所选 workflow 模板和 Scorecard 审计结果。Scorecard 检查已记录证据，不单独相信自然语言完成声明。通过的 intake 节点必须记录 `intake_decision`，包含路由、执行形态、关键假设、执行方案、已选方案、确认状态和自定义答案策略。如果下游打回让 intake 重新回到 `ready`，Scorecard 仍会把上一次可读取的 passed intake handoff 当作历史证据，不强迫用户重建原入口决策记录。通过的 global-auditor 节点必须记录 `communication_audit`；未关闭或阻塞性审计发现会按模板配置变成必需失败或推荐级提醒。通过的 delivery 节点必须记录 `evolution_candidates`；空数组表示已复盘但没有可复用经验。它们还必须记录 `knowledge_sync`，状态为 `completed`、`not_needed` 或带原因的 `deferred`，避免交付时忘记 docs/AGENTS/记忆收尾。通用候选会转成给 `codex-workflow-evolution` 的整改建议。失败的 scorecard 检查会转成整改建议，并在可定位时链接到对应节点。skill 使用、skill 选择决策、非 mission 模板上的协作审计和实际模型检查是推荐级 warning：它暴露缺失记录，但不会强迫没有使用 skill、没有同类能力选择、没有多 agent 协作或运行环境没有暴露模型的节点伪造记录。
 
 这个看板是静态视图，不自动启动 agent，不强制 claim 节点，不替用户选择具体供应商模型，不自动推断 skill 使用，不自动运行测试，不轮询文件，不同步远程状态，也不替代 `validate`、`resume`、handoff 或 delivery gate。它可以在 Codex 或其他 worker 写入记录后，展示多个 agent、worker 分道、逻辑并行组、skill 使用记录、模型档位建议、推荐模型、实际模型记录、耗时、用量和 handoff 证据。
 

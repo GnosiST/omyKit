@@ -140,6 +140,20 @@ checks:
     severity: recommended
     evidence:
       type: subagent_model_recorded_or_explained
+  - id: communication-audit-recorded
+    title:
+      en: Multi-agent work records a global communication audit
+      zh-CN: 多智能体工作记录全局协作审计
+    severity: recommended
+    evidence:
+      type: communication_audit_recorded
+  - id: communication-audit-findings-resolved
+    title:
+      en: Communication audit findings are resolved or accepted
+      zh-CN: 协作审计发现已处理或明确接受
+    severity: recommended
+    evidence:
+      type: communication_audit_findings_resolved
   - id: board-language
     title:
       en: Board language follows workflow language

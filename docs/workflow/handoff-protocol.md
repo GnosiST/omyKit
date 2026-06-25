@@ -126,6 +126,43 @@ Allowed `integration_path` values are `local_only`, `project_local`, `omykit_can
 
 Use `local_only` for a user-local experiment, `project_local` when the target project should vendor or configure the tool without changing omyKit, `omykit_candidate_branch` when generic routing might change, `main_after_review` only after owner-approved review, and `not_integrated` when the candidate is rejected. Do not copy third-party skill bodies, templates, assets, screenshots, badges, sponsor text, images, or branding into omyKit unless a license and attribution review explicitly allows vendoring.
 
+## Communication Audit
+
+When multi-agent work has more than one real worker or assignment, an independent global auditor should record `communication_audit` before integration. `mission.orchestration` requires this as a dedicated `global-auditor` node. Other templates only warn when multi-agent evidence appears without the audit.
+
+```json
+{
+  "communication_audit": {
+    "auditor_agent_id": "global-auditor",
+    "decision": "passed",
+    "reviewed_agents": [
+      "frontend-worker",
+      "visual-qa"
+    ],
+    "reviewed_handoffs": [
+      "handoffs/04-implement.json",
+      "handoffs/05-visual-qa.json"
+    ],
+    "reviewed_assignments": [
+      "04-implement:frontend-worker",
+      "05-visual-qa:visual-qa"
+    ],
+    "evidence_independence": "verified",
+    "contradiction_status": "none",
+    "scope_drift_status": "none",
+    "agreement_without_evidence": false,
+    "cross_check_method": "Compared worker handoffs, assignment scopes, changed files, and verification evidence before integration.",
+    "summary": "The workers agree on the result and the agreement is backed by independent evidence.",
+    "evidence": [
+      "evidence/05-global-audit.txt"
+    ],
+    "findings": []
+  }
+}
+```
+
+Allowed `decision` values are `passed`, `needs_rework`, `blocked`, and `not_applicable`. `evidence_independence` is `verified`, `partial`, `not_verified`, or `not_applicable`. `contradiction_status` and `scope_drift_status` are `none`, `resolved`, `unresolved`, or `not_checked`. If a finding remains `open` or `blocking`, the integration node should reject or block the affected work instead of treating worker agreement as proof.
+
 ## Knowledge Sync Review
 
 Passed delivery nodes must also record `knowledge_sync`. This records whether project knowledge was reconciled at handoff time. It is not a requirement to run a heavy cleanup after every node.

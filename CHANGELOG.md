@@ -4,6 +4,7 @@ This file records notable omyKit changes. Keep entries short, factual, and tied 
 
 ## Unreleased
 
+- Added global collaboration audit for multi-agent workflows: `mission.orchestration` now includes a `global-auditor` node before integration, handoffs can record `communication_audit`, scorecards surface missing/unresolved audits, boards render a Global Audit panel, and tests cover the failure and pass paths.
 - Added project-local omyKit enable/disable/uninstall support with local-only `.codex` entry points, `.omykit/kit` manifests, doctor visibility, and documentation that treats global install as an explicit fallback.
 - Added runtime policy blocker tracking for worker assignments and orchestration projections, and preserved passed intake-decision evidence across reject/retry loops without fabricating new handoffs.
 - Added task-inbox to workflow linking: `init` now links a matching pending task brief to the newly created workflow, and state/board projections expose `workflow_metadata` for recovery surfaces.

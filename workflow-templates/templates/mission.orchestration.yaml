@@ -126,7 +126,7 @@ nodes:
     agent: orchestrator
     parallel_group: execution
     join_policy: all_required
-    handoff_target: 05-integrate-verify
+    handoff_target: 05-global-audit
     task_complexity: complex
     model_tier: standard
     model_profile: quality-critical
@@ -139,7 +139,38 @@ nodes:
         - Ready workstreams have assignments, context packs, handoff targets, status records, and blocker or reject paths when needed.
       zh-CN:
         - 就绪工作流分支已有分配、上下文包、交接目标、状态记录，以及必要的阻塞或打回路径。
-  - id: 05-integrate-verify
+  - id: 05-global-audit
+    type: review
+    title:
+      en: Global Collaboration Audit
+      zh-CN: 全局协作审查
+    objective:
+      en: Independently review worker handoffs, assignment records, evidence independence, contradictions, and scope drift before integration.
+      zh-CN: 在集成前独立审查 worker 交接、任务分配记录、证据独立性、矛盾和范围漂移。
+    depends_on:
+      - 04-orchestrate
+    required: true
+    retry_limit: 2
+    context_level: focus
+    owner: codex
+    worker_profile: global-auditor
+    agent: global-auditor
+    parallel_group: verification
+    join_policy: all_required
+    handoff_target: 06-integrate-verify
+    task_complexity: expert
+    model_tier: frontier
+    model_profile: quality-critical
+    runtime_profile: project-default
+    safety_profile: strict-delivery
+    scorecard: mission
+    estimated_minutes: 30
+    acceptance:
+      en:
+        - communication_audit records reviewed agents, reviewed handoffs, evidence independence, contradiction status, scope drift status, findings, and required rejects or fixes.
+      zh-CN:
+        - communication_audit 已记录审查过的智能体、交接、证据独立性、矛盾状态、范围漂移状态、发现项和必要打回/修复。
+  - id: 06-integrate-verify
     type: verify
     title:
       en: Integration Gate
@@ -148,7 +179,7 @@ nodes:
       en: Verify all workstream evidence, reject incomplete handoffs, confirm scope alignment, and run scorecards before delivery.
       zh-CN: 验证所有工作流分支证据、打回不完整交接、确认范围一致，并在交付前运行 scorecard。
     depends_on:
-      - 04-orchestrate
+      - 05-global-audit
     required: true
     retry_limit: 2
     context_level: focus
@@ -157,7 +188,7 @@ nodes:
     agent: integrator
     parallel_group: verification
     join_policy: all_required
-    handoff_target: 06-delivery-learn
+    handoff_target: 07-delivery-learn
     task_complexity: expert
     model_tier: frontier
     model_profile: quality-critical
@@ -170,7 +201,7 @@ nodes:
         - Scorecards pass or produce explicit reject/block actions, and drift from the original demand is either resolved or recorded.
       zh-CN:
         - Scorecard 通过或产生明确打回/阻塞动作，偏离原始需求的漂移已处理或记录。
-  - id: 06-delivery-learn
+  - id: 07-delivery-learn
     type: delivery
     title:
       en: Delivery And Learning
@@ -179,7 +210,7 @@ nodes:
       en: Package final evidence, user-facing result, residual risks, knowledge sync, and workflow evolution candidates.
       zh-CN: 汇总最终证据、面向用户的结果、剩余风险、知识同步和 workflow 进化候选。
     depends_on:
-      - 05-integrate-verify
+      - 06-integrate-verify
     required: true
     retry_limit: 1
     context_level: focus
