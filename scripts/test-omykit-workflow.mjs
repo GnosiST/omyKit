@@ -324,6 +324,7 @@ const projectLocalDoctor = JSON.parse(run(["doctor", "--json", "--lang", "zh-CN"
 assert.equal(projectLocalDoctor.project.project_local_install.enabled, true);
 assert.equal(projectLocalDoctor.project.project_local_install.scope, "project");
 assert.equal(projectLocalDoctor.project.project_local_install.controller, ".omykit/kit/scripts/omykit-workflow.mjs");
+assert.ok(!projectLocalDoctor.issues.some((issue) => issue.id === "repo_local_skill_copy_present"));
 const projectLocalDisable = execFileSync("bash", [projectLocalScript, "disable", tmpProjectLocal], {
   cwd: repoRoot,
   env: projectLocalEnv,

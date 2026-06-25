@@ -8887,7 +8887,7 @@ function projectWorkflowHealth(cwd = process.cwd(), options = {}) {
       next_action: "Run $omykit 改造旧项目 or create docs/workflow/project-profile.md from existing project facts.",
     }));
   }
-  if (project.repo_local_skill_dirs.length > 0) {
+  if (project.repo_local_skill_dirs.length > 0 && !projectLocalInstall.enabled) {
     issues.push(doctorIssue({
       id: "repo_local_skill_copy_present",
       severity: "info",
